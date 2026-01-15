@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: sso-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: auth_platform
+      MYSQL_USER: sso_user
+      MYSQL_PASSWORD: sso_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sso-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # SSO Application
+  sso-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sso-app
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH__DATABASE__MYSQL_URL: "mysql://sso_user:sso_password@mysql:3306/auth_platform"
+      AUTH__CACHE__REDIS_URL: "redis://redis:6379"
+      AUTH__SECURITY__JWT_SECRET: "development-secret-change-in-production"
+      AUTH__SERVER__PORT: "8080"
+      AUTH__SERVER__HOST: "0.0.0.0"
+      RUST_LOG: "info,auth_platform=debug"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 2686955b3b825c372fa8aed7dd45f983d15a2b6f19b398d305a130c056214086 # shrinks to initial_config = AppConfig { server: ServerConfig { port: 1, host: "localhost", workers: None, max_connections: None, timeout_seconds: None }, database: DatabaseConfig { mysql_url: Secret([REDACTED alloc::string::String]), sqlite_url: None, max_connections: 1, min_connections: 1, connection_timeout: 1, idle_timeout: 1, max_lifetime: 1 }, security: SecurityConfig { jwt_secret: Secret([REDACTED alloc::string::String]), jwt_expiry_minutes: 1, refresh_token_expiry_days: 1, password_min_length: 8, max_login_attempts: 1, lockout_duration_minutes: 1, require_mfa: false, allowed_origins: [] }, features: FeatureConfig { enabled_features: {}, feature_limits: {}, tenant_overrides: {} }, logging: LoggingConfig { level: "", format: "", output: "", structured: false }, external_services: ExternalServicesConfig { smtp: None, sms: None, redis: None } }, tenant_id = "a00aaa00-a0a0-a0aa-000a-0000a0aaa000", override_key = "A", override_value = Bool(true)

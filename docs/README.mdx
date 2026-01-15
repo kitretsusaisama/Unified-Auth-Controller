@@ -1,0 +1,193 @@
+# UPFlame Unified Auth Controller - Documentation Index
+
+> [!NOTE]
+> **Welcome to the UPFlame UAC Documentation**  
+> This documentation is optimized for NotebookLM and serves as the institutional knowledge base.
+
+---
+
+## 📚 Documentation Structure
+
+### 01_product/ - Product & Business
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [product_vision.mdx](01_product/product_vision.mdx) | Long-term vision, market positioning, competitive differentiation | ✅ Active |
+| [product_requirements.mdx](01_product/product_requirements.mdx) | Feature requirements, implementation status, roadmap | ✅ Active |
+| [completion_towards_goal.mdx](01_product/completion_towards_goal.mdx) | Progress tracking, milestone completion, metrics | ✅ Active |
+
+---
+
+### 02_architecture/ - Architecture
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [master_architecture.mdx](02_architecture/master_architecture.mdx) | System boundaries, crate architecture, data flow | ✅ Active |
+
+---
+
+### 03_engineering/ - Engineering Standards
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [engineering_constitution.mdx](03_engineering/engineering_constitution.mdx) | ⭐ **CRITICAL** - Coding standards, security rules, testing requirements | ✅ Active |
+
+#### Module Specifications
+
+| Module | Purpose | Status |
+|--------|---------|--------|
+| [identity_service.mdx](03_engineering/module_specifications/identity_service.mdx) | User lifecycle, authentication orchestration | ✅ Active |
+| [token_service.mdx](03_engineering/module_specifications/token_service.mdx) | JWT and refresh token management | ✅ Active |
+| [authorization_engine.mdx](03_engineering/module_specifications/authorization_engine.mdx) | RBAC and ABAC policy enforcement | ✅ Active |
+| [mfa_webauthn_service.mdx](03_engineering/module_specifications/mfa_webauthn_service.mdx) | TOTP and WebAuthn/Passkeys | ✅ Active |
+| [session_service.mdx](03_engineering/module_specifications/session_service.mdx) | Session lifecycle, fingerprinting, Sudo Mode | ✅ Active |
+| [audit_service.mdx](03_engineering/module_specifications/audit_service.mdx) | Immutable audit logging, compliance exports | ✅ Active |
+
+---
+
+### 04_security/ - Security & Compliance
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [threat_model.mdx](04_security/threat_model.mdx) | STRIDE threat analysis, attack scenarios, mitigations | ✅ Active |
+| [security_architecture.mdx](04_security/security_architecture.mdx) | Defense in depth, layer-by-layer controls | ✅ Active |
+| [incident_response.mdx](04_security/incident_response.mdx) | Security incident playbooks, escalation procedures | ✅ Active |
+
+---
+
+### 05_multitenancy/ - Multitenancy
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [multitenant_model.mdx](05_multitenancy/multitenant_model.mdx) | Tenant isolation, lifecycle, per-tenant configuration | ✅ Active |
+
+---
+
+### 08_governance/ - Governance
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [adr_template.mdx](08_governance/adr_template.mdx) | Architecture Decision Record template and examples | ✅ Active |
+
+---
+
+## 🎯 Quick Navigation
+
+### For New Team Members
+
+1. Start with [Product Vision](01_product/product_vision.mdx) - Understand what we're building
+2. Read [Engineering Constitution](03_engineering/engineering_constitution.mdx) - Learn our standards
+3. Review [Master Architecture](02_architecture/master_architecture.mdx) - Understand the system
+
+### For AI-Assisted Development
+
+1. **Always reference** [Engineering Constitution](03_engineering/engineering_constitution.mdx)
+2. Check relevant module specification before modifying code
+3. Follow security guidelines in [Security Architecture](04_security/security_architecture.mdx)
+
+### For Security Reviews
+
+1. [Threat Model](04_security/threat_model.mdx) - Known threats and mitigations
+2. [Security Architecture](04_security/security_architecture.mdx) - Security controls
+3. [Incident Response](04_security/incident_response.mdx) - Incident procedures
+
+### For Compliance Audits
+
+1. [Audit Service](03_engineering/module_specifications/audit_service.mdx) - Audit logging capabilities
+2. [Security Architecture](04_security/security_architecture.mdx) - Compliance controls
+3. [Multitenant Model](05_multitenancy/multitenant_model.mdx) - Data isolation
+
+---
+
+## 📊 Documentation Statistics
+
+- **Total Documents**: 16
+- **Total Sections**: 150+
+- **Total Words**: 50,000+
+- **Mermaid Diagrams**: 10+
+- **Code Examples**: 100+
+
+---
+
+## 🔄 Document Maintenance
+
+### Update Frequency
+
+| Document Type | Update Frequency | Owner |
+|---------------|------------------|-------|
+| Product Vision | Quarterly | Product Team |
+| Product Requirements | Monthly | Product Team |
+| Completion Tracker | Weekly | Product Team |
+| Engineering Constitution | As needed | Engineering Team |
+| Module Specifications | As needed | Engineering Team |
+| Security Documents | Quarterly | Security Team |
+| ADR Template | As needed | Architecture Team |
+
+### Review Schedule
+
+- **Quarterly Reviews**: Product Vision, Security Documents
+- **Monthly Reviews**: Product Requirements
+- **Weekly Updates**: Completion Tracker
+- **As-Needed**: Engineering Constitution, Module Specs
+
+---
+
+## 📝 Contributing to Documentation
+
+### When to Create New Documents
+
+- **ADR**: For significant architectural decisions
+- **Module Spec**: When adding new service module
+- **Security Playbook**: For new incident types
+
+### When to Update Existing Documents
+
+- **Product Requirements**: When features are implemented or planned
+- **Completion Tracker**: Weekly progress updates
+- **Module Specs**: When API changes or new operations added
+
+### Documentation Standards
+
+1. **MDX Format**: All documents in MDX
+2. **Frontmatter**: Include title, version, status, date, owner, category
+3. **Mermaid Diagrams**: Use for architecture and flows
+4. **Code Examples**: Include for all APIs
+5. **Tables**: Use for comparisons and matrices
+
+---
+
+## 🔍 Search Tips
+
+### Finding Information
+
+- **Authentication**: Check Identity Service, Token Service
+- **Authorization**: Check Authorization Engine
+- **Security**: Check Security Architecture, Threat Model
+- **Multitenancy**: Check Multitenant Model
+- **Compliance**: Check Audit Service, Security Architecture
+
+### NotebookLM Queries
+
+Example queries for NotebookLM:
+
+- "How does token rotation work?"
+- "What are the tenant isolation guarantees?"
+- "What is the incident response procedure for token compromise?"
+- "What are the password security requirements?"
+- "How is RBAC implemented?"
+
+---
+
+## 📞 Documentation Feedback
+
+For documentation issues or suggestions:
+
+1. Create GitHub issue with label `documentation`
+2. Tag appropriate owner (Product, Engineering, Security)
+3. Provide specific section and suggested improvement
+
+---
+
+**Last Updated**: 2026-01-12  
+**Maintained By**: Engineering Team  
+**Version**: 1.0.0

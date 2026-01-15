@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sso-config
+  namespace: default
+data:
+  # Server Configuration
+  AUTH__SERVER__PORT: "8080"
+  AUTH__SERVER__HOST: "0.0.0.0"
+  
+  # Logging
+  RUST_LOG: "info,auth_platform=debug"
+  
+  # Database (non-sensitive)
+  AUTH__DATABASE__MAX_CONNECTIONS: "100"
+  AUTH__DATABASE__MIN_CONNECTIONS: "10"
+  AUTH__DATABASE__CONNECT_TIMEOUT: "30"
+  
+  # Cache
+  AUTH__CACHE__TTL_SECONDS: "3600"
+  AUTH__CACHE__MAX_SIZE: "10000"

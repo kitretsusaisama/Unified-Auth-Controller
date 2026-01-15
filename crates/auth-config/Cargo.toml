@@ -1,0 +1,30 @@
+[package]
+name = "auth-config"
+version = "0.1.0"
+edition = "2021"
+description = "Configuration management system"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+config = { workspace = true }
+dotenvy = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+secrecy = { workspace = true }
+validator = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = "0.4"
+tokio-test = "0.4"
+tempfile = "3.8"
+toml = { workspace = true }

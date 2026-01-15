@@ -1,0 +1,59 @@
+# Default configuration for the SSO platform
+
+[server]
+port = 8081
+host = "0.0.0.0"
+workers = 4
+max_connections = 1000
+timeout_seconds = 30
+
+[database]
+mysql_url = "mysql://localhost:3306/auth_platform"
+sqlite_url = ":memory:"
+max_connections = 10
+min_connections = 1
+connection_timeout = 30
+idle_timeout = 600
+max_lifetime = 3600
+
+[security]
+jwt_secret = "change-me-in-production-use-a-strong-secret-key"
+jwt_expiry_minutes = 15
+refresh_token_expiry_days = 30
+password_min_length = 8
+max_login_attempts = 5
+lockout_duration_minutes = 15
+require_mfa = false
+allowed_origins = ["http://localhost:3000", "https://localhost:3000"]
+
+[features]
+enabled_features = {}
+feature_limits = {}
+tenant_overrides = {}
+
+[logging]
+level = "info"
+format = "json"
+output = "stdout"
+structured = true
+
+[external_services]
+# SMTP configuration (optional)
+# [external_services.smtp]
+# host = "smtp.example.com"
+# port = 587
+# username = "noreply@example.com"
+# password = "smtp-password"
+# from_address = "noreply@example.com"
+
+# SMS configuration (optional)
+# [external_services.sms]
+# provider = "twilio"
+# api_key = "your-api-key"
+# from_number = "+1234567890"
+
+# Redis configuration (optional)
+# [external_services.redis]
+# url = "redis://localhost:6379"
+# max_connections = 10
+# timeout_seconds = 5

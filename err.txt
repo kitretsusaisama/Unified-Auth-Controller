@@ -1,0 +1,1208 @@
+﻿cargo : warning: unused 
+import: 
+`UpdateUserRequest`
+At line:1 char:1
++ cargo build 2>&1 | 
+Out-File -FilePath 
+err.txt -Encoding UTF8; 
+Get-Con ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpe    cified: 
+(warning    : 
+unused...ateUs    
+erRequest`:Strin    g) 
+[], RemoteExc    eption
+    + FullyQualified    
+ErrorId : Native    
+CommandError
+ 
+ --> crates\auth-core\src\
+services\identity.rs:2:46
+  |
+2 | ...t, 
+UpdateUserRequest, U...
+  |       
+^^^^^^^^^^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`TokenEngine`
+ --> crates\auth-core\src\
+services\identity.rs:3:53
+  |
+3 | ...r, TokenEngine};
+  |       ^^^^^^^^^^^
+
+warning: variants 
+`EncodingError`, 
+`KeyError`, and 
+`ValidationError` are 
+never constructed
+  --> crates\auth-core\src
+\services\token_service.rs
+:69:5
+   |
+68 | enum JwtError {
+   |      -------- 
+variants in this enum
+69 |     
+EncodingError(Stri...
+   |     ^^^^^^^^^^^^^
+70 |     KeyError(String),
+   |     ^^^^^^^^
+71 |     TokenExpired,
+72 |     ValidationError,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `JwtError` has 
+a derived impl for the 
+trait `Debug`, but this 
+is intentionally ignored 
+during dead code analysis
+   = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: method 
+`cleanup_expired_tokens` 
+is never used
+   --> crates\auth-core\sr
+c\services\token_service.r
+s:251:14
+    |
+218 | impl TokenEngine {
+    | ---------------- 
+method in this 
+implementation
+...
+251 |     async fn cleanup
+_expired_tokens(&s...
+    |              
+^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `auth-core` 
+(lib) generated 4 
+warnings (run `cargo fix 
+--lib -p auth-core` to 
+apply 2 suggestions)
+warning: unused variable: 
+`client`
+  --> crates\auth-protocol
+s\src\oauth.rs:42:13
+   |
+42 | ...et client = ...
+   |       ^^^^^^ help: 
+if this is intentional, 
+prefix it with an 
+underscore: `_client`
+   |
+   = note: `#[warn(unused_
+variables)]` (part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused variable: 
+`params`
+  --> crates\auth-protocol
+s\src\oauth.rs:43:13
+   |
+43 | ...et params = [
+   |       ^^^^^^ help: 
+if this is intentional, 
+prefix it with an 
+underscore: `_params`
+
+warning: field 
+`token_url` is never read
+ --> crates\auth-protocols
+\src\oauth.rs:9:5
+  |
+5 | pub struct 
+OAuthService {
+  |            
+------------ field in 
+this struct
+...
+9 |     token_url: String,
+  |     ^^^^^^^^^
+  |
+  = note: `OAuthService` 
+has a derived impl for 
+the trait `Clone`, but 
+this is intentionally 
+ignored during dead code 
+analysis
+  = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`error`
+ --> crates\auth-extension
+\src\plugin.rs:5:21
+  |
+5 | ...o, error};
+  |       ^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`error`
+ --> crates\auth-extension
+\src\webhook.rs:2:21
+  |
+2 | ...o, error};
+  |       ^^^^^
+
+warning: variable does 
+not need to be mutable
+  --> crates\auth-extensio
+n\src\plugin.rs:15:13
+   |
+15 | ...et mut engine = 
+...
+   |       ----^^^^^^
+   |       |
+   |       help: remove 
+this `mut`
+   |
+   = note: 
+`#[warn(unused_mut)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`Row`
+ --> crates\auth-db\src\re
+positories\role_repository
+.rs:5:25
+  |
+5 | ...ol, Row};
+  |        ^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`std::sync::Arc`
+ --> crates\auth-db\src\re
+positories\role_repository
+.rs:6:5
+  |
+6 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: 
+`Row`
+ --> crates\auth-db\src\re
+positories\session_reposit
+ory.rs:5:25
+  |
+5 | ...ol, Row};
+  |        ^^^
+
+warning: unused import: 
+`SubscriptionStatus`
+ --> crates\auth-db\src\re
+positories\subscription_re
+pository.rs:3:59
+  |
+3 | ...n, 
+SubscriptionStatus};
+  |       
+^^^^^^^^^^^^^^^^^^
+
+warning: unused import: 
+`UpdateUserRequest`
+ --> crates\auth-db\src\re
+positories\user_repository
+.rs:2:62
+  |
+2 | ...t, 
+UpdateUserRequest};
+  |       
+^^^^^^^^^^^^^^^^^
+
+warning: unused import: 
+`Result`
+ --> crates\auth-db\src\re
+positories\webauthn_reposi
+tory.rs:2:25
+  |
+2 | ...l, Result};
+  |       ^^^^^^
+
+warning: unused import: 
+`std::sync::Arc`
+ --> crates\auth-db\src\sh
+arding.rs:3:5
+  |
+3 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: field 
+`validation_key` is never 
+read
+  --> crates\auth-db\src\s
+harding.rs:23:5
+   |
+17 | pub struct 
+ShardManager {
+   |            
+------------ field in 
+this struct
+...
+23 |     validation_key: 
+String,
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: `auth-protocols` 
+(lib) generated 3 
+warnings (run `cargo fix 
+--lib -p auth-protocols` 
+to apply 2 suggestions)
+warning: `auth-extension` 
+(lib) generated 3 
+warnings (run `cargo fix 
+--lib -p auth-extension` 
+to apply 3 suggestions)
+warning: `auth-db` (lib) 
+generated 8 warnings (run 
+`cargo fix --lib -p 
+auth-db` to apply 7 
+suggestions)
+warning: unused imports: `
+role_repository::RoleRepos
+itory`, `session_repositor
+y::SessionRepository`, 
+and `subscription_reposito
+ry::SubscriptionRepository
+`
+  --> crates\auth-api\src\
+lib.rs:10:5
+   |
+10 |     role_repository::
+RoleRepository,
+   |     ^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+11 |     ...Repository,
+   |     ...^^^^^^^^^^
+12 |     ...Repository,
+   |     ...^^^^^^^^^^
+   |
+   = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`State`
+ --> crates\auth-api\src\h
+andlers\auth_oidc.rs:2:22
+  |
+2 | ...y, State},
+  |       ^^^^^
+
+warning: field `state` is 
+never read
+  --> crates\auth-api\src\
+handlers\auth_oidc.rs:21:5
+   |
+19 | pub struct 
+CallbackParams {
+   |            
+-------------- field in 
+this struct
+20 |     code: String,
+21 |     state: 
+Option<String>,
+   |     ^^^^^
+   |
+   = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`std::sync::Arc`
+ --> crates\auth-cache\src
+\lib.rs:5:5
+  |
+5 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused variable: 
+`content`
+  --> crates\auth-audit\sr
+c\service.rs:61:13
+   |
+61 | ...et content = ...
+   |       ^^^^^^^ help: 
+if this is intentional, 
+prefix it with an 
+underscore: `_content`
+   |
+   = note: `#[warn(unused_
+variables)]` (part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: `auth-api` (lib) 
+generated 3 warnings (run 
+`cargo fix --lib -p 
+auth-api` to apply 2 
+suggestions)
+warning: `auth-cache` 
+(lib) generated 1 warning 
+(run `cargo fix --lib -p 
+auth-cache` to apply 1 
+suggestion)
+warning: `auth-audit` 
+(lib) generated 1 warning 
+(run `cargo fix --lib -p 
+auth-audit` to apply 1 
+suggestion)
+   Compiling 
+auth-platform v0.1.0 (C:\U
+sers\Victo\Downloads\sso)
+warning: unused imports: 
+`OidcConfig` and 
+`OidcService`
+ --> src\bin\test_protocol
+_property.rs:2:28
+  |
+2 | ...::{OidcService, 
+OidcConfig};
+  |       ^^^^^^^^^^^  
+^^^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: `auth-platform` 
+(bin 
+"test_protocol_property") 
+generated 1 warning (run 
+`cargo fix --bin 
+"test_protocol_property" 
+-p auth-platform` to 
+apply 1 suggestion)
+warning: unused import: 
+`Row`
+ --> src\bin\test_auth_flo
+w.rs:6:23
+  |
+6 | ...ol, Row};
+  |        ^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`error`
+ --> src\bin\test_auth_flo
+w.rs:9:21
+  |
+9 | ...o, error, L...
+  |       ^^^^^
+
+warning: `auth-platform` 
+(bin "test_auth_flow") 
+generated 2 warnings (run 
+`cargo fix --bin 
+"test_auth_flow" -p 
+auth-platform` to apply 2 
+suggestions)
+warning: unused import: `a
+uth_core::models::subscrip
+tion::SubscriptionStatus`
+ --> src\bin\test_subscrip
+tion.rs:1:5
+  |
+1 | use a...ionStatus;
+  |     ^...^^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: `auth-platform` 
+(bin "test_subscription") 
+generated 1 warning (run 
+`cargo fix --bin 
+"test_subscription" -p 
+auth-platform` to apply 1 
+suggestion)
+error[E0432]: unresolved 
+import `serde`
+ --> src\bin\test_caching.
+rs:4:5
+  |
+4 | use 
+serde::{Serialize, 
+Deserialize};
+  |     ^^^^^ help: a 
+similar path exists: 
+`uuid::serde`
+
+warning: unused import: 
+`AuditLog`
+ --> 
+src\bin\test_audit.rs:1:32
+  |
+1 | use auth_audit::{Audit
+Service, AuditLog};
+  |                       
+         ^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`AuditLog`
+ --> src\bin\test_audit_ex
+port.rs:1:32
+  |
+1 | use auth_audit::{Audit
+Service, AuditLog};
+  |                       
+         ^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: unused import: 
+`chrono::Utc`
+ --> 
+src\bin\test_audit.rs:2:5
+  |
+2 | use chrono::Utc;
+  |     ^^^^^^^^^^^
+
+warning: unused import: 
+`chrono::Utc`
+ --> src\bin\test_audit_ex
+port.rs:5:5
+  |
+5 | use chrono::Utc;
+  |     ^^^^^^^^^^^
+
+error[E0277]: the trait 
+bound `TestUser: 
+serde::Serialize` is not 
+satisfied
+  --> src\bin\test_caching
+.rs:31:25
+   |
+31 |     
+cache.set("user:1", 
+&user, Duration::from_secs
+(10)).await.expect("Set 
+failed");
+   |           ---        
+   ^^^^^ unsatisfied 
+trait bound
+   |           |
+   |           required 
+by a bound introduced by 
+this call
+   |
+help: the trait `serde_cor
+e::ser::Serialize` is not 
+implemented for `TestUser`
+  --> src\bin\test_caching
+.rs:7:1
+   |
+ 7 | struct TestUser {
+   | ^^^^^^^^^^^^^^^
+   = note: for local 
+types consider adding `#[d
+erive(serde::Serialize)]` 
+to your `TestUser` type
+   = note: for types from 
+other crates check 
+whether the crate offers 
+a `serde` feature flag
+   = help: the following 
+other types implement 
+trait `serde_core::ser::Se
+rialize`:
+             &'a T
+             &'a mut T
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+             (T0, T1, T2, 
+T3)
+             (T0, T1, T2, 
+T3, T4)
+           and 144 others
+note: required by a bound 
+in `set`
+  --> C:\Users\Victo\Downl
+oads\sso\crates\auth-cache
+\src\lib.rs:12:21
+   |
+12 |     async fn set<T: 
+Serialize + Send + 
+Sync>(&self, key: &str, 
+value: &T, ttl: Duration) 
+-> anyhow::Result<()>;
+   |                     
+^^^^^^^^^ required by 
+this bound in `Cache::set`
+
+error[E0277]: the trait 
+bound `TestUser: serde::de
+::DeserializeOwned` is 
+not satisfied
+  --> src\bin\test_caching
+.rs:35:31
+   |
+35 |     let fetched = cac
+he.get::<TestUser>("user:1
+").await.expect("Get 
+failed").expect("Key 
+missing");
+   |                      
+   ---   ^^^^^^^^ 
+unsatisfied trait bound
+   |                      
+   |
+   |                      
+   required by a bound 
+introduced by this call
+   |
+help: the trait `for<'de> 
+serde_core::de::Deserializ
+e<'de>` is not 
+implemented for `TestUser`
+  --> src\bin\test_caching
+.rs:7:1
+   |
+ 7 | struct TestUser {
+   | ^^^^^^^^^^^^^^^
+   = help: the following 
+other types implement 
+trait `serde_core::de::Des
+erialize<'de>`:
+             &'a Path
+             &'a [u8]
+             &'a 
+serde_json::raw::RawValue
+             &'a str
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+           and 153 others
+   = note: required for 
+`TestUser` to implement `s
+erde_core::de::Deserialize
+Owned`
+note: required by a bound 
+in 
+`auth_cache::Cache::get`
+  --> C:\Users\Victo\Downl
+oads\sso\crates\auth-cache
+\src\lib.rs:11:21
+   |
+11 |     async fn get<T: 
+DeserializeOwned + 
+Send>(&self, key: &str) 
+-> Option<T>;
+   |                     
+^^^^^^^^^^^^^^^^ required 
+by this bound in 
+`Cache::get`
+
+warning: unused import: 
+`error`
+ --> src\main.rs:5:21
+  |
+5 | use tracing::{info, 
+error};
+  |                     
+^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+error[E0599]: no method 
+named `expect` found for 
+struct `TestUser` in the 
+current scope
+  --> src\bin\test_caching
+.rs:35:78
+   |
+ 7 | struct TestUser {
+   | --------------- 
+method `expect` not found 
+for this struct
+...
+35 |     let fetched = cac
+he.get::<TestUser>("user:1
+").await.expect("Get 
+failed").expect("Key 
+missing");
+   |                   ---
+--------------------------
+--------                  
+    ^^^^^^ method not 
+found in `TestUser`
+   |                   |
+   |                   
+method `expect` is 
+available on 
+`Option<TestUser>`
+
+error[E0277]: the trait 
+bound `TestUser: serde::de
+::DeserializeOwned` is 
+not satisfied
+  --> src\bin\test_caching
+.rs:42:31
+   |
+42 |     let missing = cac
+he.get::<TestUser>("user:1
+").await.expect("Get 
+failed");
+   |                      
+   ---   ^^^^^^^^ 
+unsatisfied trait bound
+   |                      
+   |
+   |                      
+   required by a bound 
+introduced by this call
+   |
+help: the trait `for<'de> 
+serde_core::de::Deserializ
+e<'de>` is not 
+implemented for `TestUser`
+  --> src\bin\test_caching
+.rs:7:1
+   |
+ 7 | struct TestUser {
+   | ^^^^^^^^^^^^^^^
+   = help: the following 
+other types implement 
+trait `serde_core::de::Des
+erialize<'de>`:
+             &'a Path
+             &'a [u8]
+             &'a 
+serde_json::raw::RawValue
+             &'a str
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+           and 153 others
+   = note: required for 
+`TestUser` to implement `s
+erde_core::de::Deserialize
+Owned`
+note: required by a bound 
+in 
+`auth_cache::Cache::get`
+  --> C:\Users\Victo\Downl
+oads\sso\crates\auth-cache
+\src\lib.rs:11:21
+   |
+11 |     async fn get<T: 
+DeserializeOwned + 
+Send>(&self, key: &str) 
+-> Option<T>;
+   |                     
+^^^^^^^^^^^^^^^^ required 
+by this bound in 
+`Cache::get`
+
+error[E0599]: no method 
+named `is_none` found for 
+struct `TestUser` in the 
+current scope
+  --> src\bin\test_caching
+.rs:43:21
+   |
+ 7 | struct TestUser {
+   | --------------- 
+method `is_none` not 
+found for this struct
+...
+43 |     assert!(missing.i
+s_none());
+   |                     
+^^^^^^^ method not found 
+in `TestUser`
+
+error[E0432]: unresolved 
+import `auth_crypto`
+ --> src\bin\test_crypto_p
+roperty.rs:1:5
+  |
+1 | use auth_crypto::{KeyP
+rovider, SoftKeyProvider};
+  |     ^^^^^^^^^^^ use 
+of unresolved module or 
+unlinked crate 
+`auth_crypto`
+  |
+  = help: if you wanted 
+to use a crate named 
+`auth_crypto`, use `cargo 
+add auth_crypto` to add 
+it to your `Cargo.toml`
+
+error[E0282]: type 
+annotations needed
+  --> src\bin\test_crypto_
+property.rs:11:21
+   |
+11 |     let signature = p
+rovider.sign(data).await.e
+xpect("Sign failed");
+   |                     
+^^^^^^^^^^^^^^^^^^^^^^^^^ 
+cannot infer type
+
+error[E0282]: type 
+annotations needed
+  --> src\bin\test_crypto_
+property.rs:12:17
+   |
+12 |     let valid = 
+provider.verify(data, &sig
+nature).await.expect("Veri
+fy failed");
+   |                 ^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^ cannot infer type
+
+error[E0282]: type 
+annotations needed
+  --> src\bin\test_crypto_
+property.rs:19:25
+   |
+19 |     let 
+valid_corrupt = provider.v
+erify(corrupted_data, &sig
+nature).await.expect("Veri
+fy failed");
+   |                      
+   ^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+ cannot infer type
+
+Some errors have detailed 
+explanations: E0277, 
+E0432, E0599.
+For more information 
+about an error, try 
+`rustc --explain E0277`.
+error: could not compile 
+`auth-platform` (bin 
+"test_caching") due to 6 
+previous errors
+warning: build failed, 
+waiting for other jobs to 
+finish...
+Some errors have detailed 
+explanations: E0282, 
+E0432.
+For more information 
+about an error, try 
+`rustc --explain E0282`.
+error: could not compile 
+`auth-platform` (bin 
+"test_crypto_property") 
+due to 4 previous errors
+warning: unused import: 
+`RoleStore`
+ --> 
+src\bin\test_rbac.rs:1:54
+  |
+1 | use auth_core::service
+s::role_service::{RoleServ
+ice, RoleStore};
+  |                       
+                          
+     ^^^^^^^^^
+  |
+  = note: 
+`#[warn(unused_imports)]` 
+(part of 
+`#[warn(unused)]`) on by 
+default
+
+warning: `auth-platform` 
+(bin "test_audit") 
+generated 2 warnings (run 
+`cargo fix --bin 
+"test_audit" -p 
+auth-platform` to apply 2 
+suggestions)
+warning: `auth-platform` 
+(bin "test_audit_export") 
+generated 2 warnings (run 
+`cargo fix --bin 
+"test_audit_export" -p 
+auth-platform` to apply 2 
+suggestions)
+error: linking with 
+`link.exe` failed: exit 
+code: 1318
+  |
+  = note: "C:\\Program 
+Files (x86)\\Microsoft 
+Visual Studio\\2022\\Build
+Tools\\VC\\Tools\\MSVC\\14
+.44.35207\\bin\\HostX64\\x
+64\\link.exe" "/NOLOGO" "C
+:\\Users\\Victo\\AppData\\
+Local\\Temp\\rustcmFDQ7j\\
+symbols.o" "<45 object 
+files omitted>" "C:\\Users
+\\Victo\\Downloads\\sso\\t
+arget\\debug\\deps/{libaut
+h_db-79117390f63775aa,liba
+uth_config-0face171ba5e131
+f,libsecrecy-b0e57068f6617
+fbd,libdashmap-1cb0966df92
+905df,libconfig-fe8603f7d2
+a677eb,libpathdiff-92a8fd0
+c27254271,libjson5-4afc6ed
+8331bf5f2,libpest-c5b898ff
+1799f084,libucd_trie-09091
+e5f58c11e26,libron-c72c1c0
+3d629b24b,libtoml-c4eaae25
+29b72cba,libtoml_edit-30a9
+af64e9777307,libserde_span
+ned-d72dc903a7788a4e,libwi
+nnow-2ec4dfa6f9db4d07,libt
+oml_write-5c67913c499a9238
+,libtoml_datetime-3faf48a7
+500725de,libini-727416ed64
+f29304,libordered_multimap
+-db5b81591cd19adf,libdlv_l
+ist-74ba6ac43ce50b34,libya
+ml_rust2-f3b0bb078802ca73,
+libencoding_rs-449ac680e98
+b71dc,libarraydeque-670905
+21eea42bae,libconvert_case
+-3e0d8edcf60c0e3c,libunico
+de_segmentation-7dabd63c47
+e76923,libauth_core-099490
+8c311a84fe,libsqlx-2dd70a8
+e58fbd683,libsqlx_sqlite-9
+63290b2c6a31571,libfutures
+_executor-67b1d78c8d82a18f
+,libflume-9c8f6b4794f9a432
+,liburlencoding-3ea8c2b146
+a6c056,libfutures_intrusiv
+e-916a8126326c9371,liblibs
+qlite3_sys-43c70709fa0d31c
+2,libatoi-6af4aa8a308016be
+,libsqlx_mysql-3923e8bbb62
+bd680,libdotenvy-4e9028b5e
+dff5ec3,libcrc-95d646a9649
+31260,libcrc_catalog-03e2a
+b0925423897,libbyteorder-6
+bb7c94c5deaf48d,libbitflag
+s-95b4b7c1de044989,libsha1
+-c3bc4e6861358f78,librsa-4
+d61bc6b82de9247,libpkcs1-4
+6dd40666f649ec9,libpkcs8-a
+2c296812dd16ed3,libspki-48
+ff42ac4597d5fa,libder-3286
+753f1e1f0d1f,libpem_rfc746
+8-150e20b7d2f02a49,libsign
+ature-4532157ea8d5139a,lib
+num_bigint_dig-37171c1416f
+aca04,liblibm-31e2d2384cdd
+9b0d,libnum_iter-408a5bb56
+4190c64,libnum_integer-030
+cd7bd09b58505,liblazy_stat
+ic-83d91273706cafd0,libspi
+n-de0ce455c6830309,librand
+-94f3a709537b5175,librand_
+chacha-469d68fa431dd1c2,li
+bppv_lite86-0acf7d7da1ca84
+0d,libsqlx_core-5880bffd38
+894cb3,librustls_pemfile-e
+f212b056af4358e,libbase64-
+158a0ddbbee949d2,libwebpki
+_roots-9c8338bb1cadbca0,li
+btracing-5e0ffb192b99430f,
+libtracing_core-4482127de3
+29fc20,libsha2-0d1d2d17b99
+57a1a,librustls-11bd5b6c04
+201c43,libsct-822d5f0e6046
+09e0,libwebpki-f906b5ee50e
+d0f85,libring-34581184115e
+50b8,libuntrusted-e7672cf8
+9ae1edc5,libsqlformat-790f
+e75fcb25cbfc,libunicode_ca
+tegories-d2c25a021839be25,
+libnom-13efea40f6da300e,li
+bhashlink-8577dbc1d62ebe5b
+,libhashbrown-a7951396d709
+54e9,libahash-93ce33bb7e76
+d65c,libzerocopy-19e0ae350
+8fb9bf8,liballocator_api2-
+da8b4da87e0f4e84,liblog-fc
+c3905c579a8a0c,libcrossbea
+m_queue-b65f6dad8bfcc0ed,l
+ibcrossbeam_utils-c457ca1b
+2782965c,libeither-7ea7a04
+0ba62a81e,libevent_listene
+r-ea5eb0b077bd3733,libfutu
+res_util-5c577f38aa2cf338,
+libfutures_io-dd508e1b5928
+8b1c,libslab-e21057079e328
+03e,libfutures_channel-743
+075851bac18a5,libfutures_s
+ink-68bd478507af2217,libfu
+tures_task-f4bf4a19155c2c3
+6,libpin_utils-a90a2b0c074
+c4a96,libfutures_core-6c1d
+e3ec41519027,libutoipa-af3
+c0c67c3795c7a,libindexmap-
+d0cb08fab8ba4fa2,libequiva
+lent-d7dc8e6d84f329de,libh
+ashbrown-f6b7716014c4ef25,
+libtokio-75cfad174a61afa2,
+libsocket2-06ce8f210a9c03e
+8,libwindows_sys-72b7e0d12
+33dcf80,libwindows_targets
+-b85a592f1c178ee9,libbytes
+-343a7e8631a50e3c,libmio-a
+192c1088e71226c,libwindows
+_sys-07952e191c219b0b,libp
+arking_lot-7a88d923aceb5f1
+b,libparking_lot_core-26d6
+bed2dae8039a,liblock_api-0
+6e2b9cc50df4074,libscopegu
+ard-a5e40deebece1c5c,libpi
+n_project_lite-3b2867320de
+0a5da,libanyhow-955714037c
+8dbe25,libargon2-471a1f7ef
+55b7319,libcpufeatures-a0c
+2be696cba13a2,libblake2-c8
+fb8ee88d1ff804,libdigest-8
+6367ea5daaf5bd1,libconst_o
+id-142a841dc361e5ed,libblo
+ck_buffer-7817580df92b5474
+,libcrypto_common-470360bf
+323a795e,libgeneric_array-
+1f32246fa297f05c,libtypenu
+m-7b34de185bd54546,libzero
+ize-66866e1d9a47ef2e,libpa
+ssword_hash-c2c2a70924c096
+31,libsubtle-4c723ba5217a1
+e82,libbase64ct-e15054475d
+01afac,librand_core-5d8eb5
+c9393d7da8,libgetrandom-89
+bd66c09d1bbc8a,libvalidato
+r-4b72a020569d886c,liburl-
+8f73b1c9924ca7f5,libidna-4
+fdf5de2ca46e549,libutf8_it
+er-1dfd4791d98fc362,libidn
+a_adapter-fb2f196d9c762ec5
+,libicu_properties-8a954e7
+146a7cc74,libicu_propertie
+s_data-7aaac85d2cc799f1,li
+bicu_normalizer-2e366813ff
+98070d,libsmallvec-140b738
+2435abfc6,libicu_normalize
+r_data-3fc757fd9ab98486,li
+bicu_collections-43b09b7d5
+3007281,libpotential_utf-2
+25fa6c1c4d64ffd,libicu_pro
+vider-f2e480c8c2841844,lib
+icu_locale_core-25ea19ae5e
+1bbcc9,libtinystr-59cfbb59
+ba09695b,liblitemap-bd2656
+41c9aca599,libwriteable-50
+bfac706911d26c,libzerovec-
+b70ba6691b46128a,libzerotr
+ie-16163ad97e7a199a,libyok
+e-dffed7b0dfce361d,libstab
+le_deref_trait-ac6c3670ec8
+85be0,libzerofrom-d278d403
+486cd1ea,libform_urlencode
+d-ee501d678146e95a,libperc
+ent_encoding-b2382b0277f73
+458,libregex-c2d24191a3cdc
+f35,libregex_automata-700e
+73cb4d7aab68,libaho_corasi
+ck-70f70e0677338f9c,libreg
+ex_syntax-27e65a0acd9d1543
+,libonce_cell-8839855ecde3
+9db4,libportable_atomic-51
+508dfac07a77e2,libidna-cc7
+d8b85db4244f4,libunicode_n
+ormalization-51ded8575a14d
+258,libtinyvec-5f92d417adc
+96475,libtinyvec_macros-0e
+2d0f052159bd1c,libunicode_
+bidi-cd4140e70629eabc,libs
+erde_json-f6cefb0c8d72bc3e
+,libmemchr-1707e1f06aeadec
+5,libitoa-de1e9e982c8ecf8a
+,libzmij-980803f7261cffe1,
+libuuid-67063100e11ede00,l
+ibgetrandom-71ec2b06c9965d
+89,libcfg_if-3f413c3287437
+5fa,libchrono-6ac2c498ed24
+f6e7,libwindows_link-532ac
+1d17439d9ff,libnum_traits-
+8536eb6e7240506a,libserde-
+a0ecef58a6b18152,libserde_
+core-62885de1a5bf6643,libt
+hiserror-1e1934797e38d011}
+.rlib" "<sysroot>\\lib\\ru
+stlib\\x86_64-pc-windows-m
+svc\\lib/{libstd-*,libpani
+c_unwind-*,libcfg_if-*,lib
+windows_targets-*,librustc
+_demangle-*,libstd_detect-
+*,libhashbrown-*,librustc_
+std_workspace_alloc-*,libu
+nwind-*,librustc_std_works
+pace_core-*,liballoc-*,lib
+core-*,libcompiler_builtin
+s-*}.rlib" "C:\\Users\\Vic
+to\\.cargo\\registry\\src\
+\index.crates.io-1949cf8c6
+b5b557f\\windows_x86_64_ms
+vc-0.53.1\\lib\\windows.0.
+53.0.lib" "bcrypt.lib" 
+"advapi32.lib" 
+"kernel32.lib" 
+"kernel32.lib" 
+"kernel32.lib" 
+"ntdll.lib" "userenv.lib" 
+"ws2_32.lib" 
+"dbghelp.lib" 
+"/defaultlib:msvcrt" 
+"/NXCOMPAT" "/LIBPATH:C:\\
+Users\\Victo\\Downloads\\s
+so\\target\\debug\\build\\
+ring-ba9565e94df06dc1\\out
+" "/LIBPATH:C:\\Users\\Vic
+to\\Downloads\\sso\\target
+\\debug\\build\\libsqlite3
+-sys-dfd4155af37fdc5c\\out
+" "/LIBPATH:C:\\Users\\Vic
+to\\Downloads\\sso\\target
+\\debug\\build\\zstd-sys-9
+ffca7c2a10f9403\\out" "/LI
+BPATH:C:\\Users\\Victo\\.c
+argo\\registry\\src\\index
+.crates.io-1949cf8c6b5b557
+f\\windows_x86_64_msvc-0.5
+3.1\\lib" "/LIBPATH:C:\\vc
+pkg\\installed\\x64-window
+s\\lib" "/LIBPATH:C:\\User
+s\\Victo\\.cargo\\registry
+\\src\\index.crates.io-194
+9cf8c6b5b557f\\windows_x86
+_64_msvc-0.52.6\\lib" "/LI
+BPATH:C:\\Users\\Victo\\.c
+argo\\registry\\src\\index
+.crates.io-1949cf8c6b5b557
+f\\windows_x86_64_msvc-0.4
+8.5\\lib" "/OUT:C:\\Users\
+\Victo\\Downloads\\sso\\ta
+rget\\debug\\deps\\test_rb
+ac.exe" "/OPT:REF,NOICF" 
+"/DEBUG" 
+"/PDBALTPATH:%_PDB%" "/NAT
+VIS:<sysroot>\\lib\\rustli
+b\\etc\\intrinsic.natvis" 
+"/NATVIS:<sysroot>\\lib\\r
+ustlib\\etc\\liballoc.natv
+is" "/NATVIS:<sysroot>\\li
+b\\rustlib\\etc\\libcore.n
+atvis" "/NATVIS:<sysroot>\
+\lib\\rustlib\\etc\\libstd
+.natvis"
+  = note: some arguments 
+are omitted. use 
+`--verbose` to show all 
+linker arguments
+  = note: LINK : fatal 
+error LNK1318: Unexpected 
+PDB error; LIMIT (12) 'C:\
+Users\Victo\Downloads\sso\
+target\debug\deps\test_rba
+c.pdb'ÔÉì
+          
+
+warning: `auth-platform` 
+(bin "test_rbac") 
+generated 1 warning
+error: could not compile 
+`auth-platform` (bin 
+"test_rbac") due to 1 
+previous error; 1 warning 
+emitted
+warning: `auth-platform` 
+(bin "auth-platform") 
+generated 1 warning (run 
+`cargo fix --bin 
+"auth-platform" -p 
+auth-platform` to apply 1 
+suggestion)

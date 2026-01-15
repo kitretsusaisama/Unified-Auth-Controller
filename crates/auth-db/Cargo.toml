@@ -1,0 +1,28 @@
+[package]
+name = "auth-db"
+version = "0.1.0"
+edition = "2021"
+description = "Database layer and migrations"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+sqlx = { workspace = true }
+sea-query = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+secrecy = { workspace = true }
+
+# Internal dependencies
+auth-core = { path = "../auth-core" }
+auth-config = { path = "../auth-config" }
+async-trait = "0.1"
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"

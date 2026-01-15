@@ -1,0 +1,26 @@
+[package]
+name = "auth-audit"
+version = "0.1.0"
+edition = "2021"
+description = "Audit logging and compliance system"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+sqlx = { workspace = true }
+
+# Internal dependencies
+auth-core = { path = "../auth-core" }
+auth-config = { path = "../auth-config" }
+auth-crypto = { path = "../auth-crypto" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"

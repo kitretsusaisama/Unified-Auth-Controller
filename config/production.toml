@@ -1,0 +1,30 @@
+# Production environment configuration
+
+[server]
+port = 8080
+host = "0.0.0.0"
+workers = 8
+max_connections = 2000
+
+[database]
+# Production should use MySQL
+max_connections = 50
+min_connections = 5
+connection_timeout = 10
+idle_timeout = 300
+
+[security]
+jwt_expiry_minutes = 15
+refresh_token_expiry_days = 7
+password_min_length = 12
+max_login_attempts = 3
+lockout_duration_minutes = 30
+require_mfa = true
+
+[logging]
+level = "warn"
+format = "json"
+structured = true
+
+[features]
+enabled_features = { "audit_logging" = true, "compliance_mode" = true }

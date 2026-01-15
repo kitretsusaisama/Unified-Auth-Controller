@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 25a77663698d4032b338ce690b3df4b24cf5098ce8f01ae658eb42fce24a1a65 # shrinks to client_id = "aA00aAaAAa", client_secret = "AaaAA0Aaaaa00AA0AAaA", redirect_uri = "https://aaaaa¡com/callback"

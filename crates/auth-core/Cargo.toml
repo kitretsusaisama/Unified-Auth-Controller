@@ -1,0 +1,39 @@
+[package]
+name = "auth-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core authentication and authorization logic"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+argon2 = { workspace = true }
+jsonwebtoken = { workspace = true }
+secrecy = { workspace = true }
+validator = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+futures = { workspace = true }
+sqlx = { workspace = true }
+
+# Additional dependencies
+async-trait = "0.1"
+utoipa = { version = "4.2", features = ["chrono", "uuid"] }
+
+# Internal dependencies
+auth-config = { path = "../auth-config" }
+auth-crypto = { path = "../auth-crypto" }
+webauthn-rs = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"
+base64 = "0.21"

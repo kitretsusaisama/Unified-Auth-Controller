@@ -1,0 +1,146 @@
+-- Initial database schema for the SSO platform
+-- Enhanced schema with proper indexing and tenant isolation
+
+-- Organizations (top-level entities)
+CREATE TABLE IF NOT EXISTS organizations (
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    domain VARCHAR(255) UNIQUE,
+    status ENUM('active', 'suspended', 'deleted') DEFAULT 'active',
+    settings JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_org_domain (domain),
+    INDEX idx_org_status (status),
+    INDEX idx_org_created (created_at)
+);
+
+-- Tenants (organizational units within organizations)  
+CREATE TABLE IF NOT EXISTS tenants (
+    id CHAR(36) PRIMARY KEY,
+    organization_id CHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    custom_domain VARCHAR(255),
+    branding_config JSON,
+    auth_config JSON,
+    compliance_config JSON,
+    status ENUM('active', 'suspended', 'deleted') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_tenant_org_slug (organization_id, slug),
+    INDEX idx_tenant_domain (custom_domain),
+    INDEX idx_tenant_status (status),
+    INDEX idx_tenant_org (organization_id),
+    INDEX idx_tenant_created (created_at)
+);
+
+-- Users with enhanced security fields
+CREATE TABLE IF NOT EXISTS users (
+    id CHAR(36) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    email_verified BOOLEAN DEFAULT FALSE,
+    phone VARCHAR(20),
+    phone_verified BOOLEAN DEFAULT FALSE,
+    password_hash VARCHAR(255),
+    password_changed_at TIMESTAMP,
+    failed_login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP NULL,
+    last_login_at TIMESTAMP NULL,
+    last_login_ip VARCHAR(45),
+    mfa_enabled BOOLEAN DEFAULT FALSE,
+    mfa_secret VARCHAR(255),
+    backup_codes JSON,
+    risk_score DECIMAL(3,2) DEFAULT 0.00,
+    profile_data JSON,
+    preferences JSON,
+    status ENUM('active', 'suspended', 'deleted', 'pending_verification') DEFAULT 'pending_verification',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    INDEX idx_user_email (email),
+    INDEX idx_user_phone (phone),
+    INDEX idx_user_status (status),
+    INDEX idx_user_risk (risk_score),
+    INDEX idx_user_deleted (deleted_at),
+    INDEX idx_user_locked (locked_until),
+    INDEX idx_user_created (created_at)
+);
+
+-- User-Tenant relationships with tenant isolation
+CREATE TABLE IF NOT EXISTS user_tenants (
+    user_id CHAR(36),
+    tenant_id CHAR(36),
+    status ENUM('active', 'suspended', 'pending') DEFAULT 'pending',
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed_at TIMESTAMP NULL,
+    PRIMARY KEY (user_id, tenant_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    INDEX idx_ut_tenant (tenant_id),
+    INDEX idx_ut_status (status),
+    INDEX idx_ut_joined (joined_at),
+    INDEX idx_ut_accessed (last_accessed_at)
+);
+
+-- Dynamic roles with hierarchical support
+CREATE TABLE IF NOT EXISTS roles (
+    id CHAR(36) PRIMARY KEY,
+    tenant_id CHAR(36),
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    parent_role_id CHAR(36) NULL,
+    is_system_role BOOLEAN DEFAULT FALSE,
+    permissions JSON,
+    constraints JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_role_id) REFERENCES roles(id) ON DELETE SET NULL,
+    UNIQUE KEY uk_role_tenant_name (tenant_id, name),
+    INDEX idx_role_parent (parent_role_id),
+    INDEX idx_role_system (is_system_role),
+    INDEX idx_role_tenant (tenant_id),
+    INDEX idx_role_created (created_at)
+);
+
+-- Granular permissions
+CREATE TABLE IF NOT EXISTS permissions (
+    id CHAR(36) PRIMARY KEY,
+    code VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    resource_type VARCHAR(100),
+    action VARCHAR(100),
+    conditions JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_perm_code (code),
+    INDEX idx_perm_resource (resource_type),
+    INDEX idx_perm_action (action),
+    INDEX idx_perm_created (created_at)
+);
+
+-- User-Role assignments with temporal support and tenant isolation
+CREATE TABLE IF NOT EXISTS user_roles (
+    id CHAR(36) PRIMARY KEY,
+    user_id CHAR(36),
+    tenant_id CHAR(36),
+    role_id CHAR(36),
+    granted_by CHAR(36),
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
+    revoked_at TIMESTAMP NULL,
+    revoked_by CHAR(36) NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (granted_by) REFERENCES users(id),
+    FOREIGN KEY (revoked_by) REFERENCES users(id),
+    INDEX idx_ur_user_tenant (user_id, tenant_id),
+    INDEX idx_ur_role (role_id),
+    INDEX idx_ur_expires (expires_at),
+    INDEX idx_ur_active (revoked_at, expires_at),
+    INDEX idx_ur_granted (granted_at),
+    INDEX idx_ur_tenant (tenant_id)
+);

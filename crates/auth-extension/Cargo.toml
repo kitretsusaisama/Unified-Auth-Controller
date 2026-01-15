@@ -1,0 +1,22 @@
+[package]
+name = "auth-extension"
+version = "0.1.0"
+edition = "2021"
+description = "Extension framework for SSO Platform"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+# Extension dependencies
+async-graphql = { workspace = true }
+rhai = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }
+
+# Internal dependencies
+auth-core = { path = "../auth-core" }

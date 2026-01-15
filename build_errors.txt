@@ -1,0 +1,423 @@
+﻿cargo : crates\auth-c
+ore\src\services\iden
+tity.rs:2:46: 
+warning: unused 
+import: 
+`UpdateUserRequest`
+At line:1 char:1
++ cargo check -p 
+auth-api 2>&1 | 
+Out-File -FilePath 
+build_errors.txt -E 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (crates\   
+ auth-cor...ateUs    
+erRequest`:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+crates\auth-core\src\
+services\identity.rs:
+3:53: warning: 
+unused import: 
+`TokenEngine`
+crates\auth-core\src\
+services\token_servic
+e.rs:69:5: warning: 
+variants 
+`EncodingError`, 
+`KeyError`, and 
+`ValidationError` 
+are never constructed
+crates\auth-core\src\
+services\token_servic
+e.rs:251:14: 
+warning: method `clea
+nup_expired_tokens` 
+is never used
+warning: `auth-core` 
+(lib) generated 4 
+warnings (run `cargo 
+fix --lib -p 
+auth-core` to apply 
+2 suggestions)
+    Checking 
+auth-protocols 
+v0.1.0 (C:\Users\Vict
+o\Downloads\sso\crate
+s\auth-protocols)
+    Checking 
+auth-extension 
+v0.1.0 (C:\Users\Vict
+o\Downloads\sso\crate
+s\auth-extension)
+crates\auth-db\src\re
+positories\role_repos
+itory.rs:5:25: 
+warning: unused 
+import: `Row`
+crates\auth-db\src\re
+positories\role_repos
+itory.rs:6:5: 
+warning: unused 
+import: 
+`std::sync::Arc`
+crates\auth-db\src\re
+positories\session_re
+pository.rs:5:25: 
+warning: unused 
+import: `Row`
+crates\auth-db\src\re
+positories\subscripti
+on_repository.rs:3:59
+: warning: unused 
+import: 
+`SubscriptionStatus`
+crates\auth-db\src\re
+positories\user_repos
+itory.rs:2:62: 
+warning: unused 
+import: 
+`UpdateUserRequest`
+crates\auth-db\src\re
+positories\webauthn_r
+epository.rs:2:25: 
+warning: unused 
+import: `Result`
+crates\auth-db\src\sh
+arding.rs:3:5: 
+warning: unused 
+import: 
+`std::sync::Arc`
+crates\auth-db\src\sh
+arding.rs:23:5: 
+warning: field 
+`validation_key` is 
+never read
+warning: `auth-db` 
+(lib) generated 8 
+warnings (run `cargo 
+fix --lib -p 
+auth-db` to apply 7 
+suggestions)
+warning: unused 
+variable: `client`
+  --> crates\auth-pro
+tocols\src\oauth.rs:4
+2:13
+   |
+42 |         let 
+client = reqwest::Cli
+ent::new();
+   |             
+^^^^^^ help: if this 
+is intentional, 
+prefix it with an 
+underscore: `_client`
+   |
+   = note: `#[warn(un
+used_variables)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+variable: `params`
+  --> crates\auth-pro
+tocols\src\oauth.rs:4
+3:13
+   |
+43 |         let 
+params = [
+   |             
+^^^^^^ help: if this 
+is intentional, 
+prefix it with an 
+underscore: `_params`
+
+warning: field 
+`token_url` is never 
+read
+ --> crates\auth-prot
+ocols\src\oauth.rs:9:
+5
+  |
+5 | pub struct 
+OAuthService {
+  |            
+------------ field 
+in this struct
+...
+9 |     token_url: 
+String,
+  |     ^^^^^^^^^
+  |
+  = note: 
+`OAuthService` has a 
+derived impl for the 
+trait `Clone`, but 
+this is 
+intentionally 
+ignored during dead 
+code analysis
+  = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `error`
+ --> crates\auth-exte
+nsion\src\plugin.rs:5
+:21
+  |
+5 | use 
+tracing::{info, 
+error};
+  |                  
+   ^^^^^
+  |
+  = note: `#[warn(unu
+sed_imports)]` (part 
+of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `error`
+ --> crates\auth-exte
+nsion\src\webhook.rs:
+2:21
+  |
+2 | use 
+tracing::{info, 
+error};
+  |                  
+   ^^^^^
+
+warning: variable 
+does not need to be 
+mutable
+  --> crates\auth-ext
+ension\src\plugin.rs:
+15:13
+   |
+15 |         let mut 
+engine = 
+Engine::new();
+   |             
+----^^^^^^
+   |             |
+   |             
+help: remove this 
+`mut`
+   |
+   = note: `#[warn(un
+used_mut)]` (part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: 
+`auth-protocols` 
+(lib) generated 3 
+warnings (run `cargo 
+fix --lib -p 
+auth-protocols` to 
+apply 2 suggestions)
+warning: 
+`auth-extension` 
+(lib) generated 3 
+warnings (run `cargo 
+fix --lib -p 
+auth-extension` to 
+apply 3 suggestions)
+    Checking 
+auth-api v0.1.0 (C:\U
+sers\Victo\Downloads\
+sso\crates\auth-api)
+error[E0761]: file 
+for module 
+`middleware` found 
+at both "crates\auth-
+api\src\middleware.rs
+" and "crates\auth-ap
+i\src\middleware\mod.
+rs"
+  --> crates\auth-api
+\src\lib.rs:21:1
+   |
+21 | pub mod 
+middleware;
+   | 
+^^^^^^^^^^^^^^^^^^^
+   |
+   = help: delete or 
+rename one of them 
+to remove the 
+ambiguity
+
+warning: unused 
+imports: `role_reposi
+tory::RoleRepository`
+, `session_repository
+::SessionRepository`,
+ and `subscription_re
+pository::Subscriptio
+nRepository`
+  --> crates\auth-api
+\src\lib.rs:10:5
+   |
+10 |     role_reposit
+ory::RoleRepository,
+   |     ^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
+11 |     session_repo
+sitory::SessionReposi
+tory,
+   |     ^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
+^^^^
+12 |     subscription
+_repository::Subscrip
+tionRepository,
+   |     ^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(un
+used_imports)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `State`
+ --> crates\auth-api\
+src\handlers\auth_oid
+c.rs:2:22
+  |
+2 |     
+extract::{Query, 
+State},
+  |                  
+    ^^^^^
+
+error[E0308]: 
+`match` arms have 
+incompatible types
+  --> crates\auth-api
+\src\error.rs:86:63
+   |
+55 |           let 
+(status, code, 
+message) = match 
+&self.inner {
+   |                 
+                     
+   ----------------- 
+`match` arms have 
+incompatible types
+...
+81 |               Au
+thError::AccountLocke
+d { reason } => (
+   |  _______________
+_____________________
+________________-
+82 | |               
+  StatusCode::LOCKED,
+83 | |               
+  "ACCOUNT_LOCKED",
+84 | |               
+  reason.as_str(),
+85 | |             ),
+   | |_____________- 
+this and all prior 
+arms are found to be 
+of type `(axum::http:
+:StatusCode, &str, 
+&str)`
+86 |               Au
+thError::RateLimitExc
+eeded { limit, 
+window } => (
+   |  _______________
+_____________________
+_____________________
+______^
+87 | |               
+  StatusCode::TOO_MAN
+Y_REQUESTS,
+88 | |               
+  "RATE_LIMIT_EXCEEDE
+D",
+89 | |               
+  &format!("Rate 
+limit exceeded: {} 
+requests per {}", 
+limit, window),
+90 | |             ),
+   | |_____________^ 
+expected 
+`(StatusCode, &str, 
+&str)`, found 
+`(StatusCode, &str, 
+&String)`
+   |
+   = note: expected 
+tuple `(axum::http::S
+tatusCode, &_, &str)`
+              found 
+tuple `(axum::http::S
+tatusCode, &'static 
+_, &std::string::Stri
+ng)`
+
+error[E0282]: type 
+annotations needed
+   --> crates\auth-ap
+i\src\error.rs:109:19
+    |
+109 |             
+code: 
+code.to_string(),
+    |                
+   ^^^^ cannot infer 
+type
+
+error[E0282]: type 
+annotations needed
+   --> crates\auth-ap
+i\src\error.rs:110:22
+    |
+110 |             
+message: 
+message.to_string(),
+    |                
+      ^^^^^^^ cannot 
+infer type
+
+Some errors have 
+detailed 
+explanations: E0282, 
+E0308, E0761.
+For more information 
+about an error, try 
+`rustc --explain 
+E0282`.
+warning: `auth-api` 
+(lib) generated 2 
+warnings
+error: could not 
+compile `auth-api` 
+(lib) due to 4 
+previous errors; 2 
+warnings emitted

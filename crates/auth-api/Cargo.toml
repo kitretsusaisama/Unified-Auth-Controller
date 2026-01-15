@@ -1,0 +1,41 @@
+[package]
+name = "auth-api"
+version = "0.1.0"
+edition = "2021"
+description = "HTTP API layer for authentication services"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+validator = { workspace = true }
+utoipa = { version = "4.2", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "6.0", features = ["axum"] }
+regex = "1.10"
+once_cell = { workspace = true }
+dashmap = { workspace = true }
+
+# Internal dependencies
+auth-core = { path = "../auth-core" }
+auth-db = { path = "../auth-db" }
+auth-config = { path = "../auth-config" }
+sqlx = { workspace = true }
+auth-protocols = { path = "../auth-protocols" }
+
+auth-extension = { path = "../auth-extension" }
+auth-telemetry = { path = "../auth-telemetry" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"
+axum-test = "14.2"

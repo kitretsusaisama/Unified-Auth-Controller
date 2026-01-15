@@ -1,0 +1,26 @@
+# Test environment configuration
+
+[server]
+port = 0  # Use random port for tests
+host = "127.0.0.1"
+
+[database]
+# Use in-memory SQLite for tests
+sqlite_url = ":memory:"
+
+[security]
+jwt_secret = "test-secret-key"
+jwt_expiry_minutes = 5  # Short expiry for testing
+refresh_token_expiry_days = 1
+password_min_length = 6
+max_login_attempts = 3
+lockout_duration_minutes = 1
+require_mfa = false
+
+[logging]
+level = "error"  # Minimal logging during tests
+format = "json"
+structured = true
+
+[features]
+enabled_features = { "test_mode" = true }

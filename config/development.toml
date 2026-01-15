@@ -1,0 +1,28 @@
+# Development environment configuration
+
+[server]
+port = 8081
+host = "127.0.0.1"
+
+[database]
+# Use SQLite for development
+sqlite_url = "sqlite:./dev.db"
+mysql_url = "mysql://root:password@localhost:3306/auth_platform_dev"
+
+[security]
+jwt_secret = "development-secret-key-not-for-production"
+require_mfa = false
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001"
+]
+
+[logging]
+level = "debug"
+format = "pretty"
+structured = false
+
+[features]
+enabled_features = { "debug_mode" = true, "detailed_logging" = true }

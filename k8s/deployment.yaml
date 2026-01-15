@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sso-app
+  namespace: default
+  labels:
+    app: sso-platform
+    component: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sso-platform
+      component: api
+  template:
+    metadata:
+      labels:
+        app: sso-platform
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: sso-app
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: sso-app
+        image: sso-platform:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: AUTH__DATABASE__MYSQL_URL
+          valueFrom:
+            secretKeyRef:
+              name: sso-secrets
+              key: db-url
+        - name: AUTH__SECURITY__JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: sso-secrets
+              key: jwt-secret
+        - name: AUTH__CACHE__REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: sso-secrets
+              key: redis-url
+              optional: true
+        envFrom:
+        - configMapRef:
+            name: sso-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sso-app
+  namespace: default

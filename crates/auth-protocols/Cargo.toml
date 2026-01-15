@@ -1,0 +1,31 @@
+[package]
+name = "auth-protocols"
+version = "0.1.0"
+edition = "2021"
+description = "SAML, OIDC, and OAuth protocol implementations"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+url = "2.5"
+
+# Protocol-specific dependencies
+# samael = { workspace = true }
+openidconnect = { workspace = true }
+
+# Internal dependencies
+auth-core = { path = "../auth-core" }
+auth-config = { path = "../auth-config" }
+auth-crypto = { path = "../auth-crypto" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"

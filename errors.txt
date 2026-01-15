@@ -1,0 +1,451 @@
+﻿cargo :    Compiling 
+winapi v0.3.9
+At line:1 char:1
++ cargo build -p 
+auth-api 2>&1 | 
+Out-File -FilePath 
+errors.txt -Encodin 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (   Comp   
+ iling winapi v0.    
+3.9:String) [],     
+RemoteException
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+warning: unused 
+import: 
+`UpdateUserRequest`
+ --> crates\auth-core
+\src\services\identit
+y.rs:2:46
+  |
+2 | ...t, 
+UpdateUserRequest, 
+U...
+  |       
+^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unu
+sed_imports)]` (part 
+of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `TokenEngine`
+ --> crates\auth-core
+\src\services\identit
+y.rs:3:53
+  |
+3 | ...r, 
+TokenEngine};
+  |       ^^^^^^^^^^^
+
+warning: variants 
+`EncodingError`, 
+`KeyError`, and 
+`ValidationError` 
+are never constructed
+  --> crates\auth-cor
+e\src\services\token_
+service.rs:69:5
+   |
+68 | enum JwtError {
+   |      -------- 
+variants in this enum
+69 |     
+EncodingError(Stri...
+   |     
+^^^^^^^^^^^^^
+70 |     
+KeyError(String),
+   |     ^^^^^^^^
+71 |     
+TokenExpired,
+72 |     
+ValidationError,
+   |     
+^^^^^^^^^^^^^^^
+   |
+   = note: 
+`JwtError` has a 
+derived impl for the 
+trait `Debug`, but 
+this is 
+intentionally 
+ignored during dead 
+code analysis
+   = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: method `clea
+nup_expired_tokens` 
+is never used
+   --> crates\auth-co
+re\src\services\token
+_service.rs:251:14
+    |
+218 | impl 
+TokenEngine {
+    | 
+---------------- 
+method in this 
+implementation
+...
+251 |     async fn cl
+eanup_expired_tokens(
+&s...
+    |              ^^
+^^^^^^^^^^^^^^^^^^^^
+
+warning: `auth-core` 
+(lib) generated 4 
+warnings (run `cargo 
+fix --lib -p 
+auth-core` to apply 
+2 suggestions)
+warning: unused 
+variable: `client`
+  --> crates\auth-pro
+tocols\src\oauth.rs:4
+2:13
+   |
+42 | ...et client = 
+...
+   |       ^^^^^^ 
+help: if this is 
+intentional, prefix 
+it with an 
+underscore: `_client`
+   |
+   = note: `#[warn(un
+used_variables)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+variable: `params`
+  --> crates\auth-pro
+tocols\src\oauth.rs:4
+3:13
+   |
+43 | ...et params = [
+   |       ^^^^^^ 
+help: if this is 
+intentional, prefix 
+it with an 
+underscore: `_params`
+
+warning: field 
+`token_url` is never 
+read
+ --> crates\auth-prot
+ocols\src\oauth.rs:9:
+5
+  |
+5 | pub struct 
+OAuthService {
+  |            
+------------ field 
+in this struct
+...
+9 |     token_url: 
+String,
+  |     ^^^^^^^^^
+  |
+  = note: 
+`OAuthService` has a 
+derived impl for the 
+trait `Clone`, but 
+this is 
+intentionally 
+ignored during dead 
+code analysis
+  = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `error`
+ --> crates\auth-exte
+nsion\src\plugin.rs:5
+:21
+  |
+5 | ...o, error};
+  |       ^^^^^
+  |
+  = note: `#[warn(unu
+sed_imports)]` (part 
+of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `error`
+ --> crates\auth-exte
+nsion\src\webhook.rs:
+2:21
+  |
+2 | ...o, error};
+  |       ^^^^^
+
+warning: variable 
+does not need to be 
+mutable
+  --> crates\auth-ext
+ension\src\plugin.rs:
+15:13
+   |
+15 | ...et mut 
+engine = ...
+   |       ----^^^^^^
+   |       |
+   |       help: 
+remove this `mut`
+   |
+   = note: `#[warn(un
+used_mut)]` (part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `Row`
+ --> crates\auth-db\s
+rc\repositories\role_
+repository.rs:5:25
+  |
+5 | ...ol, Row};
+  |        ^^^
+  |
+  = note: `#[warn(unu
+sed_imports)]` (part 
+of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: 
+`std::sync::Arc`
+ --> crates\auth-db\s
+rc\repositories\role_
+repository.rs:6:5
+  |
+6 | use 
+std::sync::Arc;
+  |     
+^^^^^^^^^^^^^^
+
+warning: unused 
+import: `Row`
+ --> crates\auth-db\s
+rc\repositories\sessi
+on_repository.rs:5:25
+  |
+5 | ...ol, Row};
+  |        ^^^
+
+warning: unused 
+import: 
+`SubscriptionStatus`
+ --> crates\auth-db\s
+rc\repositories\subsc
+ription_repository.rs
+:3:59
+  |
+3 | ...n, 
+SubscriptionStatus};
+  |       
+^^^^^^^^^^^^^^^^^^
+
+warning: unused 
+import: 
+`UpdateUserRequest`
+ --> crates\auth-db\s
+rc\repositories\user_
+repository.rs:2:62
+  |
+2 | ...t, 
+UpdateUserRequest};
+  |       
+^^^^^^^^^^^^^^^^^
+
+warning: unused 
+import: `Result`
+ --> crates\auth-db\s
+rc\repositories\webau
+thn_repository.rs:2:2
+5
+  |
+2 | ...l, Result};
+  |       ^^^^^^
+
+warning: unused 
+import: 
+`std::sync::Arc`
+ --> crates\auth-db\s
+rc\sharding.rs:3:5
+  |
+3 | use 
+std::sync::Arc;
+  |     
+^^^^^^^^^^^^^^
+
+warning: field 
+`validation_key` is 
+never read
+  --> crates\auth-db\
+src\sharding.rs:23:5
+   |
+17 | pub struct 
+ShardManager {
+   |            
+------------ field 
+in this struct
+...
+23 |     
+validation_key: 
+String,
+   |     
+^^^^^^^^^^^^^^
+   |
+   = note: 
+`#[warn(dead_code)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: 
+`auth-protocols` 
+(lib) generated 3 
+warnings (run `cargo 
+fix --lib -p 
+auth-protocols` to 
+apply 2 suggestions)
+warning: 
+`auth-extension` 
+(lib) generated 3 
+warnings (run `cargo 
+fix --lib -p 
+auth-extension` to 
+apply 3 suggestions)
+warning: `auth-db` 
+(lib) generated 8 
+warnings (run `cargo 
+fix --lib -p 
+auth-db` to apply 7 
+suggestions)
+   Compiling quanta 
+v0.11.1
+   Compiling ntapi 
+v0.4.2
+   Compiling 
+metrics-util v0.15.1
+   Compiling metrics-
+exporter-prometheus 
+v0.12.2
+   Compiling sysinfo 
+v0.30.13
+   Compiling 
+auth-telemetry 
+v0.1.0 (C:\Users\Vict
+o\Downloads\sso\crate
+s\auth-telemetry)
+   Compiling 
+auth-api v0.1.0 (C:\U
+sers\Victo\Downloads\
+sso\crates\auth-api)
+error[E0761]: file 
+for module 
+`middleware` found 
+at both "crates\auth-
+api\src\middleware.rs
+" and "crates\auth-ap
+i\src\middleware\mod.
+rs"
+  --> crates\auth-api
+\src\lib.rs:21:1
+   |
+21 | pub mod 
+middleware;
+   | 
+^^^^^^^^^^^^^^^^^^^
+   |
+   = help: delete or 
+rename one of them 
+to remove the 
+ambiguity
+
+warning: unused 
+imports: `role_reposi
+tory::RoleRepository`
+, `session_repository
+::SessionRepository`,
+ and `subscription_re
+pository::Subscriptio
+nRepository`
+  --> crates\auth-api
+\src\lib.rs:10:5
+   |
+10 |     role_reposit
+ory::RoleRepository,
+   |     ^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
+11 |     session_repo
+sitory::SessionReposi
+tory,
+   |     ^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
+^^^^
+12 |     subscription
+_repository::Subscrip
+tionRepository,
+   |     ^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(un
+used_imports)]` 
+(part of 
+`#[warn(unused)]`) 
+on by default
+
+warning: unused 
+import: `State`
+ --> crates\auth-api\
+src\handlers\auth_oid
+c.rs:2:22
+  |
+2 |     
+extract::{Query, 
+State},
+  |                  
+    ^^^^^
+
+For more information 
+about this error, 
+try `rustc --explain 
+E0761`.
+warning: `auth-api` 
+(lib) generated 2 
+warnings
+error: could not 
+compile `auth-api` 
+(lib) due to 1 
+previous error; 2 
+warnings emitted
+warning: build 
+failed, waiting for 
+other jobs to 
+finish...
