@@ -5,11 +5,16 @@ use auth_core::services::{
     role_service::RoleService,
     session_service::SessionService,
     subscription_service::SubscriptionService,
+    otp_service::OtpService,
+    otp_delivery::OtpDeliveryService,
+    lazy_registration::LazyRegistrationService,
+    rate_limiter::RateLimiter,
 };
 use auth_db::repositories::{
     role_repository::RoleRepository,
     session_repository::SessionRepository,
     subscription_repository::SubscriptionRepository,
+    otp_repository::OtpRepository,
 };
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -19,6 +24,10 @@ pub mod handlers;
 pub mod error;
 pub mod validation;
 pub mod middleware;
+
+// Admin UI (feature-gated)
+#[cfg(feature = "admin-ui")]
+pub mod admin;
 
 /// OpenAPI documentation for the Enterprise SSO Platform
 #[derive(OpenApi)]
@@ -65,11 +74,88 @@ pub struct AppState {
     pub session_service: Arc<SessionService>,
     pub subscription_service: Arc<SubscriptionService>,
     pub identity_service: Arc<auth_core::services::identity::IdentityService>,
-    // Add other services here
+    pub otp_service: Arc<OtpService>,
+    pub otp_delivery_service: Arc<OtpDeliveryService>,
+    pub lazy_registration_service: Arc<LazyRegistrationService>,
+    pub rate_limiter: Arc<RateLimiter>,
+    pub otp_repository: Arc<OtpRepository>,
+    pub audit_logger: Arc<dyn auth_core::audit::AuditLogger>,
 }
 
 pub fn app(state: AppState) -> Router {
-    router::api_router()
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .with_state(state)
+    // Build base router with swagger  
+    let router = router::api_router()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()));
+    
+    // Add admin UI routes if feature is enabled
+    #[cfg(feature = "admin-ui")]
+    let router = {
+        use axum::routing::get;
+        use axum::middleware;
+        
+        router
+            // Public auth pages (no middleware)
+            .route("/admin/login", get(admin::handlers::login_page))
+            .route("/admin/register", get(admin::handlers::register_page))
+            
+            // Protected dashboard pages (with JWT auth middleware)
+            .route("/admin/dashboard", 
+                get(admin::handlers::dashboard_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/users", 
+                get(admin::handlers::users_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/roles", 
+                get(admin::handlers::roles_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/settings", 
+                get(admin::handlers::settings_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/logout", get(admin::handlers::logout))
+    };
+    
+    router.with_state(state)
+}
+
+// Make services extractable from AppState via State<Arc<Service>>
+impl axum::extract::FromRef<AppState> for Arc<auth_core::services::identity::IdentityService> {
+    fn from_ref(state: &AppState) -> Self {
+        state.identity_service.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<OtpService> {
+    fn from_ref(state: &AppState) -> Self {
+        state.otp_service.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<OtpDeliveryService> {
+    fn from_ref(state: &AppState) -> Self {
+        state.otp_delivery_service.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<LazyRegistrationService> {
+    fn from_ref(state: &AppState) -> Self {
+        state.lazy_registration_service.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<RateLimiter> {
+    fn from_ref(state: &AppState) -> Self {
+        state.rate_limiter.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<OtpRepository> {
+    fn from_ref(state: &AppState) -> Self {
+        state.otp_repository.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<dyn auth_core::audit::AuditLogger> {
+    fn from_ref(state: &AppState) -> Self {
+        state.audit_logger.clone()
+    }
 }

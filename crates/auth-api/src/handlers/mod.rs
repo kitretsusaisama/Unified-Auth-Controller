@@ -3,4 +3,8 @@ pub mod users;
 pub mod health;
 pub mod auth_oidc;
 pub mod auth_saml;
-
+pub mod otp;
+pub mod register;
+pub mod login_otp;
+pub mod profile;
+pub mod verification;

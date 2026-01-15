@@ -1,0 +1,36 @@
+[package]
+name = "auth-platform"
+version = "0.1.0"
+edition = "2021"
+description = "Platform-level infrastructure for enterprise auth system"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+futures = { workspace = true }
+
+# OS-level socket control
+socket2 = { version = "0.5", features = ["all"] }
+
+# Process management
+sysinfo = "0.30"
+
+# Time handling
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.8"
+proptest = { workspace = true }
+
+[[test]]
+name = "lib"
+path = "src/lib.rs"
+harness = true

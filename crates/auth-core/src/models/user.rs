@@ -5,14 +5,40 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+/// Identifier type for user authentication
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
+#[sqlx(rename_all = "snake_case")]
+pub enum IdentifierType {
+    Email,
+    Phone,
+    Both,
+}
+
+/// Primary identifier for login
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
+#[sqlx(rename_all = "snake_case")]
+pub enum PrimaryIdentifier {
+    Email,
+    Phone,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct User {
     pub id: Uuid,
+    
+    // Multi-channel identifier fields
+    pub identifier_type: IdentifierType,
+    pub primary_identifier: PrimaryIdentifier,
+    
     #[validate(email)]
-    pub email: String,
+    pub email: Option<String>,
     pub email_verified: bool,
+    pub email_verified_at: Option<DateTime<Utc>>,
+    
     pub phone: Option<String>,
     pub phone_verified: bool,
+    pub phone_verified_at: Option<DateTime<Utc>>,
+    
     pub password_hash: Option<String>,
     pub password_changed_at: Option<DateTime<Utc>>,
     pub failed_login_attempts: u32,
@@ -42,12 +68,24 @@ pub enum UserStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct CreateUserRequest {
+    /// Type of identifier being used
+    pub identifier_type: IdentifierType,
+    
     #[validate(email)]
-    pub email: String,
+    pub email: Option<String>,
+    
     pub phone: Option<String>,
+    
+    /// Primary identifier for login (email or phone)
+    pub primary_identifier: Option<PrimaryIdentifier>,
+    
     #[validate(length(min = 8, max = 128))]
     pub password: Option<String>,
+    
     pub profile_data: Option<serde_json::Value>,
+    
+    /// Require verification after registration
+    pub require_verification: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -83,6 +121,17 @@ impl User {
     /// Get the user's risk score
     pub fn get_risk_score(&self) -> f32 {
         self.risk_score.clamp(0.0, 1.0)
+    }
+}
+
+impl std::fmt::Display for UserStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UserStatus::Active => write!(f, "active"),
+            UserStatus::Suspended => write!(f, "suspended"),
+            UserStatus::Deleted => write!(f, "deleted"),
+            UserStatus::PendingVerification => write!(f, "pending_verification"),
+        }
     }
 }
 

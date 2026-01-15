@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SSO Admin{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- HTMX for declarative AJAX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Alpine.js for reactive UI -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full bg-gray-50 dark:bg-gray-900">
+    {% block body %}{% endblock %}
+    
+    <!-- Toast notifications container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <script>
+        // Helper: Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg shadow-lg ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            } text-white transform transition-all duration-300 translate-x-full`;
+            toast.textContent = message;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // HTMX event listeners for global loading state
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            const button = evt.detail.elt;
+            if (button.tagName === 'BUTTON') {
+                button.disabled = true;
+                button.dataset.originalText = button.textContent;
+                button.innerHTML = '<span class="animate-spin">⏳</span> Loading...';
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            const button = evt.detail.elt;
+            if (button.tagName === 'BUTTON' && button.dataset.originalText) {
+                button.disabled = false;
+                button.textContent = button.dataset.originalText;
+                delete button.dataset.originalText;
+            }
+        });
+    </script>
+</body>
+</html>

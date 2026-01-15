@@ -6,6 +6,8 @@
 pub mod error;
 pub mod models;
 pub mod services;
+pub mod audit;
+pub mod resilience;
 
 pub use error::AuthError;
 
@@ -14,4 +16,5 @@ pub mod prelude {
     pub use crate::error::AuthError;
     pub use crate::models::*;
     pub use crate::services::*;
+    pub use crate::audit::*;
 }

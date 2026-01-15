@@ -373,7 +373,7 @@ impl RefreshTokenStore for RefreshTokenRepository {
             created_at: token.created_at,
         };
 
-        self.save(record).await.map_err(|e| AuthError::DatabaseError(e.to_string()))
+        self.save(record).await.map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 
     async fn find_by_hash(&self, hash: &str) -> Result<Option<RefreshToken>, AuthError> {
@@ -393,20 +393,20 @@ impl RefreshTokenStore for RefreshTokenRepository {
                 created_at: record.created_at,
             })),
             Err(RefreshTokenError::TokenNotFound) => Ok(None),
-            Err(e) => Err(AuthError::DatabaseError(e.to_string())),
+            Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
         }
     }
 
     async fn revoke(&self, token_id: Uuid) -> Result<(), AuthError> {
         self.revoke_token(token_id, Some("Revoked by user/system".to_string()))
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 
     async fn revoke_family(&self, family_id: Uuid) -> Result<(), AuthError> {
         self.revoke_family(family_id, "Family revocation".to_string())
             .await
             .map(|_| ())
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 }

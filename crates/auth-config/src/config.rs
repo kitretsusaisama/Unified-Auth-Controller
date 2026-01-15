@@ -19,12 +19,27 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct ServerConfig {
+    // Legacy port field (kept for backward compatibility, will use port_policy if present)
     #[validate(range(min = 1, max = 65535))]
     pub port: u16,
+    
     pub host: String,
+    
+    /// Port binding policy (optional, falls back to simple port if not specified)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub port_policy: Option<auth_platform::PortPolicy>,
+    
+    /// Graceful shutdown drain timeout in seconds
+    #[serde(default = "default_drain_timeout")]
+    pub drain_timeout_seconds: u64,
+    
     pub workers: Option<usize>,
     pub max_connections: Option<u32>,
     pub timeout_seconds: Option<u64>,
+}
+
+fn default_drain_timeout() -> u64 {
+    30
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -107,6 +122,8 @@ impl Default for AppConfig {
             server: ServerConfig {
                 port: 8081,
                 host: "0.0.0.0".to_string(),
+                port_policy: None, // Will use legacy port field
+                drain_timeout_seconds: 30,
                 workers: None,
                 max_connections: Some(1000),
                 timeout_seconds: Some(30),

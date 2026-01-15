@@ -46,6 +46,21 @@ The platform follows a microservices architecture with clear separation of conce
 - **auth-crypto**: Cryptographic operations and key management
 - **auth-audit**: Audit logging and compliance
 
+## Production Deployment
+
+The SSO Platform is now production-ready with the following features:
+
+- **Secure Authentication**: Multi-channel authentication (email, phone, OAuth)
+- **Scalable Architecture**: Microservice-based design with async Rust
+- **Database Support**: MySQL for production, SQLite for development/testing
+- **Security Features**: JWT-based authentication, rate limiting, audit logging
+- **OTP Services**: SMS and email OTP delivery with configurable providers
+- **Multi-tenancy**: Built-in support for multi-tenant deployments
+- **Health Checks**: Built-in health check endpoints
+- **Monitoring**: Prometheus metrics and structured logging
+
+For production deployment details, see [PRODUCTION_STARTUP.md](PRODUCTION_STARTUP.md).
+
 ## Quick Start
 
 ### Prerequisites

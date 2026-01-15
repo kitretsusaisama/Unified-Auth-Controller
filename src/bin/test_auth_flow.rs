@@ -72,15 +72,18 @@ async fn main() -> anyhow::Result<()> {
     // A. Register
     info!("Step A: Registering user {}", email);
     let register_req = CreateUserRequest {
-        email: email.clone(),
-        password: Some(password.to_string()),
+        identifier_type: auth_core::models::user::IdentifierType::Email,
+        email: Some(email.clone()),
         phone: None,
+        primary_identifier: Some(auth_core::models::user::PrimaryIdentifier::Email),
+        password: Some(password.to_string()),
         profile_data: None,
+        require_verification: Some(true),
     };
     
     let user = identity_service.register(register_req, tenant_id).await?;
     info!("User registered: ID={}", user.id);
-    assert_eq!(user.email, email);
+    assert_eq!(user.email, Some(email.clone()));
     assert!(matches!(user.status, UserStatus::PendingVerification));
 
     // B. Activate User (Directly via Repo or Service if exposed)

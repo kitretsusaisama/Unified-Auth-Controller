@@ -22,6 +22,9 @@ validator = { workspace = true }
 dashmap = { workspace = true }
 parking_lot = { workspace = true }
 
+# Internal dependencies
+auth-platform = { path = "../auth-platform" }
+
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = "0.4"

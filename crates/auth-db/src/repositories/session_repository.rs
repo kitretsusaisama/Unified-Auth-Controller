@@ -41,7 +41,7 @@ impl SessionStore for SessionRepository {
         .bind(session.created_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+        .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
 
         Ok(session)
     }
@@ -51,7 +51,7 @@ impl SessionStore for SessionRepository {
             .bind(session_token)
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 
     async fn delete(&self, session_token: &str) -> Result<(), AuthError> {
@@ -59,7 +59,7 @@ impl SessionStore for SessionRepository {
             .bind(session_token)
             .execute(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
         Ok(())
     }
 
@@ -68,7 +68,7 @@ impl SessionStore for SessionRepository {
             .bind(user_id.to_string())
             .execute(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
         Ok(())
     }
 }

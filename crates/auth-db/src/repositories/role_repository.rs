@@ -38,7 +38,7 @@ impl RoleStore for RoleRepository {
         .bind(role.updated_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+        .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
 
         Ok(role)
     }
@@ -70,7 +70,7 @@ impl RoleStore for RoleRepository {
         .bind(id.to_string())
         .execute(&self.pool)
         .await
-        .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+        .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
 
         Ok(current_role)
     }
@@ -80,7 +80,7 @@ impl RoleStore for RoleRepository {
             .bind(id.to_string())
             .execute(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
         Ok(())
     }
 
@@ -89,7 +89,7 @@ impl RoleStore for RoleRepository {
             .bind(id.to_string())
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 
     async fn find_by_tenant(&self, tenant_id: Uuid) -> Result<Vec<Role>, AuthError> {
@@ -97,7 +97,7 @@ impl RoleStore for RoleRepository {
             .bind(tenant_id.to_string())
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 
     async fn find_by_name(&self, tenant_id: Uuid, name: &str) -> Result<Option<Role>, AuthError> {
@@ -106,6 +106,6 @@ impl RoleStore for RoleRepository {
             .bind(name)
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(e.to_string()))
+            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 }

@@ -75,8 +75,8 @@ pub async fn register(
     Json(mut payload): Json<CreateUserRequest>,
 ) -> Result<Json<User>, ApiError> {
     // Validate and normalize email
-    payload.email = validation::validate_email(&payload.email)
-        .map_err(|e| ApiError::new(e).with_request_id(request_id))?;
+    payload.email = Some(validation::validate_email(payload.email.as_deref().unwrap_or(""))
+        .map_err(|e| ApiError::new(e).with_request_id(request_id))?);
 
     // Validate password strength
     if let Some(ref password) = payload.password {
@@ -90,7 +90,7 @@ pub async fn register(
 
     info!(
         request_id = %request_id,
-        email = %payload.email,
+        email = %payload.email.as_deref().unwrap_or("<no email>"),
         "Registration attempt"
     );
 
@@ -102,7 +102,7 @@ pub async fn register(
         Ok(user) => {
             info!(
                 request_id = %request_id,
-                email = %payload.email,
+                email = %payload.email.as_deref().unwrap_or("<no email>"),
                 user_id = %user.id,
                 "Registration successful"
             );
@@ -111,7 +111,7 @@ pub async fn register(
         Err(e) => {
             warn!(
                 request_id = %request_id,
-                email = %payload.email,
+                email = %payload.email.as_deref().unwrap_or("<no email>"),
                 error = ?e,
                 "Registration failed"
             );

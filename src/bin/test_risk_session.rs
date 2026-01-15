@@ -68,7 +68,7 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     // Create a mock User object for the service
     let user = User {
         id: user_id,
-        email: "risk_user@example.com".to_string(),
+        email: Some("risk_user@example.com".to_string()),
         email_verified: true,
         phone: None,
         phone_verified: false,
@@ -88,6 +88,10 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         deleted_at: None,
+        email_verified_at: Some(Utc::now()),
+        identifier_type: auth_core::models::user::IdentifierType::Email,
+        phone_verified_at: None,
+        tenant_id,
     };
 
     // Test 1: Low Risk Login

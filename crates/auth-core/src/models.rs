@@ -10,6 +10,7 @@ pub mod session;
 pub mod subscription;
 pub mod user_tenant;
 pub mod password_policy;
+pub mod validation;
 
 pub use user::*;
 pub use tenant::*;

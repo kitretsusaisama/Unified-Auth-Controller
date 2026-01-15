@@ -9,6 +9,9 @@ host = "127.0.0.1"
 sqlite_url = "sqlite:./dev.db"
 mysql_url = "mysql://root:password@localhost:3306/auth_platform_dev"
 
+# Set default to SQLite
+default_database = "sqlite"
+
 [security]
 jwt_secret = "development-secret-key-not-for-production"
 require_mfa = false

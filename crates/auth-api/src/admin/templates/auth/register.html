@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Register - SSO Admin{% endblock %}
+
+{% block body %}
+<div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <!-- Header -->
+        <div class="text-center">
+            <div class="mx-auto h-16 w-16 bg-primary-600 rounded-full flex items-center justify-center">
+                <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+            </div>
+            <h2 class="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
+                Create your account
+            </h2>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Join the SSO Platform
+            </p>
+        </div>
+
+        <!-- Registration  Form -->
+        <div class="mt-8 bg-white dark:bg-gray-800 py-8 px-6 shadow-lg rounded-lg sm:px-10">
+            <form class="space-y-6" 
+                  x-data="{ loading: false, error: '', success: false }"
+                  @submit.prevent="handleRegister($event)">
+                
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Email address
+                    </label>
+                    <input id="email" name="email" type="email" autocomplete="email" required
+                           class="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm">
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Password
+                    </label>
+                    <input id="password" name="password" type="password" autocomplete="new-password" required
+                           minlength="8"
+                           class="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Must be at least 8 characters</p>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label for="confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Confirm Password
+                    </label>
+                    <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" required
+                           class="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm">
+                </div>
+
+                <!-- Error Message -->
+                <div x-show="error" x-text="error" x-cloak
+                     class="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-800 dark:text-red-200">
+                </div>
+
+                <!-- Success Message -->
+                <div x-show="success" x-cloak
+                     class="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
+                    <p class="text-sm text-green-800 dark:text-green-200">
+                        Account created successfully! Redirecting to login...
+                    </p>
+                </div>
+
+                <!-- Submit Button -->
+                <div>
+                    <button type="submit" 
+                            :disabled="loading"
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50">
+                        <span x-show="!loading">Create Account</span>
+                        <span x-show="loading" x-cloak class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Creating account...
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Login Link -->
+            <div class="mt-6 text-center">
+                <a href="/admin/login" class="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                    Already have an account? Sign in
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function handleRegister(event) {
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        const password = formData.get('password');
+        const confirmPassword = formData.get('confirm-password');
+        
+        // Client-side validation
+        if (password !== confirmPassword) {
+            Alpine.store('error', 'Passwords do not match');
+            return;
+        }
+        
+        Alpine.store('loading', true);
+        Alpine.store('error', '');
+        
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.get('email'),
+                    password: password,
+                }),
+            });
+
+            if (response.ok) {
+                Alpine.store('success', true);
+                showToast('Account created successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/admin/login';
+                }, 2000);
+            } else {
+                const error = await response.json();
+                Alpine.store('error', error.message || 'Registration failed');
+            }
+        } catch (err) {
+            Alpine.store('error', 'Network error. Please try again.');
+        } finally {
+            Alpine.store('loading', false);
+        }
+    }
+</script>
+{% endblock %}

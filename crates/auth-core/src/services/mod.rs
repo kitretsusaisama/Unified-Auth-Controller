@@ -17,3 +17,12 @@ pub use session_service::*;
 pub use subscription_service::*;
 pub use token_service::*;
 pub use webauthn_service::*;
+pub mod otp_service;
+pub mod otp_delivery;
+pub mod lazy_registration;
+pub mod rate_limiter;
+
+pub use otp_service::*;
+pub use otp_delivery::*;
+pub use lazy_registration::*;
+pub use rate_limiter::*;

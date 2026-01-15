@@ -13,5 +13,15 @@ rand = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 
+# Additional dependencies for JWT
+jsonwebtoken = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true, features = ["fs", "sync"] }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+rand_core = "0.6"
+tracing = { workspace = true }
+
 [dev-dependencies]
 tokio = { workspace = true }

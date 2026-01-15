@@ -269,11 +269,11 @@ impl RevokedTokenStore for RevokedTokenRepository {
             None, // revoked_by (system)
             Some("Revoked via TokenEngine".to_string()),
             expires_at
-        ).await.map(|_| ()).map_err(|e| AuthError::DatabaseError(e.to_string()))
+        ).await.map(|_| ()).map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 
     async fn is_revoked(&self, jti: Uuid) -> Result<bool, AuthError> {
-        self.is_token_revoked(jti).await.map_err(|e| AuthError::DatabaseError(e.to_string()))
+        self.is_token_revoked(jti).await.map_err(|e| AuthError::DatabaseError { message: e.to_string() })
     }
 }
 

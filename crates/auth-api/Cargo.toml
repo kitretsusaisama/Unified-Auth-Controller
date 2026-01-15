@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "HTTP API layer for authentication services"
 
+[features]
+default = []
+admin-ui = ["dep:askama", "dep:askama_axum"]
+
 [dependencies]
 # Workspace dependencies
 tokio = { workspace = true }
@@ -24,6 +28,10 @@ utoipa-swagger-ui = { version = "6.0", features = ["axum"] }
 regex = "1.10"
 once_cell = { workspace = true }
 dashmap = { workspace = true }
+
+# Template engine (optional, for admin UI)
+askama = { workspace = true, optional = true }
+askama_axum = { workspace = true, optional = true }
 
 # Internal dependencies
 auth-core = { path = "../auth-core" }

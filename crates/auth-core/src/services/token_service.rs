@@ -2,82 +2,14 @@
 
 use crate::error::{AuthError, TokenErrorKind};
 use crate::models::{AccessToken, RefreshToken, TokenPair, Claims};
-// TODO: Implement JWT services in auth_crypto
-// use auth_crypto::{JwtService, JwtConfig, KeyManager, JwtError};
+use auth_crypto::{JwtService, JwtConfig, JwtClaims, JwtError, KeyManager};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, Duration};
 use std::collections::HashMap;
-
-// Temporary stubs until auth_crypto JWT modules are implemented
-#[derive(Clone)] 
-struct JwtService;
-impl JwtService {
-    fn new(_config: JwtConfig, _key_manager: KeyManager) -> Self {
-        Self
-    }
-    // Updated signature to match usage: Scope passed as None in some places, so Option<HashMap> or check call site.
-    // The error says "expected HashMap, found Option". The stub defined it as HashMap.
-    // I will change stub to Option<HashMap> to verify, or check call site. 
-    // Wait, the call site passes None. Let's make stub accept Option<HashMap<String, String>>.
-    async fn generate_access_token(&self, _user_id: Uuid, _tenant_id: Uuid, _roles: Vec<String>, _scopes: Vec<String>, _metadata: Option<HashMap<String, String>>) -> Result<String, JwtError> {
-        Ok("stub_token".to_string())
-    }
-    async fn validate_token(&self, _token: &str) -> Result<Claims, JwtError> {
-        Err(JwtError::TokenExpired)
-    }
-    
-    // Missing methods
-    fn extract_claims_unsafe(&self, _token: &str) -> Result<Claims, JwtError> {
-         Ok(Claims { 
-            sub: Uuid::new_v4().to_string(), 
-            iss: "stub".to_string(),
-            aud: "stub".to_string(),
-            exp: (Utc::now() + Duration::hours(1)).timestamp(), 
-            iat: Utc::now().timestamp(), 
-            nbf: Utc::now().timestamp(),
-            jti: Uuid::new_v4().to_string(),
-            tenant_id: Uuid::new_v4().to_string(),
-            permissions: vec![],
-            roles: vec![],
-        })
-    }
-    
-    fn is_token_expired(&self, _claims: &Claims) -> bool {
-        false
-    }
-}
-
-#[derive(Clone)] 
-struct JwtConfig;
-impl Default for JwtConfig {
-    fn default() -> Self {
-        Self
-    }
-}
-#[derive(Clone)] 
-struct KeyManager;
-impl KeyManager {
-    async fn new() -> Result<Self, JwtError> {
-        Ok(Self)
-    }
-}
-
-#[derive(Debug)] 
-enum JwtError {
-    EncodingError(String),
-    KeyError(String),
-    TokenExpired,
-    ValidationError,
-    // Add any others if needed
-}
-
-impl std::fmt::Display for JwtError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
+use lru::LruCache;
+use std::num::NonZeroUsize;
 
 /// Trait for refresh token persistent storage
 #[async_trait::async_trait]
@@ -137,12 +69,15 @@ pub struct TokenEngine {
 
 // In-memory implementations for testing/default
 pub struct InMemoryRefreshTokenStore {
-    tokens: RwLock<HashMap<String, RefreshToken>>,
+    tokens: Arc<RwLock<LruCache<String, RefreshToken>>>,
 }
 
 impl InMemoryRefreshTokenStore {
-    pub fn new() -> Self {
-        Self { tokens: RwLock::new(HashMap::new()) }
+    pub fn new(capacity: usize) -> Self {
+        let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| NonZeroUsize::new(10_000).unwrap());
+        Self {
+            tokens: Arc::new(RwLock::new(LruCache::new(cap))),
+        }
     }
 }
 
@@ -150,31 +85,30 @@ impl InMemoryRefreshTokenStore {
 impl RefreshTokenStore for InMemoryRefreshTokenStore {
     async fn create(&self, token: RefreshToken) -> Result<(), AuthError> {
         let mut tokens = self.tokens.write().await;
-        tokens.insert(token.token_hash.clone(), token);
+        tokens.put(token.token_hash.clone(), token);
         Ok(())
     }
 
     async fn find_by_hash(&self, hash: &str) -> Result<Option<RefreshToken>, AuthError> {
-        let tokens = self.tokens.read().await;
+        let mut tokens = self.tokens.write().await;  // LRU needs mut for get
         Ok(tokens.get(hash).cloned())
     }
 
     async fn revoke(&self, token_id: Uuid) -> Result<(), AuthError> {
-        // For in-memory, we can't easily revoke by ID without secondary index.
-        // But for tests, we usually revoke by has via refresh_tokens logic which calls this.
-        // If we really need to support revoke by ID in memory:
+        // For LRU cache, scan all entries (inefficient but necessary for in-memory)
         let mut tokens = self.tokens.write().await;
-        // Inefficient scan
-        let mut hash_to_remove = None;
+        
+        // Find the matching token
+        let mut found_hash: Option<String> = None;
         for (hash, token) in tokens.iter() {
             if token.id == token_id {
-                hash_to_remove = Some(hash.clone());
+                found_hash = Some(hash.clone());
                 break;
             }
         }
         
-        if let Some(hash) = hash_to_remove {
-            // We soft delete by setting revoked_at
+        // Soft delete by setting revoked_at
+        if let Some(hash) = found_hash {
             if let Some(token) = tokens.get_mut(&hash) {
                 token.revoked_at = Some(Utc::now());
             }
@@ -183,17 +117,21 @@ impl RefreshTokenStore for InMemoryRefreshTokenStore {
     }
 
     async fn revoke_family(&self, _family_id: Uuid) -> Result<(), AuthError> {
+        // TODO: Implement family revocation
         Ok(())
     }
 }
 
 pub struct InMemoryRevokedTokenStore {
-    revoked: RwLock<HashMap<Uuid, DateTime<Utc>>>,
+    revoked: Arc<RwLock<LruCache<Uuid, DateTime<Utc>>>>,
 }
 
 impl InMemoryRevokedTokenStore {
-    pub fn new() -> Self {
-        Self { revoked: RwLock::new(HashMap::new()) }
+    pub fn new(capacity: usize) -> Self {
+        let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| NonZeroUsize::new(10_000).unwrap());
+        Self {
+            revoked: Arc::new(RwLock::new(LruCache::new(cap))),
+        }
     }
 }
 
@@ -201,12 +139,12 @@ impl InMemoryRevokedTokenStore {
 impl RevokedTokenStore for InMemoryRevokedTokenStore {
     async fn add_to_blacklist(&self, jti: Uuid, _user_id: Uuid, _tenant_id: Uuid, expires_at: DateTime<Utc>) -> Result<(), AuthError> {
         let mut revoked = self.revoked.write().await;
-        revoked.insert(jti, expires_at);
+        revoked.put(jti, expires_at);
         Ok(())
     }
 
     async fn is_revoked(&self, jti: Uuid) -> Result<bool, AuthError> {
-        let revoked = self.revoked.read().await;
+        let mut revoked = self.revoked.write().await;  // LRU needs mut for get
         if let Some(expiry) = revoked.get(&jti) {
             Ok(*expiry > Utc::now())
         } else {
@@ -225,8 +163,8 @@ impl TokenEngine {
         
         Ok(Self {
             jwt_service: JwtService::new(config, key_manager),
-            revoked_token_store: Arc::new(InMemoryRevokedTokenStore::new()),
-            refresh_token_store: Arc::new(InMemoryRefreshTokenStore::new()),
+            revoked_token_store: Arc::new(InMemoryRevokedTokenStore::new(10_000)),
+            refresh_token_store: Arc::new(InMemoryRefreshTokenStore::new(10_000)),
         })
     }
 
@@ -266,7 +204,7 @@ impl TokenProvider for TokenEngine {
                 tenant_id,
                 claims.permissions,
                 claims.roles,
-                None, // scope
+                None, // scope - OAuth specific, optional
             )
             .await
             .map_err(|e| match e {

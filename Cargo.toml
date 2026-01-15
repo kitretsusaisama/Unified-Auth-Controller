@@ -9,12 +9,13 @@ members = [
     "crates/auth-cache",
     "crates/auth-telemetry",
     "crates/auth-audit",
-    "crates/auth-extension"
+    "crates/auth-extension",
+    "crates/auth-platform"
 ]
 resolver = "2"
 
 [package]
-name = "auth-platform"
+name = "auth-sso-platform"
 version = "0.1.0"
 edition = "2021"
 description = "Enterprise SSO and Identity Platform"
@@ -45,8 +46,11 @@ auth-protocols = { path = "crates/auth-protocols" }
 auth-extension = { path = "crates/auth-extension" }
 auth-cache = { path = "crates/auth-cache" }
 auth-telemetry = { path = "crates/auth-telemetry" }
+auth-platform = { path = "crates/auth-platform" }
 async-graphql = { workspace = true }
+async-trait = { workspace = true }
 metrics = "0.21"
+secrecy = { workspace = true }
 
 dotenvy.workspace = true
 
@@ -97,6 +101,26 @@ path = "src/bin/test_passwordless.rs"
 [[bin]]
 name = "test_auth_flow"
 path = "src/bin/test_auth_flow.rs"
+
+[[bin]]
+name = "auth-sso-platform"
+path = "src/main.rs"
+
+[features]
+default = []
+admin-ui = ["auth-api/admin-ui"]
+
+[[test]]
+name = "api_mock_tests"
+path = "tests/api_mock_tests.rs"
+
+[[test]]
+name = "integration_tests"
+path = "tests/integration_tests.rs"
+
+[[test]]
+name = "mysql_only_tests"
+path = "tests/mysql_only_tests.rs"
 
 [workspace.dependencies]
 # Core async runtime
@@ -184,6 +208,10 @@ parking_lot = "0.12"
 futures = "0.3"
 pin-project = "1.1"
 async-trait = "0.1"
+
+# Templates
+askama = "0.12"
+askama_axum = "0.4"
 
 [profile.dev]
 opt-level = 0
