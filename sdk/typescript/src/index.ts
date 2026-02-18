@@ -21,6 +21,12 @@ export interface TokenResponse {
     expires_in: number;
 }
 
+export interface FlowResult {
+    next_state: string;
+    ui_hints?: Record<string, any>;
+    error?: string;
+}
+
 export class AuthClient {
     private client: AxiosInstance;
     private config: AuthConfig;
@@ -192,6 +198,30 @@ export class AuthClient {
             localStorage.removeItem('access_token');
             sessionStorage.clear();
             // Optional: Redirect to logout endpoint
+        }
+    }
+
+    /**
+     * Universal Workflow Interaction
+     * Submits an action to the current authentication flow.
+     * @param flowId The unique ID of the flow (from Start Flow or previous step)
+     * @param action The action name (e.g., 'submit_identifier', 'submit_password')
+     * @param payload The data payload for the action
+     */
+    public async submitFlow(flowId: string, action: string, payload: any): Promise<FlowResult> {
+        try {
+            const response = await this.client.post<FlowResult>(`/auth/flow/${flowId}/submit`, {
+                action,
+                payload,
+            });
+            return response.data;
+        } catch (error: any) {
+            // Handle RFC 7807 Problem Details
+            if (error.response && error.response.headers['content-type']?.includes('application/problem+json')) {
+                const problem = error.response.data;
+                throw new Error(problem.detail || problem.title || 'Unknown flow error');
+            }
+            throw error;
         }
     }
 }
