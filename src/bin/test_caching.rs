@@ -1,6 +1,5 @@
 use auth_cache::{Cache, MultiLevelCache};
 use std::time::Duration;
-use tokio;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -32,14 +31,14 @@ async fn main() {
     
     // Get L1
     // Explicit type to satisfy E0282
-    let fetched = cache.get::<TestUser>("user:1").await.expect("Get failed").expect("Key missing");
+    let fetched = cache.get::<TestUser>("user:1").await.expect("Key missing");
     assert_eq!(user, fetched);
     println!("✅ L1 Get Passed");
 
     // Delete
     cache.delete("user:1").await.expect("Delete failed");
     
-    let missing = cache.get::<TestUser>("user:1").await.expect("Get failed");
+    let missing = cache.get::<TestUser>("user:1").await;
     assert!(missing.is_none());
     println!("✅ Delete Passed");
 }

@@ -7,7 +7,7 @@
 
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{SocketAddr, TcpListener};
-use tracing::debug;
+use tracing::{debug, warn};
 
 /// Managed TCP listener with ownership tracking
 pub struct ManagedListener {

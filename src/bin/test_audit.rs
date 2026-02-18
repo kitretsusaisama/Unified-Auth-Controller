@@ -1,5 +1,4 @@
-use auth_audit::{AuditService, AuditLog};
-use chrono::Utc;
+use auth_audit::AuditService;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use uuid::Uuid;

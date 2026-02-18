@@ -1,4 +1,4 @@
-use auth_crypto::{KeyProvider, SoftwareKeyProvider};
+use auth_crypto::{KeyProvider, SoftKeyProvider};
 
 #[tokio::main]
 async fn main() {

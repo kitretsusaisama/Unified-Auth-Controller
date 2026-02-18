@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{MySql, Pool, Result};
+use sqlx::{MySql, Pool};
 use uuid::Uuid;
 use auth_core::services::webauthn_service::{Passkey, WebauthnStore};
 use async_trait::async_trait;

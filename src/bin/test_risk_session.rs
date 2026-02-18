@@ -48,22 +48,25 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     let user_id = Uuid::new_v4();
 
     println!("Setting up test organization, tenant, and user...");
-    sqlx::query!("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')", 
-        org_id.to_string(), "Risk Test Org")
+    sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
+        .bind(org_id.to_string())
+        .bind("Risk Test Org")
         .execute(&pool)
         .await?;
 
-    sqlx::query!("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')",
-        tenant_id.to_string(), org_id.to_string(), "Risk Test Tenant", "risk-tenant")
+    sqlx::query("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')")
+        .bind(tenant_id.to_string())
+        .bind(org_id.to_string())
+        .bind("Risk Test Tenant")
+        .bind("risk-tenant")
         .execute(&pool)
         .await?;
 
-    sqlx::query!(
-        "INSERT INTO users (id, email, status) VALUES (?, ?, 'active')",
-        user_id.to_string(), "risk_user@example.com"
-    )
-    .execute(&pool)
-    .await?;
+    sqlx::query("INSERT INTO users (id, email, status) VALUES (?, ?, 'active')")
+        .bind(user_id.to_string())
+        .bind("risk_user@example.com")
+        .execute(&pool)
+        .await?;
 
     // Create a mock User object for the service
     let user = User {
@@ -91,7 +94,7 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
         email_verified_at: Some(Utc::now()),
         identifier_type: auth_core::models::user::IdentifierType::Email,
         phone_verified_at: None,
-        tenant_id,
+        primary_identifier: auth_core::models::user::PrimaryIdentifier::Email,
     };
 
     // Test 1: Low Risk Login

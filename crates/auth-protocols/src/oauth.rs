@@ -39,8 +39,8 @@ impl OAuthService {
         // Stub implementation effectively mimicking a real exchange for basic structure
         // In reality, this would make an HTTP POST to self.token_url
         
-        let client = reqwest::Client::new();
-        let params = [
+        let _client = reqwest::Client::new();
+        let _params = [
             ("grant_type", "authorization_code"),
             ("code", code),
             ("redirect_uri", redirect_uri),

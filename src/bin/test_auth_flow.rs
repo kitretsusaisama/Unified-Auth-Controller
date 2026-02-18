@@ -3,10 +3,11 @@ use auth_core::services::token_service::{TokenEngine, TokenProvider}; // TokenEn
 use auth_core::models::user::{CreateUserRequest, UserStatus};
 use auth_db::repositories::UserRepository;
 use auth_core::services::identity::UserStore;
-use sqlx::{MySqlPool, Row};
+use auth_core::audit::{TracingAuditLogger, AuditLogger};
+use sqlx::MySqlPool;
 use std::sync::Arc;
 use uuid::Uuid;
-use tracing::{info, error, Level};
+use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 #[tokio::main]
@@ -62,7 +63,8 @@ async fn main() -> anyhow::Result<()> {
     // We can use the default in-memory ones via `TokenEngine::new()`.
     let token_service: Arc<dyn TokenProvider> = Arc::new(TokenEngine::new().await?);
     
-    let identity_service = IdentityService::new(user_repo.clone(), token_service.clone());
+    let audit_logger: Arc<dyn AuditLogger> = Arc::new(TracingAuditLogger);
+    let identity_service = IdentityService::new(user_repo.clone(), token_service.clone(), audit_logger);
 
     // 5. Run Scenario
     let tenant_id = Uuid::new_v4();

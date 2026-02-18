@@ -1,6 +1,5 @@
 use auth_db::sharding::{ShardManager, ShardConfig};
 use uuid::Uuid;
-use tokio;
 use proptest::prelude::*;
 
 #[tokio::main]

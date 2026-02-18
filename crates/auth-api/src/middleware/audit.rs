@@ -1,11 +1,9 @@
 use axum::{
     body::Body,
-    http::{Request, StatusCode},
+    http::Request,
     middleware::Next,
     response::Response,
-    extract::Extension,
 };
-use uuid::Uuid;
 use std::sync::Arc;
 use std::time::Instant;
 use auth_core::audit::{AuditLogger, AuditEvent, AuditCategory, AuditSeverity, AuditOutcome};

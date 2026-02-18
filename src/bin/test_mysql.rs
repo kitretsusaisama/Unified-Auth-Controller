@@ -37,20 +37,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Setting up test data (Org, Tenant, User)...");
     
     // 1. Create Organization
-    sqlx::query!("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')", 
-        org_id.to_string(), "Test Org")
+    sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
+        .bind(org_id.to_string())
+        .bind("Test Org")
         .execute(&pool)
         .await?;
 
     // 2. Create Tenant
-    sqlx::query!("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')",
-        tenant_id.to_string(), org_id.to_string(), "Test Tenant", "test-tenant")
+    sqlx::query("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')")
+        .bind(tenant_id.to_string())
+        .bind(org_id.to_string())
+        .bind("Test Tenant")
+        .bind("test-tenant")
         .execute(&pool)
         .await?;
 
     // 3. Create User
-    sqlx::query!("INSERT INTO users (id, email, status) VALUES (?, ?, 'active')",
-        user_id.to_string(), "test@example.com")
+    sqlx::query("INSERT INTO users (id, email, status) VALUES (?, ?, 'active')")
+        .bind(user_id.to_string())
+        .bind("test@example.com")
         .execute(&pool)
         .await?;
 

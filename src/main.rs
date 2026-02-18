@@ -7,7 +7,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use sqlx::{mysql::MySqlPoolOptions};
 use secrecy::ExposeSecret;
 use std::sync::Arc;
-use std::time::Duration;
 
 // Port management
 use auth_platform::{PortAuthority, PortPolicy, PortClass, shutdown_signal};
@@ -111,10 +110,13 @@ async fn main() -> Result<()> {
     let token_service: Arc<dyn auth_core::services::token_service::TokenProvider> = 
         Arc::new(auth_core::services::token_service::TokenEngine::new().await.expect("Failed to initialize TokenEngine"));
 
+    let audit_logger: Arc<dyn AuditLogger> = Arc::new(TracingAuditLogger);
+
     // Initialize Identity Service
     let identity_service = Arc::new(auth_core::services::identity::IdentityService::new(
         user_repo as Arc<dyn auth_core::services::identity::UserStore>,
         token_service,
+        audit_logger.clone(),
     ));
 
     // Initialize OTP Service
@@ -161,7 +163,6 @@ async fn main() -> Result<()> {
 
     // Initialize Audit Service
     let _audit_service = Arc::new(AuditService::new(pool.clone()));
-    let audit_logger: Arc<dyn AuditLogger> = Arc::new(TracingAuditLogger);
 
     let app_state = AppState {
         db: pool,

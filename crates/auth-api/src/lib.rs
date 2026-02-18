@@ -10,12 +10,7 @@ use auth_core::services::{
     lazy_registration::LazyRegistrationService,
     rate_limiter::RateLimiter,
 };
-use auth_db::repositories::{
-    role_repository::RoleRepository,
-    session_repository::SessionRepository,
-    subscription_repository::SubscriptionRepository,
-    otp_repository::OtpRepository,
-};
+use auth_db::repositories::otp_repository::OtpRepository;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 

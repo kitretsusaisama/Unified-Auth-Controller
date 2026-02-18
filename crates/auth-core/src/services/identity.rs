@@ -1,6 +1,7 @@
 use crate::error::AuthError;
 use crate::models::{User, CreateUserRequest, UpdateUserRequest, UserStatus};
 use crate::services::token_service::{TokenProvider};
+use crate::audit::{AuditLogger, AuditEvent, AuditCategory, AuditSeverity};
 use crate::models::Claims;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -50,11 +51,12 @@ pub struct AuthResponse {
 pub struct IdentityService {
     store: Arc<dyn UserStore>,
     token_service: Arc<dyn TokenProvider>,
+    audit_logger: Arc<dyn AuditLogger>,
 }
 
 impl IdentityService {
-    pub fn new(store: Arc<dyn UserStore>, token_service: Arc<dyn TokenProvider>) -> Self {
-        Self { store, token_service }
+    pub fn new(store: Arc<dyn UserStore>, token_service: Arc<dyn TokenProvider>, audit_logger: Arc<dyn AuditLogger>) -> Self {
+        Self { store, token_service, audit_logger }
     }
 
     pub async fn register(&self, request: CreateUserRequest, tenant_id: Uuid) -> Result<User, AuthError> {
@@ -91,7 +93,17 @@ impl IdentityService {
         // 4. Create User
         let user = self.store.create(request, password_hash, tenant_id).await?;
         
-        // 5. TODO: Trigger Audit Log (Registration)
+        // 5. Trigger Audit Log (Registration)
+        let event = AuditEvent::new(
+            AuditCategory::UserManagement,
+            "user.register",
+            AuditSeverity::Info
+        )
+        .with_actor(user.id)
+        .with_context(None, None, Some(tenant_id))
+        .with_resource(user.id.to_string());
+
+        self.audit_logger.log(event).await;
 
         Ok(user)
     }

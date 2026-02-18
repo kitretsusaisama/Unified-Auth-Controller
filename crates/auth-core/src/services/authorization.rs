@@ -65,3 +65,8 @@ impl AuthorizationEngine {
         Self {}
     }
 }
+impl Default for AuthorizationEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}

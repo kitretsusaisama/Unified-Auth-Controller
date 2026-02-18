@@ -32,9 +32,12 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 argon2 = { workspace = true }
 rand = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
 proptest = "1.4"
+tower = { workspace = true }
+futures-lite = "1.13"
 
 # Internal dependencies
 auth-config = { path = "crates/auth-config" }
@@ -47,6 +50,7 @@ auth-extension = { path = "crates/auth-extension" }
 auth-cache = { path = "crates/auth-cache" }
 auth-telemetry = { path = "crates/auth-telemetry" }
 auth-platform = { path = "crates/auth-platform" }
+auth-crypto = { path = "crates/auth-crypto" }
 async-graphql = { workspace = true }
 async-trait = { workspace = true }
 metrics = "0.21"
@@ -194,7 +198,7 @@ openidconnect = "3.4"
 # Extension support
 async-graphql = { version = "7.0", features = ["uuid", "chrono"] }
 async-graphql-axum = "7.0"
-rhai = "1.16"
+rhai = { version = "1.16", features = ["sync"] }
 
 # Security
 webauthn-rs = "0.5"

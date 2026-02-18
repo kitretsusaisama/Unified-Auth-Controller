@@ -17,6 +17,9 @@ use std::sync::Arc;
 use auth_core::models::user::{IdentifierType, PrimaryIdentifier};
 use auth_core::models::validation::{normalize_phone, validate_email};
 use auth_core::services::identity::IdentityService;
+use auth_core::services::otp_service::{OtpService, OtpPurpose, DeliveryMethod};
+use auth_core::services::otp_delivery::OtpDeliveryService;
+use auth_db::repositories::otp_repository::OtpRepository;
 use auth_core::error::AuthError;
 
 // ============================================================================
@@ -92,6 +95,9 @@ pub struct ErrorResponse {
 /// Multi-channel user registration
 pub async fn register(
     State(identity_service): State<Arc<IdentityService>>,
+    State(otp_service): State<Arc<OtpService>>,
+    State(otp_delivery): State<Arc<OtpDeliveryService>>,
+    State(otp_repo): State<Arc<OtpRepository>>,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // 1. Validate identifier type
@@ -265,9 +271,57 @@ pub async fn register(
     
     // 8. Send verification if required
     let verification_sent_to = if payload.require_verification {
-        match primary_identifier {             // Use the original (cloned) value
-             PrimaryIdentifier::Email => user.email.clone(),
-             PrimaryIdentifier::Phone => user.phone.clone(),
+        let (method, identifier) = match primary_identifier {
+             PrimaryIdentifier::Email => (DeliveryMethod::Email, user.email.clone().unwrap()),
+             PrimaryIdentifier::Phone => (DeliveryMethod::Sms, user.phone.clone().unwrap()),
+        };
+
+        // Create OTP Session
+        // TODO: Use actual tenant_id logic
+        let session_result = otp_service.create_session(
+            payload.tenant_id,
+            identifier.clone(),
+            match method { DeliveryMethod::Email => "email".to_string(), DeliveryMethod::Sms => "phone".to_string() },
+            method.clone(),
+            match method { DeliveryMethod::Email => OtpPurpose::EmailVerification, DeliveryMethod::Sms => OtpPurpose::PhoneVerification },
+            Some(user.id),
+            None,
+            None
+        );
+
+        match session_result {
+            Ok((session, token)) => {
+                let token_hash = otp_service.hash_otp(&token).unwrap_or_default();
+                if let Err(e) = otp_repo.create_session(&session, &token_hash).await {
+                     tracing::error!("Failed to save OTP session: {:?}", e);
+                     // Non-blocking error? Or should we fail registration?
+                     // Usually better to return success but log error, or fail.
+                     // Since user is created, failing here leaves user in pending state without email.
+                     // Client can request resend.
+                } else {
+                    // Send
+                    match method {
+                        DeliveryMethod::Email => {
+                             // Construct Link
+                             let base_url = std::env::var("APP_BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+                             let link = format!("{}/auth/verify/email?token={}&verification_id={}", base_url, token, session.id);
+                             if let Err(e) = otp_delivery.send_verification_email(&identifier, &link).await {
+                                 tracing::error!("Failed to send verification email: {:?}", e);
+                             }
+                        },
+                        DeliveryMethod::Sms => {
+                             if let Err(e) = otp_delivery.send_phone_otp(&identifier, &token).await {
+                                 tracing::error!("Failed to send verification SMS: {:?}", e);
+                             }
+                        }
+                    }
+                }
+                Some(identifier)
+            },
+            Err(e) => {
+                tracing::error!("Failed to create OTP session: {:?}", e);
+                None
+            }
         }
     } else {
         None

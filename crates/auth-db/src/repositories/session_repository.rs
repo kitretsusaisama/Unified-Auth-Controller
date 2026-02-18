@@ -2,7 +2,7 @@ use anyhow::Result;
 use auth_core::error::AuthError;
 use auth_core::models::Session;
 use auth_core::services::session_service::SessionStore;
-use sqlx::{MySql, Pool, Row};
+use sqlx::{MySql, Pool};
 use uuid::Uuid;
 
 pub struct SessionRepository {

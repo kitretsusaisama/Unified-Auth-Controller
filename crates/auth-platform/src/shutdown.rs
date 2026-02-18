@@ -5,6 +5,7 @@
 
 use std::future::Future;
 use std::time::Duration;
+#[cfg(not(unix))]
 use tokio::signal;
 use tracing::info;
 

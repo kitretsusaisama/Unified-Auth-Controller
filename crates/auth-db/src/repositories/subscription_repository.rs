@@ -1,6 +1,6 @@
 use anyhow::Result;
 use auth_core::error::AuthError;
-use auth_core::models::subscription::{TenantSubscription, SubscriptionStatus};
+use auth_core::models::subscription::TenantSubscription;
 use auth_core::services::subscription_service::SubscriptionStore;
 use sqlx::{MySql, Pool, Row};
 use uuid::Uuid;

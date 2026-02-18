@@ -19,7 +19,9 @@ pub struct Organization {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum OrganizationStatus {
+    #[default]
     Active,
     Suspended,
     Deleted,
@@ -58,12 +60,7 @@ impl Organization {
 
     /// Check if organization has custom settings configured
     pub fn has_custom_settings(&self) -> bool {
-        !self.settings.is_null() && self.settings.as_object().map_or(false, |obj| !obj.is_empty())
+        !self.settings.is_null() && self.settings.as_object().is_some_and(|obj| !obj.is_empty())
     }
 }
 
-impl Default for OrganizationStatus {
-    fn default() -> Self {
-        Self::Active
-    }
-}

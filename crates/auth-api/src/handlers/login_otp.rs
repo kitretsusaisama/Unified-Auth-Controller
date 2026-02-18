@@ -14,14 +14,13 @@ use uuid::Uuid;
 use std::sync::Arc;
 
 use auth_core::services::{
-    otp_service::{OtpService, OtpPurpose},
+    otp_service::OtpService,
     identity::IdentityService,
     lazy_registration::LazyRegistrationService,
 };
 use auth_db::repositories::otp_repository::OtpRepository;
 use crate::error::ApiError;
 use auth_core::error::{AuthError, TokenErrorKind};
-use auth_core::models::user::IdentifierType;
 
 // ============================================================================
 // Request/Response Types

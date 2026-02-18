@@ -1,4 +1,4 @@
-use auth_core::services::role_service::{RoleService, RoleStore};
+use auth_core::services::role_service::RoleService;
 use auth_core::models::CreateRoleRequest;
 use auth_db::repositories::RoleRepository;
 use sqlx::mysql::MySqlPoolOptions;
@@ -37,13 +37,17 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     let tenant_id = Uuid::new_v4();
     
     println!("Setting up test organization and tenant...");
-    sqlx::query!("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')", 
-        org_id.to_string(), "RBAC Test Org")
+    sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
+        .bind(org_id.to_string())
+        .bind("RBAC Test Org")
         .execute(&pool)
         .await?;
 
-    sqlx::query!("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')",
-        tenant_id.to_string(), org_id.to_string(), "RBAC Test Tenant", "rbac-tenant")
+    sqlx::query("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')")
+        .bind(tenant_id.to_string())
+        .bind(org_id.to_string())
+        .bind("RBAC Test Tenant")
+        .bind("rbac-tenant")
         .execute(&pool)
         .await?;
 

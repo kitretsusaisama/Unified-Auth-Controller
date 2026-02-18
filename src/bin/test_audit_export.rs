@@ -1,8 +1,7 @@
-use auth_audit::{AuditService, AuditLog};
+use auth_audit::AuditService;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use uuid::Uuid;
-use chrono::Utc;
 use serde_json::json;
 
 #[tokio::main]

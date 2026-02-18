@@ -86,3 +86,9 @@ impl KeyProvider for HsmKeyProvider {
         "-----BEGIN PUBLIC KEY-----\nMOCK_HSM_KEY\n-----END PUBLIC KEY-----".to_string()
     }
 }
+
+impl Default for SoftKeyProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -160,7 +160,7 @@ impl OtpService {
         ttl_minutes: Option<i64>,
     ) -> Result<(OtpSession, String), OtpError> {
         let otp = explicit_token.unwrap_or_else(|| self.generate_otp());
-        let otp_hash = self.hash_otp(&otp)?;
+        let _otp_hash = self.hash_otp(&otp)?;
         
         let now = Utc::now();
         let ttl = ttl_minutes.unwrap_or(self.default_ttl_minutes);

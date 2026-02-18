@@ -70,7 +70,7 @@ impl FirebaseOtpProvider {
     }
     
     /// Send OTP using Firebase Phone Auth
-    async fn send_firebase_otp(&self, phone: &str, otp: &str) -> Result<String, DeliveryError> {
+    async fn send_firebase_otp(&self, phone: &str, _otp: &str) -> Result<String, DeliveryError> {
         // Firebase REST API endpoint for sending verification code
         let url = format!(
             "https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={}",
@@ -225,7 +225,7 @@ impl EmailProvider for SmtpEmailProvider {
         let mailer = self.build_mailer()?;
         
         // Send email synchronously (lettre doesn't have async SMTP yet)
-        let result = tokio::task::spawn_blocking(move || {
+        let _result = tokio::task::spawn_blocking(move || {
             mailer.send(&email)
         })
         .await

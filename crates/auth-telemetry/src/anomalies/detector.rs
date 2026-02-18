@@ -22,7 +22,7 @@ impl AnomalyDetector {
 
     pub fn record(&self, key: &str, value: f64) -> bool {
         let mut windows = self.windows.lock().unwrap();
-        let window = windows.entry(key.to_string()).or_insert_with(VecDeque::new);
+        let window = windows.entry(key.to_string()).or_default();
 
         // Calculate stats on CURRENT window
         let is_anomaly = if window.len() >= 10 { // Min samples

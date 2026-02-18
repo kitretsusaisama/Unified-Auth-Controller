@@ -17,11 +17,11 @@ use auth_core::services::{
     otp_service::{OtpService, OtpPurpose, DeliveryMethod, TokenType},
     otp_delivery::OtpDeliveryService,
     identity::IdentityService,
-    rate_limiter::{RateLimiter, identifier_key},
+    rate_limiter::RateLimiter,
 };
 use auth_db::repositories::otp_repository::OtpRepository;
 use crate::error::ApiError;
-use auth_core::error::{AuthError, TokenErrorKind};
+use auth_core::error::TokenErrorKind;
 
 // ============================================================================
 // Types
@@ -91,13 +91,13 @@ pub async fn send_email_verification(
          return Err(ApiError::new(auth_core::error::AuthError::ValidationError { message: "User has no email to verify".to_string() }));
     }
     
-    if user.email_verified && user.email.as_ref().map_or(false, |e| e == &email) { // Check if email matches the one being verified
+    if user.email_verified && (user.email.as_ref() == Some(&email)) { // Check if email matches the one being verified
         return Err(ApiError::new(auth_core::error::AuthError::Conflict { message: "Email already verified".to_string() }));
     }
 
     // 2. Rate Limiting
     let limit_key = format!("verify_email:{}", user.id);
-    let is_allowed: bool = rate_limiter.check_limit(&limit_key, "email_verification").await.map_err(|e| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    let is_allowed: bool = rate_limiter.check_limit(&limit_key, "email_verification").await.map_err(|_e| ApiError::new(auth_core::error::AuthError::InternalError))?;
     if !is_allowed {
          return Err(ApiError::new(auth_core::error::AuthError::RateLimitExceeded { limit: 3, window: "1 hour".to_string() }));
     }
@@ -131,7 +131,7 @@ pub async fn send_email_verification(
     let base_url = std::env::var("APP_BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
     let link = format!("{}/auth/verify/email?token={}&verification_id={}", base_url, token, session.id);
     
-    otp_delivery.send_verification_email(&email, &link).await.map_err(|e| ApiError::from(e))?;
+    otp_delivery.send_verification_email(&email, &link).await.map_err(ApiError::from)?;
 
     Ok((
         StatusCode::OK,
@@ -202,7 +202,7 @@ pub async fn send_phone_verification(
     
     // Rate Limit
     let limit_key = format!("verify_phone:{}", user.id);
-    let is_allowed: bool = rate_limiter.check_limit(&limit_key, "phone_verification").await.map_err(|e| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    let is_allowed: bool = rate_limiter.check_limit(&limit_key, "phone_verification").await.map_err(|_e| ApiError::new(auth_core::error::AuthError::InternalError))?;
     if !is_allowed {
          return Err(ApiError::new(auth_core::error::AuthError::RateLimitExceeded { limit: 3, window: "1 hour".to_string() }));
     }
@@ -224,7 +224,7 @@ pub async fn send_phone_verification(
     let otp_hash = otp_service.hash_otp(&otp)?;
     otp_repo.create_session(&session, &otp_hash).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
     
-    otp_delivery.send_phone_otp(&phone, &otp).await.map_err(|e| ApiError::from(e))?;
+    otp_delivery.send_phone_otp(&phone, &otp).await.map_err(ApiError::from)?;
 
     Ok((
         StatusCode::OK,

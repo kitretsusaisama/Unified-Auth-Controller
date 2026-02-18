@@ -59,10 +59,12 @@ pub struct User {
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum UserStatus {
     Active,
     Suspended,
     Deleted,
+    #[default]
     PendingVerification,
 }
 
@@ -135,8 +137,3 @@ impl std::fmt::Display for UserStatus {
     }
 }
 
-impl Default for UserStatus {
-    fn default() -> Self {
-        Self::PendingVerification
-    }
-}

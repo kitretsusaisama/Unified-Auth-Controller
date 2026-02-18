@@ -16,7 +16,7 @@ use std::sync::Arc;
 use auth_core::services::{
     otp_service::{OtpService, OtpPurpose, DeliveryMethod},
     otp_delivery::OtpDeliveryService,
-    rate_limiter::{RateLimiter, identifier_key, ip_key},
+    rate_limiter::{RateLimiter, identifier_key},
 };
 use auth_db::repositories::otp_repository::OtpRepository;
 use crate::error::ApiError;
@@ -82,7 +82,7 @@ pub async fn request_otp(
     let is_allowed = rate_limiter
         .check_limit(&identifier_limit_key, "otp_request_per_identifier")
         .await
-        .map_err(|e| ApiError::new(AuthError::InternalError))?;
+        .map_err(|_e| ApiError::new(AuthError::InternalError))?;
     if !is_allowed {
         return Err(ApiError::new(AuthError::RateLimitExceeded {
             limit: 5,
@@ -180,7 +180,7 @@ pub async fn verify_otp(
     let is_allowed = rate_limiter
         .check_limit(&session_key, "otp_verification_per_session")
         .await
-        .map_err(|e| ApiError::new(AuthError::InternalError))?;
+        .map_err(|_e| ApiError::new(AuthError::InternalError))?;
     if !is_allowed {
         return Err(ApiError::new(AuthError::TokenError {
             kind: TokenErrorKind::Invalid,

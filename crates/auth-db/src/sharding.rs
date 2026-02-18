@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use sqlx::MySqlPool;
@@ -84,5 +83,11 @@ impl ShardManager {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
         hasher.finish()
+    }
+}
+
+impl Default for ShardManager {
+    fn default() -> Self {
+        Self::new()
     }
 }

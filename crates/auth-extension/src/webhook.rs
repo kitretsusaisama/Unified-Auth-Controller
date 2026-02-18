@@ -1,5 +1,5 @@
 use serde_json::Value;
-use tracing::{info, error};
+use tracing::info;
 use reqwest::Client;
 
 #[derive(Clone)]
@@ -42,5 +42,11 @@ impl WebhookDispatcher {
         
         info!("Webhook dispatched successfully (simulated)");
         Ok(())
+    }
+}
+
+impl Default for WebhookDispatcher {
+    fn default() -> Self {
+        Self::new()
     }
 }

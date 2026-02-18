@@ -2,8 +2,7 @@ use anyhow::Result;
 use auth_core::error::AuthError;
 use auth_core::models::{Role, UpdateRoleRequest};
 use auth_core::services::role_service::RoleStore;
-use sqlx::{MySql, Pool, Row};
-use std::sync::Arc;
+use sqlx::{MySql, Pool};
 use uuid::Uuid;
 
 pub struct RoleRepository {

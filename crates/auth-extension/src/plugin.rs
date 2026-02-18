@@ -2,7 +2,7 @@ use rhai::{Engine, Scope, AST, EvalAltResult};
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{info, error};
+use tracing::info;
 
 #[derive(Clone)]
 pub struct PluginEngine {
@@ -12,7 +12,7 @@ pub struct PluginEngine {
 
 impl PluginEngine {
     pub fn new() -> Self {
-        let mut engine = Engine::new();
+        let engine = Engine::new();
         // Configure engine for safety (e.g., limit iterations/depth if needed in prod)
         // engine.set_max_expr_depths(50, 50);
         
@@ -71,5 +71,11 @@ impl PluginEngine {
     // Simplified execution for verifying basic logic
     pub fn eval_simple(&self, script: &str) -> Result<i64, Box<EvalAltResult>> {
         self.engine.eval(script)
+    }
+}
+
+impl Default for PluginEngine {
+    fn default() -> Self {
+        Self::new()
     }
 }

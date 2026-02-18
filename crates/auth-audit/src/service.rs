@@ -58,7 +58,7 @@ impl AuditService {
         // Compute hash for integrity (HMAC-like using simple hashing for now, ideally HMAC with secret)
         // Hash content = prev_hash + id + action + actor + resource + timestamp
         // For production, use HMAC with a secret key from config.
-        let content = format!("{}{}{}{}{}{}", prev_hash, id, action, actor_id, resource, timestamp.to_rfc3339());
+        let _content = format!("{}{}{}{}{}{}", prev_hash, id, action, actor_id, resource, timestamp.to_rfc3339());
         
         // Use sha2 from auth-crypto/crates or just dependency if exposed. 
         // For simplicity reusing hashing logic or just a placeholder if auth-crypto not easy to use directly here yet.

@@ -15,9 +15,11 @@ pub struct UserTenant {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum UserTenantStatus {
     Active,
     Suspended,
+    #[default]
     Pending,
 }
 
@@ -41,8 +43,3 @@ pub struct UserRole {
     pub revoked_by: Option<Uuid>,
 }
 
-impl Default for UserTenantStatus {
-    fn default() -> Self {
-        Self::Pending
-    }
-}

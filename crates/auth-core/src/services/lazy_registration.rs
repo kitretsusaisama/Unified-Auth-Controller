@@ -6,7 +6,7 @@
 
 use uuid::Uuid;
 use std::sync::Arc;
-use crate::models::user::{User, IdentifierType, PrimaryIdentifier};
+use crate::models::user::{User, IdentifierType};
 use crate::services::identity::IdentityService;
 use crate::error::AuthError;
 use serde_json::json;
@@ -53,9 +53,9 @@ impl LazyRegistrationService {
 
         // 3. Create the user "lazily"
         // We set a flag or status indicating profile is incomplete
-        let is_email = matches!(identifier_type, IdentifierType::Email);
+        let _is_email = matches!(identifier_type, IdentifierType::Email);
         
-        let mut profile_data = json!({
+        let _profile_data = json!({
             "registration_method": "lazy",
             "source": "auto_creation"
         });

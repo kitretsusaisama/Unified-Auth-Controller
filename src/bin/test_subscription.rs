@@ -1,4 +1,3 @@
-use auth_core::models::subscription::SubscriptionStatus;
 use auth_core::services::subscription_service::SubscriptionService;
 use auth_db::repositories::subscription_repository::SubscriptionRepository;
 use sqlx::mysql::MySqlPoolOptions;
@@ -39,13 +38,17 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     
     // Create Tenant (Org & Tenant needed for FK)
     println!("Setting up tenant...");
-    sqlx::query!("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')", 
-        org_id.to_string(), "Sub Test Org")
+    sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
+        .bind(org_id.to_string())
+        .bind("Sub Test Org")
         .execute(&pool)
         .await?;
 
-    sqlx::query!("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')",
-        tenant_id.to_string(), org_id.to_string(), "Sub Test Tenant", "sub-tenant")
+    sqlx::query("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')")
+        .bind(tenant_id.to_string())
+        .bind(org_id.to_string())
+        .bind("Sub Test Tenant")
+        .bind("sub-tenant")
         .execute(&pool)
         .await?;
 

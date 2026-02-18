@@ -3,9 +3,8 @@
 //! These tests ensure that all functionality works properly with MySQL database only
 //! and that no SQLite dependencies remain in the production code.
 
-use auth_config::{ConfigLoader, ConfigManager};
 use auth_db::connection::create_mysql_pool;
-use sqlx::{Executor, Row};
+use sqlx::Row;
 use uuid::Uuid;
 
 #[tokio::test]

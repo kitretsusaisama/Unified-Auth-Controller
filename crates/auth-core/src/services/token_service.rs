@@ -2,12 +2,11 @@
 
 use crate::error::{AuthError, TokenErrorKind};
 use crate::models::{AccessToken, RefreshToken, TokenPair, Claims};
-use auth_crypto::{JwtService, JwtConfig, JwtClaims, JwtError, KeyManager};
+use auth_crypto::{JwtService, JwtConfig, JwtError, KeyManager};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, Duration};
-use std::collections::HashMap;
 use lru::LruCache;
 use std::num::NonZeroUsize;
 

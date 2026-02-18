@@ -1,5 +1,4 @@
 use proptest::prelude::*;
-use auth_protocols::oidc::{OidcService, OidcConfig};
 
 proptest! {
     #[test]

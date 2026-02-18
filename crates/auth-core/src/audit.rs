@@ -6,7 +6,6 @@
 use serde::{Serialize, Serializer};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use std::fmt;
 
 /// Categories of audit events
 #[derive(Debug, Clone, Serialize)]
