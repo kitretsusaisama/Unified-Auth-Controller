@@ -1,7 +1,7 @@
 use axum::{routing::{get, post}, Router, middleware};
 use tower_http::trace::TraceLayer;
 use crate::AppState;
-use crate::handlers::{health, auth, users, auth_oidc, auth_saml, otp, register, login_otp, profile, verification, discovery, certs};
+use crate::handlers::{health, auth, users, auth_oidc, auth_saml, otp, register, login_otp, profile, verification, discovery, certs, auth_flow, lazy_reg};
 use crate::middleware::{request_id_middleware, security_headers_middleware, RateLimiter};
 use std::time::Duration;
 
@@ -16,7 +16,8 @@ pub fn api_router() -> Router<AppState> {
         // Auth - Basic & Multi-Channel
         .route("/auth/login", post(auth::login))
         .route("/auth/register", post(register::register)) // Replaced basic register with multi-channel
-        
+        .route("/auth/register/lazy", post(lazy_reg::lazy_register))
+
         // Auth - OTP
         .route("/auth/otp/request", post(otp::request_otp))
         .route("/auth/otp/verify", post(otp::verify_otp))
@@ -35,6 +36,11 @@ pub fn api_router() -> Router<AppState> {
         .route("/users/:id/ban", post(users::ban_user))
         .route("/users/:id/activate", post(users::activate_user))
         
+        // Advanced Auth Flow
+        .route("/auth/flow/start", post(auth_flow::start_flow))
+        .route("/auth/flow/:id", get(auth_flow::get_flow_state))
+        .route("/auth/flow/:id/resume", post(auth_flow::resume_flow))
+
         // OIDC / SAML
         .route("/.well-known/openid-configuration", get(discovery::oidc_configuration))
         .route("/auth/certs", get(certs::jwks))

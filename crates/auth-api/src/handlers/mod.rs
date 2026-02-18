@@ -10,3 +10,6 @@ pub mod profile;
 pub mod verification;
 pub mod discovery;
 pub mod certs;
+pub mod oidc_provider;
+pub mod auth_flow;
+pub mod lazy_reg;

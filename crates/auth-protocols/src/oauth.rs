@@ -6,6 +6,7 @@ pub struct OAuthService {
     client_id: String,
     client_secret: String,
     auth_url: String,
+    #[allow(dead_code)]
     token_url: String,
 }
 

@@ -55,6 +55,7 @@ pub trait EmailProvider: Send + Sync {
 /// Firebase Authentication OTP Provider
 /// Uses Firebase Phone Authentication to send OTPs
 pub struct FirebaseOtpProvider {
+    #[allow(dead_code)]
     project_id: String,
     api_key: String,
     client: reqwest::Client,

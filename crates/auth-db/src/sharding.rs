@@ -19,6 +19,7 @@ pub struct ShardManager {
     // Consistent hashing ring (simplified: virtual nodes -> shard_id)
     ring: RwLock<Vec<(u64, u32)>>,
     // Total number of virtual nodes
+    #[allow(dead_code)]
     validation_key: String,
 }
 

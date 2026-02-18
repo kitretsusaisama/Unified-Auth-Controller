@@ -189,6 +189,7 @@ impl TokenEngine {
     }
 
     /// Clean up expired tokens (No-op in trait-based implementation as DB handles it)
+    #[allow(dead_code)]
     async fn cleanup_expired_tokens(&self) {}
 }
 

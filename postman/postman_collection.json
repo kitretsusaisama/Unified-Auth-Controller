@@ -1,0 +1,255 @@
+{
+	"info": {
+		"_postman_id": "e5c7036d-1234-4b5a-9012-abcdef123456",
+		"name": "Enterprise SSO Platform",
+		"description": "Production-ready API collection for the Enterprise SSO Platform.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"identifier_type\": \"email\",\n    \"email\": \"user@example.com\",\n    \"password\": \"SecurePass123!\",\n    \"tenant_id\": \"{{tenant_id}}\",\n    \"require_verification\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Lazy Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"identifier\": \"device_id_123\",\n    \"identifier_type\": \"email\",\n    \"tenant_id\": \"{{tenant_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register/lazy",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register", "lazy"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"access_token\", jsonData.access_token);",
+									"pm.environment.set(\"refresh_token\", jsonData.refresh_token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"SecurePass123!\",\n    \"tenant_id\": \"{{tenant_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth Flow (Advanced)",
+			"item": [
+				{
+					"name": "Start Flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"flow_id\", jsonData.flow_id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"flow_type\": \"login\",\n    \"tenant_id\": \"{{tenant_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/flow/start",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "flow", "start"]
+						}
+					}
+				},
+				{
+					"name": "Resume Flow (Identifier)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"submit_identifier\",\n    \"data\": { \"identifier\": \"user@example.com\" }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/flow/{{flow_id}}/resume",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "flow", "{{flow_id}}", "resume"]
+						}
+					}
+				},
+				{
+					"name": "Get Flow State",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/flow/{{flow_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "flow", "{{flow_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "OIDC Provider",
+			"item": [
+				{
+					"name": "Discovery",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/.well-known/openid-configuration",
+							"host": ["{{base_url}}"],
+							"path": [".well-known", "openid-configuration"]
+						}
+					}
+				},
+				{
+					"name": "Authorize",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/authorize?response_type=code&client_id=client_123&redirect_uri=http://localhost:3000/cb&state=xyz",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "authorize"],
+							"query": [
+								{ "key": "response_type", "value": "code" },
+								{ "key": "client_id", "value": "client_123" },
+								{ "key": "redirect_uri", "value": "http://localhost:3000/cb" },
+								{ "key": "state", "value": "xyz" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Token Exchange",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{ "key": "grant_type", "value": "authorization_code" },
+								{ "key": "code", "value": "mock_auth_code_12345" },
+								{ "key": "client_id", "value": "client_123" },
+								{ "key": "redirect_uri", "value": "http://localhost:3000/cb" }
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/token",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "token"]
+						}
+					}
+				},
+				{
+					"name": "UserInfo",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{access_token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/userinfo",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "userinfo"]
+						}
+					}
+				},
+				{
+					"name": "JWKS",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/certs",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "certs"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+        {
+            "key": "tenant_id",
+            "value": "9992003c-e093-4c07-975d-44639ceb36d6",
+            "type": "string"
+        }
+	]
+}

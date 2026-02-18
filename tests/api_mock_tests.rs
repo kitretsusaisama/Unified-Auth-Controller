@@ -11,7 +11,6 @@ use axum::{
 use serde_json::json;
 use tokio;
 use tower::util::ServiceExt;
-use sqlx::{Pool, MySql};
 use auth_core::services::identity::IdentityService;
 use auth_core::services::token_service::TokenEngine;
 use auth_core::services::otp_delivery::{OtpProvider, EmailProvider, DeliveryError};
