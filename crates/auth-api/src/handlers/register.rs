@@ -271,12 +271,13 @@ pub async fn register(
     
     // 8. Send verification if required
     let verification_sent_to = if payload.require_verification {
-        let (method, identifier) = match primary_identifier {
-             PrimaryIdentifier::Email => (DeliveryMethod::Email, user.email.clone().unwrap()),
-             PrimaryIdentifier::Phone => (DeliveryMethod::Sms, user.phone.clone().unwrap()),
+        let identifier_opt = match primary_identifier {
+             PrimaryIdentifier::Email => user.email.clone().map(|e| (DeliveryMethod::Email, e)),
+             PrimaryIdentifier::Phone => user.phone.clone().map(|p| (DeliveryMethod::Sms, p)),
         };
 
-        // Create OTP Session
+        if let Some((method, identifier)) = identifier_opt {
+            // Create OTP Session
         // TODO: Use actual tenant_id logic
         let session_result = otp_service.create_session(
             payload.tenant_id,
@@ -322,6 +323,10 @@ pub async fn register(
                 tracing::error!("Failed to create OTP session: {:?}", e);
                 None
             }
+        }
+        } else {
+            tracing::warn!("Verification required but user has no primary identifier set");
+            None
         }
     } else {
         None
