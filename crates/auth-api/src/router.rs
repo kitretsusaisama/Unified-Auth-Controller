@@ -1,7 +1,7 @@
 use axum::{routing::{get, post}, Router, middleware};
 use tower_http::trace::TraceLayer;
 use crate::AppState;
-use crate::handlers::{health, auth, users, auth_oidc, auth_saml, otp, register, login_otp, profile, verification, discovery, certs, auth_flow, lazy_reg};
+use crate::handlers::{health, auth, users, auth_oidc, auth_saml, otp, register, login_otp, profile, verification, discovery, certs, auth_flow, lazy_reg, oidc_provider, workflow};
 use crate::middleware::{request_id_middleware, security_headers_middleware, RateLimiter};
 use std::time::Duration;
 
@@ -41,9 +41,17 @@ pub fn api_router() -> Router<AppState> {
         .route("/auth/flow/:id", get(auth_flow::get_flow_state))
         .route("/auth/flow/:id/resume", post(auth_flow::resume_flow))
 
+        // Universal Workflow API (Hyper-Advanced)
+        .route("/auth/flow/:id/submit", post(workflow::submit))
+
         // OIDC / SAML
         .route("/.well-known/openid-configuration", get(discovery::oidc_configuration))
         .route("/auth/certs", get(certs::jwks))
+        // OIDC Provider Endpoints (Real Implementation)
+        .route("/auth/authorize", get(oidc_provider::authorize))
+        .route("/auth/token", post(oidc_provider::token))
+        .route("/auth/userinfo", get(oidc_provider::userinfo))
+        // Legacy/Federation stubs
         .route("/auth/oidc/login", get(auth_oidc::login))
         .route("/auth/oidc/callback", get(auth_oidc::callback))
         .route("/auth/saml/metadata", get(auth_saml::metadata))

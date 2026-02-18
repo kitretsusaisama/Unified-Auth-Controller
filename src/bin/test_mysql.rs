@@ -1,4 +1,4 @@
-use auth_core::services::{TokenEngine, TokenProvider};
+use auth_core::prelude::token_service::{TokenEngine, TokenProvider};
 use auth_db::repositories::{RefreshTokenRepository, RevokedTokenRepository};
  // assuming this exists or I build config
 use sqlx::mysql::MySqlPoolOptions;

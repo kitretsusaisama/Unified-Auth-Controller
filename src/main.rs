@@ -37,6 +37,7 @@ use auth_core::audit::{TracingAuditLogger, AuditLogger};
 use auth_audit::AuditService;
 
 use auth_api::AppState;
+use auth_cache::{MultiLevelCache, Cache};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -164,6 +165,25 @@ async fn main() -> Result<()> {
     // Initialize Audit Service
     let _audit_service = Arc::new(AuditService::new(pool.clone()));
 
+    // Initialize Cache
+    let redis_url = if let Some(redis_config) = config.external_services.redis {
+        Some(redis_config.url)
+    } else {
+        None
+    };
+
+    if redis_url.is_none() && environment == "production" {
+        tracing::error!("Production environment detected but Redis is not configured! Falling back to in-memory cache.");
+    }
+
+    let cache: Arc<dyn Cache> = match MultiLevelCache::new(redis_url.clone()) {
+        Ok(c) => Arc::new(c),
+        Err(e) => {
+             tracing::error!("Failed to connect to Redis: {}. Falling back to in-memory.", e);
+             Arc::new(MultiLevelCache::new(None).unwrap())
+        }
+    };
+
     let app_state = AppState {
         db: pool,
         role_service,
@@ -176,6 +196,7 @@ async fn main() -> Result<()> {
         rate_limiter,
         otp_repository: otp_repo,
         audit_logger,
+        cache,
     };
 
     // Initialize Router

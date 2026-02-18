@@ -14,6 +14,7 @@ use tower::util::ServiceExt;
 use auth_core::services::identity::IdentityService;
 use auth_core::services::token_service::TokenEngine;
 use auth_core::services::otp_delivery::{OtpProvider, EmailProvider, DeliveryError};
+use auth_cache::MultiLevelCache;
 use async_trait::async_trait;
 
 // Mock OTP Provider
@@ -73,6 +74,7 @@ async fn create_test_app_state() -> AppState {
         rate_limiter: Arc::new(auth_core::services::rate_limiter::RateLimiter::new()),
         otp_repository: Arc::new(auth_db::repositories::OtpRepository::new(pool.clone())),
         audit_logger,
+        cache: Arc::new(MultiLevelCache::new(None).unwrap()),
     }
 }
 

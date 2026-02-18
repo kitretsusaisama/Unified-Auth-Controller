@@ -1,25 +1,29 @@
 use async_trait::async_trait;
 use dashmap::DashMap;
 use redis::{AsyncCommands, Client};
-use serde::{de::DeserializeOwned, Serialize};
 use std::time::Duration;
-use tracing::{debug, error};
+use tracing::debug;
 
 #[async_trait]
 pub trait Cache: Send + Sync {
-    async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> Option<T>;
-    async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    async fn get(&self, key: &str) -> anyhow::Result<Option<String>>;
+    async fn set(&self, key: &str, value: &str, ttl: Duration) -> anyhow::Result<()>;
     async fn delete(&self, key: &str) -> anyhow::Result<()>;
 }
 
 pub struct MultiLevelCache {
     l1: DashMap<String, (String, std::time::Instant)>, // Value (JSON), Expiry
-    l2: Client,
+    l2: Option<Client>,
 }
 
 impl MultiLevelCache {
-    pub fn new(redis_url: &str) -> anyhow::Result<Self> {
-        let client = Client::open(redis_url)?;
+    pub fn new(redis_url: Option<String>) -> anyhow::Result<Self> {
+        let client = if let Some(url) = redis_url {
+            Some(Client::open(url)?)
+        } else {
+            None
+        };
+
         Ok(Self {
             l1: DashMap::new(),
             l2: client,
@@ -34,64 +38,57 @@ impl MultiLevelCache {
 
 #[async_trait]
 impl Cache for MultiLevelCache {
-    async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> Option<T> {
+    async fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
         // L1 Check
         if let Some(entry) = self.l1.get(key) {
             if entry.1 > std::time::Instant::now() {
                 debug!("L1 Cache Hit: {}", key);
-                if let Ok(val) = serde_json::from_str(&entry.0) {
-                    return Some(val);
-                }
+                return Ok(Some(entry.0.clone()));
             } else {
                 // Expired
-                drop(entry); // explicit drop to avoid deadlock if remove needs lock (DashMap handles this fine though)
+                drop(entry);
                 self.l1.remove(key);
             }
         }
 
         // L2 Check (Redis)
-        let mut conn = match self.l2.get_multiplexed_async_connection().await {
-            Ok(c) => c,
-            Err(e) => {
-                error!("Redis connection error: {}", e);
-                return None;
-            }
-        };
+        if let Some(client) = &self.l2 {
+            let mut conn = client.get_multiplexed_async_connection().await?;
 
-        match conn.get::<_, Option<String>>(key).await {
-            Ok(Some(val_str)) => {
-                debug!("L2 Cache Hit: {}", key);
-                // Populate L1 (Default TTL 60s for simplicity if not stored)
-                // In real app, fetch TTL from Redis or use config
-                self.l1.insert(key.to_string(), (val_str.clone(), std::time::Instant::now() + Duration::from_secs(60)));
-                
-                serde_json::from_str(&val_str).ok()
+            match conn.get::<_, Option<String>>(key).await? {
+                Some(val_str) => {
+                    debug!("L2 Cache Hit: {}", key);
+                    // Populate L1 (Default TTL 60s)
+                    self.l1.insert(key.to_string(), (val_str.clone(), std::time::Instant::now() + Duration::from_secs(60)));
+
+                    Ok(Some(val_str))
+                }
+                None => Ok(None),
             }
-            Ok(None) => None,
-            Err(e) => {
-                error!("Redis get error: {}", e);
-                None
-            }
+        } else {
+            Ok(None)
         }
     }
 
-    async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()> {
-        let val_str = serde_json::to_string(value)?;
-
+    async fn set(&self, key: &str, value: &str, ttl: Duration) -> anyhow::Result<()> {
         // Update L1
-        self.l1.insert(key.to_string(), (val_str.clone(), std::time::Instant::now() + ttl));
+        self.l1.insert(key.to_string(), (value.to_string(), std::time::Instant::now() + ttl));
 
         // Update L2
-        let mut _conn = self.l2.get_multiplexed_async_connection().await?;
-        // let _: redis::Value = conn.set_ex(key, val_str, ttl.as_secs() as usize).await?;
+        if let Some(client) = &self.l2 {
+            let mut conn = client.get_multiplexed_async_connection().await?;
+            let _: redis::Value = conn.set_ex(key, value, ttl.as_secs()).await?;
+        }
 
         Ok(())
     }
 
     async fn delete(&self, key: &str) -> anyhow::Result<()> {
         self.l1.remove(key);
-        let mut _conn = self.l2.get_multiplexed_async_connection().await?;
-        // let _: redis::Value = conn.del(key).await?;
+        if let Some(client) = &self.l2 {
+            let mut conn = client.get_multiplexed_async_connection().await?;
+            let _: redis::Value = conn.del(key).await?;
+        }
         Ok(())
     }
 }

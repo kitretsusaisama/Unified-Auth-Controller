@@ -20,6 +20,8 @@ pub mod error;
 pub mod validation;
 pub mod middleware;
 
+use auth_cache::Cache;
+
 // Admin UI (feature-gated)
 #[cfg(feature = "admin-ui")]
 pub mod admin;
@@ -75,6 +77,7 @@ pub struct AppState {
     pub rate_limiter: Arc<RateLimiter>,
     pub otp_repository: Arc<OtpRepository>,
     pub audit_logger: Arc<dyn auth_core::audit::AuditLogger>,
+    pub cache: Arc<dyn Cache>,
 }
 
 pub fn app(state: AppState) -> Router {
@@ -152,5 +155,11 @@ impl axum::extract::FromRef<AppState> for Arc<OtpRepository> {
 impl axum::extract::FromRef<AppState> for Arc<dyn auth_core::audit::AuditLogger> {
     fn from_ref(state: &AppState) -> Self {
         state.audit_logger.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<dyn Cache> {
+    fn from_ref(state: &AppState) -> Self {
+        state.cache.clone()
     }
 }

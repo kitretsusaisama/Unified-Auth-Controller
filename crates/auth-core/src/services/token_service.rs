@@ -208,7 +208,7 @@ impl TokenProvider for TokenEngine {
                 tenant_id,
                 claims.permissions,
                 claims.roles,
-                None, // scope - OAuth specific, optional
+                claims.scope.clone(),
             )
             .await
             .map_err(|e| match e {
@@ -288,6 +288,7 @@ impl TokenProvider for TokenEngine {
             tenant_id: jwt_claims.tenant_id,
             permissions: jwt_claims.permissions,
             roles: jwt_claims.roles,
+            scope: jwt_claims.scope,
         })
     }
 
@@ -327,6 +328,7 @@ impl TokenProvider for TokenEngine {
             tenant_id: token_data.tenant_id.to_string(),
             permissions: vec![],
             roles: vec![],
+            scope: None,
         };
 
         let access_token = self.issue_access_token(claims).await?;

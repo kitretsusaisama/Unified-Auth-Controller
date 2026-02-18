@@ -5,6 +5,7 @@
 
 use std::sync::Arc;
 use auth_api::{AppState, app};
+use auth_cache::MultiLevelCache;
 use auth_core::services::{
     identity::IdentityService,
     session_service::SessionService,
@@ -110,6 +111,7 @@ impl TokenProvider for MockTokenService {
             tenant_id: Uuid::new_v4().to_string(),
             roles: vec![],
             permissions: vec![],
+            scope: None,
         })
     }
 
@@ -249,6 +251,7 @@ fn create_test_app_state() -> AppState {
     ));
     let lazy_registration_service = Arc::new(LazyRegistrationService::new(identity_service.clone()));
     let rate_limiter = Arc::new(RateLimiter::new());
+    let cache = Arc::new(MultiLevelCache::new(None).unwrap());
 
     AppState {
         db: pool,
@@ -262,6 +265,7 @@ fn create_test_app_state() -> AppState {
         rate_limiter,
         otp_repository: otp_repo,
         audit_logger,
+        cache,
     }
 }
 

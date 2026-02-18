@@ -11,6 +11,7 @@ use rand::{distributions::Alphanumeric, Rng};
 use uuid::Uuid;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use thiserror::Error;
+use totp_rs::{TOTP, Algorithm, Secret};
 
 #[derive(Debug, Error)]
 pub enum OtpError {
@@ -144,6 +145,25 @@ impl OtpService {
     pub fn verify_otp(&self, otp: &str, hash: &str) -> Result<bool, OtpError> {
         verify(otp, hash)
             .map_err(|_| OtpError::Invalid)
+    }
+
+    /// Verify TOTP code against a secret
+    pub fn verify_totp(&self, secret_str: &str, code: &str) -> Result<bool, OtpError> {
+        let secret = Secret::Encoded(secret_str.to_string())
+            .to_bytes()
+            .map_err(|_| OtpError::Invalid)?;
+
+        let totp = TOTP::new(
+            Algorithm::SHA1,
+            6,
+            1,
+            30,
+            secret,
+            Some("AuthPlatform".to_string()),
+            "user".to_string(),
+        ).map_err(|_| OtpError::GenerationFailed)?;
+
+        Ok(totp.check_current(code).unwrap_or(false))
     }
     
     /// Create new OTP session

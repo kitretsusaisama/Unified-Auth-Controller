@@ -10,7 +10,7 @@ struct TestUser {
 
 #[tokio::main]
 async fn main() {
-    let redis_url = "redis://127.0.0.1/";
+    let redis_url = Some("redis://127.0.0.1/".to_string());
     
     let cache = match MultiLevelCache::new(redis_url) {
         Ok(c) => c,
@@ -27,18 +27,19 @@ async fn main() {
     let user = TestUser { id: 1, name: "Vic".to_string() };
     
     // Set
-    cache.set("user:1", &user, Duration::from_secs(10)).await.expect("Set failed");
+    let val_str = serde_json::to_string(&user).unwrap();
+    cache.set("user:1", &val_str, Duration::from_secs(10)).await.expect("Set failed");
     
     // Get L1
-    // Explicit type to satisfy E0282
-    let fetched = cache.get::<TestUser>("user:1").await.expect("Key missing");
+    let fetched_opt = cache.get("user:1").await.expect("Get failed");
+    let fetched: TestUser = serde_json::from_str(&fetched_opt.expect("Key missing")).expect("Deserialize failed");
     assert_eq!(user, fetched);
     println!("✅ L1 Get Passed");
 
     // Delete
     cache.delete("user:1").await.expect("Delete failed");
     
-    let missing = cache.get::<TestUser>("user:1").await;
+    let missing = cache.get("user:1").await.expect("Get failed");
     assert!(missing.is_none());
     println!("✅ Delete Passed");
 }

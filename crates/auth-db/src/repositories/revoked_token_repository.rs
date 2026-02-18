@@ -255,7 +255,7 @@ impl RevokedTokenRepository {
     }
 }
 
-use auth_core::services::RevokedTokenStore;
+use auth_core::services::token_service::RevokedTokenStore;
 use auth_core::error::AuthError;
 
 #[async_trait::async_trait]

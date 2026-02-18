@@ -1,11 +1,13 @@
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 pub use auth_core::error::AuthError;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
+use crate::error::problem_details::ProblemDetails;
+
+pub mod problem_details;
 
 /// Structured error response for API
 #[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
@@ -82,14 +84,16 @@ impl IntoResponse for ApiError {
             AuthError::CircuitBreakerOpen { service } => (StatusCode::SERVICE_UNAVAILABLE, format!("Service unavailable: {}", service)),
         };
 
-        let error_response = ErrorResponse {
-            code: code.to_string(),
-            message,
-            fields: None, // Fields could be extracted if ValidationErrors carried structured data
-            request_id: self.request_id.map(|id| id.to_string()),
-        };
+        // Convert to RFC 7807 Problem Details
+        let mut problem = ProblemDetails::new(status, message)
+            .with_type(format!("https://auth.example.com/errors/{}", code))
+            .with_extension("code", code);
 
-        (status, Json(error_response)).into_response()
+        if let Some(req_id) = self.request_id {
+            problem = problem.with_extension("request_id", req_id.to_string());
+        }
+
+        problem.into_response()
     }
 }
 

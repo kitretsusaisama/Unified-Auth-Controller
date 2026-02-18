@@ -92,7 +92,7 @@ pub async fn login_with_otp(
     ).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
 
     // 4. Issue Tokens
-    let auth_response = identity_service.issue_tokens_for_user(&user, payload.tenant_id).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let auth_response = identity_service.issue_tokens_for_user(&user, payload.tenant_id, None, None).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
     
     // Check if profile is complete (assumes we added this check in User model or helper)
     // For now we check the profile_data json or the flag if available on User struct

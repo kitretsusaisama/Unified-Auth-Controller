@@ -316,7 +316,7 @@ impl RefreshTokenRepository {
 }
 
 // Imports for trait implementation
-use auth_core::services::RefreshTokenStore;
+use auth_core::services::token_service::RefreshTokenStore;
 use auth_core::models::RefreshToken;
 use auth_core::error::AuthError;
 

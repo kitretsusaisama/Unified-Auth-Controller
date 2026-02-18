@@ -143,15 +143,15 @@ impl IdentityService {
         self.store.record_login(user.id, request.ip_address).await?;
 
         // 5. Issue Tokens
-        self.issue_tokens_for_user(&user, request.tenant_id).await
+        self.issue_tokens_for_user(&user, request.tenant_id, None, None).await
     }
 
     /// Issue access and refresh tokens for a newly authenticated user
-    pub async fn issue_tokens_for_user(&self, user: &User, tenant_id: Uuid) -> Result<AuthResponse, AuthError> {
+    pub async fn issue_tokens_for_user(&self, user: &User, tenant_id: Uuid, audience: Option<String>, scope: Option<String>) -> Result<AuthResponse, AuthError> {
         let claims = Claims {
             sub: user.id.to_string(),
             iss: "auth-service".to_string(),
-            aud: "auth-service".to_string(),
+            aud: audience.unwrap_or_else(|| "auth-service".to_string()),
             exp: (chrono::Utc::now() + chrono::Duration::minutes(15)).timestamp(),
             iat: chrono::Utc::now().timestamp(),
             nbf: chrono::Utc::now().timestamp(),
@@ -159,6 +159,7 @@ impl IdentityService {
             tenant_id: tenant_id.to_string(), 
             permissions: vec![],
             roles: vec![],
+            scope,
         };
 
         let access_token_struct = self.token_service.issue_access_token(claims).await?;
@@ -274,5 +275,34 @@ impl IdentityService {
     /// Mark phone as verified
     pub async fn mark_phone_verified(&self, user_id: Uuid) -> Result<(), AuthError> {
          self.store.set_phone_verified(user_id, true).await
+    }
+
+    /// Validate access token and return claims
+    pub async fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
+        self.token_service.validate_token(token).await
+    }
+
+    /// Verify password for a user
+    pub async fn verify_password(&self, user_id: Uuid, password: &str) -> Result<bool, AuthError> {
+        let user = self.store.find_by_id(user_id).await?.ok_or(AuthError::UserNotFound)?;
+
+        let password_clone = password.to_string();
+        // If user has no password (e.g. social only), fail
+        let hash_clone = user.password_hash.ok_or(AuthError::InvalidCredentials)?.clone();
+
+        let is_valid = tokio::task::spawn_blocking(move || {
+            let parsed_hash = PasswordHash::new(&hash_clone).ok()?;
+            Some(Argon2::default().verify_password(password_clone.as_bytes(), &parsed_hash).is_ok())
+        })
+        .await
+        .map_err(|_| AuthError::InternalError)?
+        .unwrap_or(false);
+
+        if !is_valid {
+             self.store.increment_failed_attempts(user.id).await?;
+             return Ok(false);
+        }
+
+        Ok(true)
     }
 }

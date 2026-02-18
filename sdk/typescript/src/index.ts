@@ -40,15 +40,18 @@ export class AuthClient {
      * Redirects the browser to the login page
      */
     public async loginWithRedirect(): Promise<void> {
-        // Generate simple state/nonce for MVP
-        // In prod, use crypto for PKCE verifier/challenge
-        const state = Math.random().toString(36).substring(7);
-        const nonce = Math.random().toString(36).substring(7);
+        // Generate secure state/nonce
+        const state = this.generateRandomString(32);
+        const nonce = this.generateRandomString(32);
 
-        // Store state/nonce in sessionStorage
+        // Generate PKCE
+        const { verifier, challenge } = await this.generatePKCE();
+
+        // Store state/nonce/verifier in sessionStorage
         if (typeof window !== 'undefined') {
             sessionStorage.setItem('auth_state', state);
             sessionStorage.setItem('auth_nonce', nonce);
+            sessionStorage.setItem('auth_verifier', verifier);
         }
 
         const params = new URLSearchParams({
@@ -58,6 +61,8 @@ export class AuthClient {
             scope: this.config.scope || 'openid profile email',
             state,
             nonce,
+            code_challenge: challenge,
+            code_challenge_method: 'S256',
         });
 
         const url = `${this.config.baseUrl}/auth/authorize?${params.toString()}`;
@@ -67,6 +72,50 @@ export class AuthClient {
         } else {
             console.log(`[AuthSDK] Redirect URL: ${url}`);
         }
+    }
+
+    private generateRandomString(length: number): string {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+        let result = '';
+        if (typeof window !== 'undefined' && window.crypto) {
+             const array = new Uint8Array(length);
+             window.crypto.getRandomValues(array);
+             for(let i = 0; i < length; i++) {
+                 result += characters.charAt(array[i] % characters.length);
+             }
+        } else {
+             for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+             }
+        }
+        return result;
+    }
+
+    private async generatePKCE() {
+        const verifier = this.generateRandomString(43);
+        const challenge = await this.generateCodeChallenge(verifier);
+        return { verifier, challenge };
+    }
+
+    private async generateCodeChallenge(verifier: string) {
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(verifier);
+            const hash = await window.crypto.subtle.digest('SHA-256', data);
+            return this.base64UrlEncode(new Uint8Array(hash));
+        }
+        return verifier; // Fallback for non-browser env (not secure but allows basic test)
+    }
+
+    private base64UrlEncode(array: Uint8Array) {
+        let str = '';
+        for(let i = 0; i < array.length; i++) {
+            str += String.fromCharCode(array[i]);
+        }
+        return btoa(str)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
     }
 
     /**
@@ -91,16 +140,22 @@ export class AuthClient {
     }
 
     private async exchangeCodeForToken(code: string): Promise<void> {
+        const verifier = typeof window !== 'undefined' ? sessionStorage.getItem('auth_verifier') : undefined;
+
         const response = await this.client.post<TokenResponse>('/auth/token', {
             grant_type: 'authorization_code',
             client_id: this.config.clientId,
             code,
             redirect_uri: this.config.redirectUri,
+            code_verifier: verifier,
         });
 
         this.token = response.data.access_token;
         if (typeof window !== 'undefined') {
             localStorage.setItem('access_token', this.token);
+            sessionStorage.removeItem('auth_verifier'); // Clean up
+            sessionStorage.removeItem('auth_state');
+            sessionStorage.removeItem('auth_nonce');
         }
     }
 

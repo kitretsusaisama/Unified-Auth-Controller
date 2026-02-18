@@ -12,9 +12,4 @@ pub mod resilience;
 pub use error::AuthError;
 
 /// Re-export commonly used types
-pub mod prelude {
-    pub use crate::error::AuthError;
-    pub use crate::models::*;
-    pub use crate::services::*;
-    pub use crate::audit::*;
-}
+pub mod prelude;
