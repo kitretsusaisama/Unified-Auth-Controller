@@ -1,7 +1,7 @@
 use auth_core::services::identity::{IdentityService, AuthRequest};
 use auth_core::services::token_service::{TokenEngine, TokenProvider}; // TokenEngine implements TokenProvider
 use auth_core::models::user::{CreateUserRequest, UserStatus};
-use auth_db::repositories::UserRepository;
+use auth_db::repositories::user_repository::UserRepository;
 use auth_core::services::identity::UserStore;
 use auth_core::audit::{TracingAuditLogger, AuditLogger};
 use sqlx::MySqlPool;

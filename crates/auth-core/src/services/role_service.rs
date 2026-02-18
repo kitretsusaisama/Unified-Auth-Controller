@@ -1,4 +1,4 @@
-use crate::models::{Role, UpdateRoleRequest, CreateRoleRequest};
+use crate::models::{Role, UpdateRoleRequest, CreateRoleRequest, RoleScope};
 use crate::error::AuthError;
 use uuid::Uuid;
 use std::sync::Arc;
@@ -35,8 +35,11 @@ impl RoleService {
             description: req.description,
             parent_role_id: req.parent_role_id,
             is_system_role: false,
-            permissions: sqlx::types::Json(req.permissions),
-            constraints: sqlx::types::Json(req.constraints.unwrap_or_default()),
+            permissions: req.permissions,
+            constraints: req.constraints,
+            organization_id: None, // Assuming tenant level for now, can extend Request to include org_id
+            scope: RoleScope::Tenant,
+            metadata: None,
             created_at: chrono::Utc::now(),
             updated_at: None,
         };

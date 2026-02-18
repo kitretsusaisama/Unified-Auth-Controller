@@ -1,6 +1,6 @@
-use auth_core::services::role_service::RoleService;
+use auth_core::services::authorization::AuthorizationService;
+use auth_db::repositories::authorization::role_repository::RoleRepository;
 use auth_core::models::CreateRoleRequest;
-use auth_db::repositories::RoleRepository;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::sync::Arc;
@@ -30,7 +30,7 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize Store & Service
     let role_repo = Arc::new(RoleRepository::new(pool.clone()));
-    let role_service = RoleService::new(role_repo);
+    let role_service = AuthorizationService::new(role_repo);
 
     // Setup Test Data
     let org_id = Uuid::new_v4();

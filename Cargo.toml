@@ -107,6 +107,10 @@ name = "test_auth_flow"
 path = "src/bin/test_auth_flow.rs"
 
 [[bin]]
+name = "seed_rbac"
+path = "src/bin/seed_rbac.rs"
+
+[[bin]]
 name = "auth-sso-platform"
 path = "src/main.rs"
 

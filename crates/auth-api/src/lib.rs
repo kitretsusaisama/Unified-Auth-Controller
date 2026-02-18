@@ -2,7 +2,7 @@ use axum::Router;
 use sqlx::MySqlPool;
 use std::sync::Arc;
 use auth_core::services::{
-    role_service::RoleService,
+    authorization::AuthorizationService,
     session_service::SessionService,
     subscription_service::SubscriptionService,
     otp_service::OtpService,
@@ -67,7 +67,7 @@ pub struct ApiDoc;
 #[derive(Clone)]
 pub struct AppState {
     pub db: MySqlPool,
-    pub role_service: Arc<RoleService>,
+    pub role_service: Arc<AuthorizationService>,
     pub session_service: Arc<SessionService>,
     pub subscription_service: Arc<SubscriptionService>,
     pub identity_service: Arc<auth_core::services::identity::IdentityService>,

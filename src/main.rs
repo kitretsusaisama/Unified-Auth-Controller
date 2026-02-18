@@ -13,7 +13,7 @@ use auth_platform::{PortAuthority, PortPolicy, PortClass, shutdown_signal};
 
 // Repositories
 use auth_db::repositories::{
-    role_repository::RoleRepository,
+    RoleRepository,
     session_repository::SessionRepository,
     subscription_repository::SubscriptionRepository,
     user_repository::UserRepository,
@@ -22,7 +22,7 @@ use auth_db::repositories::{
 
 // Services
 use auth_core::services::{
-    role_service::RoleService,
+    authorization::AuthorizationService,
     session_service::SessionService,
     subscription_service::SubscriptionService,
     risk_assessment::RiskEngine,
@@ -101,7 +101,8 @@ async fn main() -> Result<()> {
     let otp_repo = Arc::new(OtpRepository::new(pool.clone()));
 
     // Initialize Services
-    let role_service = Arc::new(RoleService::new(role_repo));
+    // We use AuthorizationService for RBAC instead of legacy RoleService
+    let role_service = Arc::new(AuthorizationService::new(role_repo));
     
     let risk_engine = Arc::new(RiskEngine::new()); // Config thresholds could be passed here
     let session_service = Arc::new(SessionService::new(session_repo, risk_engine));
