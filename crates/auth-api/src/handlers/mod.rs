@@ -8,3 +8,4 @@ pub mod register;
 pub mod login_otp;
 pub mod profile;
 pub mod verification;
+pub mod discovery;

@@ -1,7 +1,7 @@
 use axum::{routing::{get, post}, Router, middleware};
 use tower_http::trace::TraceLayer;
 use crate::AppState;
-use crate::handlers::{health, auth, users, auth_oidc, auth_saml, otp, register, login_otp, profile, verification};
+use crate::handlers::{health, auth, users, auth_oidc, auth_saml, otp, register, login_otp, profile, verification, discovery};
 use crate::middleware::{request_id_middleware, security_headers_middleware, RateLimiter};
 use std::time::Duration;
 
@@ -36,6 +36,7 @@ pub fn api_router() -> Router<AppState> {
         .route("/users/:id/activate", post(users::activate_user))
         
         // OIDC / SAML
+        .route("/.well-known/openid-configuration", get(discovery::oidc_configuration))
         .route("/auth/oidc/login", get(auth_oidc::login))
         .route("/auth/oidc/callback", get(auth_oidc::callback))
         .route("/auth/saml/metadata", get(auth_saml::metadata))
