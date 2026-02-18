@@ -12,3 +12,4 @@ pub mod credential;
 pub mod authorization;
 pub mod webauthn_service;
 pub mod workflow;
+pub mod background;

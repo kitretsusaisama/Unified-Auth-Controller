@@ -224,4 +224,21 @@ export class AuthClient {
             throw error;
         }
     }
+
+    /**
+     * Start WebAuthn (Passkey) Flow
+     * @param flowId Flow ID
+     */
+    public async loginWithPasskey(flowId: string): Promise<FlowResult> {
+        // 1. Start WebAuthn
+        const startResult = await this.submitFlow(flowId, 'start_webauthn', {});
+
+        // 2. Get Challenge (from ui_hints or data if exposed)
+        // For simulation, we assume client knows how to handle browser WebAuthn API
+        // const credential = navigator.credentials.get(...)
+
+        // 3. Submit Credential
+        const credential = "mock_credential_from_browser";
+        return await this.submitFlow(flowId, 'submit_webauthn', { credential });
+    }
 }

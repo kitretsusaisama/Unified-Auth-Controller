@@ -34,6 +34,7 @@ use auth_core::services::{
 use async_trait::async_trait;
 
 use auth_core::audit::{TracingAuditLogger, AuditLogger};
+use auth_core::services::background::audit_worker::{AsyncAuditLogger, AuditWorker};
 use auth_audit::AuditService;
 
 use auth_api::AppState;
@@ -111,7 +112,15 @@ async fn main() -> Result<()> {
     let token_service: Arc<dyn auth_core::services::token_service::TokenProvider> = 
         Arc::new(auth_core::services::token_service::TokenEngine::new().await.expect("Failed to initialize TokenEngine"));
 
-    let audit_logger: Arc<dyn AuditLogger> = Arc::new(TracingAuditLogger);
+    // Initialize Async Audit
+    // We use TracingAuditLogger as the underlying persistent logger (or DbAuditLogger in real life)
+    let persistent_logger = Arc::new(TracingAuditLogger);
+    let (async_logger, audit_rx) = AsyncAuditLogger::new(1000);
+    let audit_logger: Arc<dyn AuditLogger> = Arc::new(async_logger);
+
+    // Spawn Audit Worker
+    let audit_worker = AuditWorker::new(audit_rx, persistent_logger);
+    tokio::spawn(audit_worker.run());
 
     // Initialize Identity Service
     let identity_service = Arc::new(auth_core::services::identity::IdentityService::new(

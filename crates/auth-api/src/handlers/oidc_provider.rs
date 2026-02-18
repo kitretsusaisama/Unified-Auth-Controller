@@ -206,6 +206,60 @@ pub async fn token(
                 "id_token": "mock_id_token_jwt" // Placeholder: Requires RSA signing which is complex to add here without auth-crypto helper
             })))
         },
+        "client_credentials" => {
+            // 1. Verify Client ID & Secret
+            // In a real implementation, look up client in DB and verify secret (bcrypt/argon2)
+            if payload.client_id.is_empty() || payload.client_secret.is_none() {
+                 return Err(ApiError::new(AuthError::ValidationError { message: "client_id and client_secret required".to_string() }));
+            }
+
+            // Mock verify: assume client_123 / secret_123 is valid
+            if payload.client_id != "client_123" || payload.client_secret.as_deref() != Some("secret_123") {
+                 return Err(ApiError::new(AuthError::InvalidCredentials));
+            }
+
+            // 2. Issue Tokens
+            let user_id = Uuid::new_v4(); // Service Account ID
+            let tenant_id = Uuid::new_v4();
+
+            // Create "Service User" struct on the fly or fetch
+            let user = auth_core::models::User {
+                id: user_id,
+                identifier_type: auth_core::models::user::IdentifierType::Email,
+                primary_identifier: auth_core::models::user::PrimaryIdentifier::Email,
+                email: Some(format!("service-account@{}", payload.client_id)),
+                email_verified: true,
+                phone: None,
+                phone_verified: false,
+                password_hash: None,
+                password_changed_at: None,
+                failed_login_attempts: 0,
+                locked_until: None,
+                last_login_at: None,
+                last_login_ip: None,
+                mfa_enabled: false,
+                mfa_secret: None,
+                backup_codes: None,
+                risk_score: 0.0,
+                profile_data: serde_json::json!({"type": "service_account"}),
+                preferences: serde_json::json!({}),
+                status: auth_core::models::user::UserStatus::Active,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+                deleted_at: None,
+                email_verified_at: None,
+                phone_verified_at: None,
+            };
+
+            let token_response = state.identity_service.issue_tokens_for_user(&user, tenant_id, Some(payload.client_id), None).await.map_err(ApiError::from)?;
+
+            Ok(Json(serde_json::json!({
+                "access_token": token_response.access_token,
+                "token_type": "Bearer",
+                "expires_in": 3600,
+                "refresh_token": token_response.refresh_token
+            })))
+        },
         "refresh_token" => {
             // TODO: Implement refresh logic using IdentityService
              Err(ApiError::new(AuthError::ValidationError { message: "grant_type not implemented".to_string() }))
