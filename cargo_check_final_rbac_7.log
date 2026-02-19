@@ -1,0 +1,144 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-db v0.1.0 (/app/crates/auth-db)
+    Checking auth-protocols v0.1.0 (/app/crates/auth-protocols)
+    Checking auth-extension v0.1.0 (/app/crates/auth-extension)
+    Checking auth-audit v0.1.0 (/app/crates/auth-audit)
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+  --> crates/auth-db/src/repositories/authorization/role_repository.rs:27:22
+   |
+27 |           let result = sqlx::query!(
+   |  ______________________^
+28 | |             r#"
+29 | |             INSERT INTO roles (
+30 | |                 id, tenant_id, organization_id, name, description,
+...  |
+46 | |             role.updated_at
+47 | |         )
+   | |_________^
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+  --> crates/auth-db/src/repositories/authorization/role_repository.rs:63:22
+   |
+63 |           let result = sqlx::query!(
+   |  ______________________^
+64 | |             "DELETE FROM roles WHERE id = ? AND tenant_id = ?",
+65 | |             id.to_string(),
+66 | |             tenant_id.to_string()
+67 | |         )
+   | |_________^
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+  --> crates/auth-db/src/repositories/authorization/role_repository.rs:84:19
+   |
+84 |           let rec = sqlx::query!(
+   |  ___________________^
+85 | |             r#"
+86 | |             SELECT id, tenant_id, organization_id, name, description,
+87 | |                    parent_role_id, is_system_role, scope, metadata, constraints,
+...  |
+93 | |             tenant_id.to_string()
+94 | |         )
+   | |_________^
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+   --> crates/auth-db/src/repositories/authorization/role_repository.rs:133:22
+    |
+133 |           let result = sqlx::query!(
+    |  ______________________^
+134 | |             "INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)",
+135 | |             role_id.to_string(),
+136 | |             permission_id.to_string()
+137 | |         )
+    | |_________^
+    |
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused import: `std::collections::HashMap`
+ --> crates/auth-db/src/repositories/authorization/role_repository.rs:7:5
+  |
+7 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0282]: type annotations needed for `Result<_, _>`
+  --> crates/auth-db/src/repositories/authorization/role_repository.rs:27:13
+   |
+27 |         let result = sqlx::query!(
+   |             ^^^^^^
+...
+53 |             Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+   |                                                               - type must be known at this point
+   |
+help: consider giving `result` an explicit type, where the placeholders `_` are specified
+   |
+27 |         let result: Result<T, E> = sqlx::query!(
+   |                   ++++++++++++++
+
+error[E0282]: type annotations needed for `Result<_, _>`
+  --> crates/auth-db/src/repositories/authorization/role_repository.rs:63:13
+   |
+63 |         let result = sqlx::query!(
+   |             ^^^^^^
+...
+73 |                 if res.rows_affected() == 0 {
+   |                    --- type must be known at this point
+   |
+help: consider giving `result` an explicit type, where the placeholders `_` are specified
+   |
+63 |         let result: Result<_, E> = sqlx::query!(
+   |                   ++++++++++++++
+
+error[E0282]: type annotations needed for `Result<{type error}, _>`
+  --> crates/auth-db/src/repositories/authorization/role_repository.rs:63:13
+   |
+63 |         let result = sqlx::query!(
+   |             ^^^^^^
+...
+79 |             Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+   |                                                               - type must be known at this point
+   |
+help: consider giving `result` an explicit type, where the placeholders `_` are specified
+   |
+63 |         let result: Result<_, E> = sqlx::query!(
+   |                   ++++++++++++++
+
+error[E0282]: type annotations needed for `Result<std::option::Option<{type error}>, _>`
+   --> crates/auth-db/src/repositories/authorization/role_repository.rs:84:13
+    |
+ 84 |         let rec = sqlx::query!(
+    |             ^^^
+...
+123 |             Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+    |                                                               - type must be known at this point
+    |
+help: consider giving `rec` an explicit type, where the placeholders `_` are specified
+    |
+ 84 |         let rec: Result<_, E> = sqlx::query!(
+    |                ++++++++++++++
+
+error[E0282]: type annotations needed for `Result<_, _>`
+   --> crates/auth-db/src/repositories/authorization/role_repository.rs:133:13
+    |
+133 |         let result = sqlx::query!(
+    |             ^^^^^^
+...
+143 |             Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+    |                                                               - type must be known at this point
+    |
+help: consider giving `result` an explicit type, where the placeholders `_` are specified
+    |
+133 |         let result: Result<T, E> = sqlx::query!(
+    |                   ++++++++++++++
+
+For more information about this error, try `rustc --explain E0282`.
+warning: `auth-db` (lib) generated 1 warning
+error: could not compile `auth-db` (lib) due to 9 previous errors; 1 warning emitted

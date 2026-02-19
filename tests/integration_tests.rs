@@ -9,7 +9,7 @@ use auth_cache::MultiLevelCache;
 use auth_core::services::{
     identity::IdentityService,
     session_service::SessionService,
-    role_service::RoleService,
+    authorization::AuthorizationService,
     subscription_service::SubscriptionService,
     otp_service::OtpService,
     otp_delivery::OtpDeliveryService,
@@ -135,6 +135,10 @@ impl TokenProvider for MockTokenService {
             scope: None,
         })
     }
+
+    async fn get_jwks(&self) -> serde_json::Value {
+        json!({ "keys": [] })
+    }
 }
 
 // Mock User Store
@@ -226,7 +230,11 @@ fn create_test_app_state() -> AppState {
         audit_logger.clone(),
     ));
 
-    // Create a dummy MySQL pool for the test
+    // Create a dummy MySQL pool for the test - this won't actually connect in unit tests usually, but State needs it
+    // In a real integration test, we would need a real DB or a mock DB.
+    // For this "integration" test which mostly mocks repositories, we just need a valid Pool struct.
+    // However, Repository::new(pool) might fail if it tries to prepare statements immediately (it usually doesn't).
+    // sqlx::MySqlPool::connect_lazy allows creating a pool without immediate connection.
     let pool: Pool<MySql> = sqlx::pool::PoolOptions::new()
         .max_connections(1)
         .connect_lazy("mysql://dummy:dummy@127.0.0.1:3306/dummy")
@@ -236,13 +244,14 @@ fn create_test_app_state() -> AppState {
     let role_repo = Arc::new(auth_db::repositories::RoleRepository::new(pool.clone()));
     let session_repo = Arc::new(auth_db::repositories::session_repository::SessionRepository::new(pool.clone()));
     let subscription_repo = Arc::new(auth_db::repositories::subscription_repository::SubscriptionRepository::new(pool.clone()));
-    let otp_repo = Arc::new(auth_db::repositories::OtpRepository::new(pool.clone()));
+    let otp_repo = Arc::new(auth_db::repositories::otp_repository::OtpRepository::new(pool.clone()));
 
     let session_service = Arc::new(SessionService::new(
         session_repo,
         Arc::new(auth_core::services::risk_assessment::RiskEngine::new())
     ));
-    let role_service = Arc::new(RoleService::new(role_repo));
+    // Updated to AuthorizationService
+    let role_service = Arc::new(AuthorizationService::new(role_repo));
     let subscription_service = Arc::new(SubscriptionService::new(subscription_repo));
     let otp_service = Arc::new(OtpService::new());
     let otp_delivery_service = Arc::new(OtpDeliveryService::new(
@@ -268,6 +277,9 @@ fn create_test_app_state() -> AppState {
         cache,
     }
 }
+
+// Helper for one-shot requests
+// ... (Already in tests)
 
 #[tokio::test]
 async fn test_registration_endpoint() {
@@ -295,7 +307,6 @@ async fn test_registration_endpoint() {
         .await
         .unwrap();
 
-    // With MockUserStore, creation succeeds
     assert_eq!(response.status(), StatusCode::CREATED);
 }
 
@@ -323,8 +334,6 @@ async fn test_login_endpoint() {
         .await
         .unwrap();
 
-    // MockUserStore returns a valid user, but password verification might fail if hash doesn't match "password"
-    // or argon2 parameters differ. We accept 401 as proof of reachable endpoint and validation logic.
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 

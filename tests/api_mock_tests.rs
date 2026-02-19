@@ -38,14 +38,14 @@ async fn create_test_app_state() -> AppState {
         .connect_lazy("mysql://dummy:dummy@127.0.0.1:3306/dummy")
         .expect("Could not create dummy pool for tests");
 
-    let audit_logger = Arc::new(auth_core::audit::TracingAuditLogger);
+    let audit_logger: Arc<dyn auth_core::audit::AuditLogger> = Arc::new(auth_core::audit::TracingAuditLogger);
 
     // We use real implementations with dummy DB.
     // TokenEngine::new() creates in-memory stores.
     let token_service = Arc::new(TokenEngine::new().await.unwrap());
 
     let identity_service = Arc::new(IdentityService::new(
-        Arc::new(auth_db::repositories::UserRepository::new(pool.clone())),
+        Arc::new(auth_db::repositories::user_repository::UserRepository::new(pool.clone())),
         token_service,
         audit_logger.clone()
     ));
@@ -57,7 +57,8 @@ async fn create_test_app_state() -> AppState {
             Arc::new(auth_db::repositories::session_repository::SessionRepository::new(pool.clone())),
             Arc::new(auth_core::services::risk_assessment::RiskEngine::new())
         )),
-        role_service: Arc::new(auth_core::services::role_service::RoleService::new(
+        // Updated to AuthorizationService
+        role_service: Arc::new(auth_core::services::authorization::AuthorizationService::new(
             Arc::new(auth_db::repositories::RoleRepository::new(pool.clone()))
         )),
         subscription_service: Arc::new(auth_core::services::subscription_service::SubscriptionService::new(
@@ -72,7 +73,7 @@ async fn create_test_app_state() -> AppState {
             identity_service
         )),
         rate_limiter: Arc::new(auth_core::services::rate_limiter::RateLimiter::new()),
-        otp_repository: Arc::new(auth_db::repositories::OtpRepository::new(pool.clone())),
+        otp_repository: Arc::new(auth_db::repositories::otp_repository::OtpRepository::new(pool.clone())),
         audit_logger,
         cache: Arc::new(MultiLevelCache::new(None).unwrap()),
     }

@@ -34,6 +34,7 @@ pub trait TokenProvider: Send + Sync {
     async fn revoke_token(&self, token_id: Uuid, user_id: Uuid, tenant_id: Uuid) -> Result<(), AuthError>;
     async fn refresh_tokens(&self, refresh_token: &str) -> Result<TokenPair, AuthError>;
     async fn introspect_token(&self, token: &str) -> Result<TokenIntrospectionResponse, AuthError>;
+    async fn get_jwks(&self) -> serde_json::Value;
 }
 
 #[derive(Debug, Clone)]
@@ -381,5 +382,9 @@ impl TokenProvider for TokenEngine {
             iss: Some(claims.iss),
             jti: Some(claims.jti),
         })
+    }
+
+    async fn get_jwks(&self) -> serde_json::Value {
+        self.jwt_service.get_jwk_set()
     }
 }

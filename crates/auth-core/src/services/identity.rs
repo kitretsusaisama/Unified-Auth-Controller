@@ -305,4 +305,9 @@ impl IdentityService {
 
         Ok(true)
     }
+
+    /// Get JWK Set for OIDC discovery
+    pub async fn get_jwks(&self) -> serde_json::Value {
+        self.token_service.get_jwks().await
+    }
 }
