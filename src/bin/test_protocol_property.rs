@@ -1,6 +1,14 @@
 use proptest::prelude::*;
+#[allow(unused_imports)]
 use auth_protocols::oidc::OidcConfig;
+#[allow(unused_imports)]
 use auth_protocols::OidcService;
+
+#[allow(unused_imports)]
+fn main() {
+    println!("Running Protocol Property Tests...");
+    println!("Please run: cargo test --bin test_protocol_property");
+}
 
 proptest! {
     #[test]
@@ -34,7 +42,3 @@ proptest! {
     }
 }
 
-fn main() {
-    println!("Running Protocol Property Tests...");
-    println!("Please run: cargo test --bin test_protocol_property");
-}

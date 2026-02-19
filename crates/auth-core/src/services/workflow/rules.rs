@@ -5,6 +5,7 @@ pub trait Rule: Send + Sync {
     fn evaluate(&self, ctx: &FlowContext) -> Result<bool, AuthError>;
 }
 
+#[derive(Default)]
 pub struct RuleEngine {
     rules: Vec<Box<dyn Rule>>,
 }

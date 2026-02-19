@@ -34,7 +34,7 @@ pub enum TokenType {
 }
 
 impl TokenType {
-    fn to_str(&self) -> &'static str {
+    fn as_str(&self) -> &'static str {
         match self {
             TokenType::Access => "access",
             TokenType::Refresh => "refresh",
@@ -59,6 +59,7 @@ impl RevokedTokenRepository {
     }
 
     /// Add a token to the revocation blacklist
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_revoked_token(
         &self,
        token_jti: Uuid,
@@ -89,7 +90,7 @@ impl RevokedTokenRepository {
         .bind(token_jti.to_string())
         .bind(user_id.to_string())
         .bind(tenant_id.to_string())
-        .bind(token_type.to_str())
+        .bind(token_type.as_str())
         .bind(now)
         .bind(revoked_by.map(|id| id.to_string()))
         .bind(&revoked_reason)

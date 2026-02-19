@@ -46,6 +46,7 @@ impl RefreshTokenRepository {
     }
 
     /// Create a new refresh token in the database
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         user_id: Uuid,

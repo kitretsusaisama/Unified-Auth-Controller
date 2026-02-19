@@ -24,7 +24,7 @@ impl RoleService {
 
     pub async fn create_role(&self, tenant_id: Uuid, req: CreateRoleRequest) -> Result<Role, AuthError> {
         // Check if role name exists in tenant
-        if let Some(_) = self.store.find_by_name(tenant_id, &req.name).await? {
+        if self.store.find_by_name(tenant_id, &req.name).await?.is_some() {
              return Err(AuthError::ValidationError { message: "Role with this name already exists".to_string() });
         }
 

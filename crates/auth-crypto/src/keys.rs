@@ -20,7 +20,9 @@ pub enum KeyError {
 
 #[derive(Clone)]
 pub struct KeyManager {
+    #[allow(dead_code)]
     encoding_key: Arc<RwLock<EncodingKey>>,
+    #[allow(dead_code)]
     decoding_key: Arc<RwLock<DecodingKey>>,
     // Store PEMs for reconstruction if needed, or simply for JWK generation
     private_key_pem: String,

@@ -168,6 +168,7 @@ impl OtpService {
     
     /// Create new OTP session
     /// If `explicit_token` is provided, it is used. Otherwise, one is generated.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_session(
         &self,
         tenant_id: Uuid,

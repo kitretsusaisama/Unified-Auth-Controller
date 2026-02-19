@@ -51,6 +51,7 @@ pub trait StepHandler: Send + Sync {
     async fn validate(&self, ctx: &FlowContext) -> Result<(), AuthError>;
 }
 
+#[derive(Default)]
 pub struct WorkflowEngine {
     handlers: HashMap<FlowState, Box<dyn StepHandler>>,
 }
