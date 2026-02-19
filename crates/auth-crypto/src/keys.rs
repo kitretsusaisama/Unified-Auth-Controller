@@ -4,9 +4,9 @@ use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use rsa::{RsaPublicKey, traits::PublicKeyParts};
-use rsa::pkcs1::DecodeRsaPublicKey;
+use rsa::{RsaPrivateKey, RsaPublicKey, traits::PublicKeyParts, pkcs1::EncodeRsaPublicKey, pkcs1::EncodeRsaPrivateKey, pkcs1::DecodeRsaPublicKey};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use rand::thread_rng;
 
 #[derive(Debug, Error)]
 pub enum KeyError {
@@ -22,6 +22,9 @@ pub enum KeyError {
 pub struct KeyManager {
     encoding_key: Arc<RwLock<EncodingKey>>,
     decoding_key: Arc<RwLock<DecodingKey>>,
+    // Store PEMs for reconstruction if needed, or simply for JWK generation
+    private_key_pem: String,
+    public_key_pem: String,
 }
 
 impl KeyManager {
@@ -31,21 +34,30 @@ impl KeyManager {
         Self::new_for_testing().await
     }
 
-    /// Create a KeyManager for testing with fixed keys
+    /// Create a KeyManager for testing with dynamically generated keys
     pub async fn new_for_testing() -> Result<Self, KeyError> {
-        // Use a fixed RSA key pair for testing
-        let private_key_pem = include_str!("../test_keys/private_key.pem");
-        let public_key_pem = include_str!("../test_keys/public_key.pem");
-        
-        let encoding_key = EncodingKey::from_rsa_pem(private_key_pem.as_bytes())
+        let mut rng = thread_rng();
+        let bits = 2048;
+        let private_key = RsaPrivateKey::new(&mut rng, bits)
+            .map_err(|e| KeyError::GenerationError(e.to_string()))?;
+        let public_key = RsaPublicKey::from(&private_key);
+
+        let private_pem = private_key.to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
+            .map_err(|e| KeyError::GenerationError(e.to_string()))?;
+        let public_pem = public_key.to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
+            .map_err(|e| KeyError::GenerationError(e.to_string()))?;
+
+        let encoding_key = EncodingKey::from_rsa_pem(private_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
         
-        let decoding_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
+        let decoding_key = DecodingKey::from_rsa_pem(public_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
 
         Ok(Self {
             encoding_key: Arc::new(RwLock::new(encoding_key)),
             decoding_key: Arc::new(RwLock::new(decoding_key)),
+            private_key_pem: private_pem.to_string(),
+            public_key_pem: public_pem.to_string(),
         })
     }
 
@@ -66,26 +78,24 @@ impl KeyManager {
         Ok(Self {
             encoding_key: Arc::new(RwLock::new(encoding_key)),
             decoding_key: Arc::new(RwLock::new(decoding_key)),
+            private_key_pem,
+            public_key_pem,
         })
     }
 
     /// Get the encoding key for JWT signing
     pub async fn get_encoding_key(&self) -> Result<EncodingKey, KeyError> {
-        let _key = self.encoding_key.read().await;
-        // We need to clone the actual key data, not just the reference
-        // For now, we'll recreate from the same source
-        let private_key_pem = include_str!("../test_keys/private_key.pem");
-        EncodingKey::from_rsa_pem(private_key_pem.as_bytes())
+        // We recreate from the stored PEM because EncodingKey is not easily clonable directly
+        // without internal access, and existing implementation suggested this pattern.
+        // Or we could return a clone of the key if we change the struct or if EncodingKey supported it.
+        // But since we store the PEM now, we can just use it.
+        EncodingKey::from_rsa_pem(self.private_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))
     }
 
     /// Get the decoding key for JWT verification
     pub async fn get_decoding_key(&self) -> Result<DecodingKey, KeyError> {
-        let _key = self.decoding_key.read().await;
-        // We need to clone the actual key data, not just the reference
-        // For now, we'll recreate from the same source
-        let public_key_pem = include_str!("../test_keys/public_key.pem");
-        DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
+        DecodingKey::from_rsa_pem(self.public_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))
     }
 
@@ -102,9 +112,7 @@ impl KeyManager {
     /// Get the JWK Set (public keys)
     pub fn get_jwk_set(&self) -> serde_json::Value {
         // Parse public key PEM
-        let public_key_pem = include_str!("../test_keys/public_key.pem");
-        // We assume valid PEM for now since it's hardcoded
-        let pub_key = RsaPublicKey::from_pkcs1_pem(public_key_pem).expect("Invalid Public Key PEM");
+        let pub_key = RsaPublicKey::from_pkcs1_pem(&self.public_key_pem).expect("Invalid Public Key PEM");
 
         let n = URL_SAFE_NO_PAD.encode(pub_key.n().to_bytes_be());
         let e = URL_SAFE_NO_PAD.encode(pub_key.e().to_bytes_be());
