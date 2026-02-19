@@ -17,23 +17,6 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-export class SessionStorageAdapter implements StorageAdapter {
-  getItem(key: string): string | null {
-    if (typeof window === 'undefined') return null;
-    return sessionStorage.getItem(key);
-  }
-
-  setItem(key: string, value: string): void {
-    if (typeof window === 'undefined') return;
-    sessionStorage.setItem(key, value);
-  }
-
-  removeItem(key: string): void {
-    if (typeof window === 'undefined') return;
-    sessionStorage.removeItem(key);
-  }
-}
-
 export class MemoryStorageAdapter implements StorageAdapter {
   private store: Map<string, string> = new Map();
 
@@ -50,39 +33,23 @@ export class MemoryStorageAdapter implements StorageAdapter {
   }
 }
 
-export class StorageManager {
-  private adapter: StorageAdapter;
-  private prefix: string = 'auth_core:';
+export class CookieStorageAdapter implements StorageAdapter {
+  // Basic implementation - in real environment might delegate to framework specific cookie helpers
+  // or use `document.cookie` in browser.
 
-  constructor(adapter?: StorageAdapter) {
-    this.adapter = adapter || (typeof window !== 'undefined' ? new LocalStorageAdapter() : new MemoryStorageAdapter());
+  getItem(key: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
+    return match ? match[2] : null;
   }
 
-  async get<T>(key: string): Promise<T | null> {
-    const raw = await this.adapter.getItem(this.prefix + key);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return null;
-    }
+  setItem(key: string, value: string): void {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${key}=${value}; path=/; secure; samesite=strict`;
   }
 
-  async set<T>(key: string, value: T): Promise<void> {
-    const raw = JSON.stringify(value);
-    await this.adapter.setItem(this.prefix + key, raw);
-  }
-
-  async remove(key: string): Promise<void> {
-    await this.adapter.removeItem(this.prefix + key);
-  }
-
-  async clear(): Promise<void> {
-    // Note: Most adapters don't support clear by prefix easily without scanning keys.
-    // For now we assume clearing specific keys manually or implementing a clear method if critical.
-    // We'll add common keys here:
-    await this.remove('tokens');
-    await this.remove('user');
-    await this.remove('flow_id');
+  removeItem(key: string): void {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
   }
 }

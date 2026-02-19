@@ -1,67 +1,58 @@
-import { StorageManager } from '../storage';
-import { HttpClient } from '../http/client';
-import { EventBus } from '../events/bus';
-import { TokenManager } from '../token/lifecycle';
-import { SessionManager } from '../session/manager';
-import { AuthService } from '../auth/service';
-import { AuthConfig } from '../types';
+import { AuthConfig, ClientMode, StorageAdapter } from '../types';
+import { TokenManager } from './token';
+import { LocalStorageAdapter, MemoryStorageAdapter, CookieStorageAdapter } from '../storage';
 
-export class AuthClient {
-  private httpClient: HttpClient;
-  private storageManager: StorageManager;
-  private tokenManager: TokenManager;
-  private sessionManager: SessionManager;
-  private authService: AuthService;
-  private eventBus: EventBus;
+export abstract class CoreClient {
+  protected config: AuthConfig;
+  protected tokenManager: TokenManager;
+  protected mode: ClientMode;
 
-  constructor(config: AuthConfig) {
-    this.storageManager = new StorageManager(config.storage);
-    this.tokenManager = new TokenManager(this.storageManager);
+  constructor(config: AuthConfig, mode: ClientMode) {
+    this.config = config;
+    this.mode = mode;
 
-    // Setup HTTP Client with token provider
-    this.httpClient = new HttpClient(config.baseUrl, async () => {
-      // Refresh token if needed
-      if (this.tokenManager.isAccessTokenExpired()) {
-        try {
-          await this.authService.refreshToken();
-        } catch {
-          return null;
-        }
+    // Auto-select storage if not provided
+    const storage = config.storage || this.getDefaultStorage(mode);
+    this.tokenManager = new TokenManager(storage);
+  }
+
+  private getDefaultStorage(mode: ClientMode): StorageAdapter {
+    if (typeof window !== 'undefined') {
+        // Browser environment
+        return new LocalStorageAdapter();
+    } else {
+        // Server environment
+        return new MemoryStorageAdapter(); // Or default to None if state is ephemeral per request
+    }
+  }
+
+  abstract login(options?: any): Promise<void>;
+  abstract logout(options?: any): Promise<void>;
+
+  async getAccessToken(): Promise<string | null> {
+    // Check expiry and refresh if needed
+    if (this.tokenManager.isAccessTokenExpired()) {
+        await this.refreshToken();
+    }
+    return this.tokenManager.getAccessToken();
+  }
+
+  async refreshToken(): Promise<void> {
+      // Base implementation, might be overridden or use shared logic
+      const existingPromise = this.tokenManager.getExistingRefreshPromise();
+      if (existingPromise) {
+          await existingPromise;
+          return;
       }
-      return this.tokenManager.getAccessToken();
-    });
 
-    this.sessionManager = new SessionManager(this.storageManager, this.tokenManager);
-    this.eventBus = new EventBus();
+      const refreshLogic = async () => {
+          // Actual refresh logic (HTTP call)
+          // This should be implemented by subclasses or a shared HTTP helper
+          // For now returning null to satisfy types in abstract base
+          return null;
+      };
 
-    this.authService = new AuthService(
-      config,
-      this.httpClient,
-      this.sessionManager,
-      this.tokenManager,
-      this.eventBus
-    );
-  }
-
-  // Facade Methods
-
-  async init(): Promise<void> {
-    await this.sessionManager.initialize();
-  }
-
-  get auth() {
-    return this.authService;
-  }
-
-  get session() {
-    return this.sessionManager;
-  }
-
-  get events() {
-    return this.eventBus;
-  }
-
-  get http() {
-    return this.httpClient;
+      this.tokenManager.setRefreshPromise(refreshLogic());
+      await this.tokenManager.getExistingRefreshPromise();
   }
 }

@@ -1,89 +1,81 @@
-# @auth-core/sdk
+# @upflame/sso
 
-A Universal Microsoft-Level TypeScript SDK for the Auth Core platform.
+Production-ready Identity SDK for the Upflame Platform. Fully compatible with Browser, Server (Node.js), Next.js, and Edge environments.
 
 ## Features
 
-- **Universal Auth Flow**: Handle any authentication method (Password, Passkey, Magic Link, OIDC) through a unified API.
-- **Framework Agnostic**: Core logic is pure TypeScript.
-- **React Integration**: `AuthProvider` and `useAuth` hook included.
-- **Next.js Integration**: Server-side helpers and cookie storage adapter.
-- **Token Management**: Automatic token refresh, storage, and expiration handling.
-- **Type Safety**: Fully typed with TypeScript.
+- **Universal Auth**: Supports Browser (PKCE), Server (Confidential), and Service (Client Credentials) flows.
+- **Environment Agnostic**: Automatically detects environment and selects optimal storage/flow.
+- **Framework Integration**: Built-in helpers for Next.js (App Router, Middleware) and React.
+- **Advanced Lifecycle**: Automatic token refresh, refresh locking, and session management.
+- **Type Safety**: Full TypeScript support.
 
 ## Installation
 
 ```bash
-npm install @auth-core/sdk
+npm install @upflame/sso
 ```
 
-## Basic Usage
+## Usage
+
+### Browser (React/SPA)
 
 ```typescript
-import { AuthClient } from '@auth-core/sdk';
+import { AuthClient, AuthProvider, useAuth } from '@upflame/sso';
 
-const client = new AuthClient({
+// 1. Initialize Client
+const authClient = AuthClient.createBrowserClient({
   baseUrl: 'https://auth.example.com',
   clientId: 'your-client-id',
-  redirectUri: 'https://app.example.com/callback',
+  redirectUri: window.location.origin + '/callback',
 });
 
-// Initialize session
-await client.init();
-
-// Check if logged in
-if (client.session.isAuthenticated()) {
-  console.log('User:', client.session.getUser());
-} else {
-  // Start login flow
-  const flow = await client.auth.startLoginFlow();
-  console.log('Next step:', flow.step);
-}
-```
-
-## React Usage
-
-Wrap your app with `AuthProvider`:
-
-```tsx
-import { AuthClient } from '@auth-core/sdk';
-import { AuthProvider } from '@auth-core/sdk/dist/framework/react';
-
-const client = new AuthClient({ ... });
-
+// 2. Wrap App
 function App() {
   return (
-    <AuthProvider client={client}>
+    <AuthProvider client={authClient}>
       <Main />
     </AuthProvider>
   );
 }
-```
 
-Use the hook:
-
-```tsx
-import { useAuth } from '@auth-core/sdk/dist/framework/react';
-
+// 3. Use Hook
 function Main() {
   const { user, login, logout } = useAuth();
-
   if (!user) return <button onClick={() => login()}>Login</button>;
-  return <button onClick={logout}>Logout {user.email}</button>;
+  return <div>Welcome {user.email} <button onClick={logout}>Logout</button></div>;
 }
 ```
 
-## Next.js (App Router)
+### Server (Node.js)
 
-In `layout.tsx` or Server Component:
+```typescript
+import { AuthClient } from '@upflame/sso';
 
-```tsx
-import { cookies } from 'next/headers';
-import { createServerClient } from '@auth-core/sdk/dist/framework/nextjs';
+const client = AuthClient.createServerClient({
+  baseUrl: process.env.AUTH_URL,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET, // Required for server
+});
 
-export default async function Layout({ children }) {
-  const cookieStore = await cookies();
-  const client = createServerClient({ ... }, cookieStore);
-  // ...
-}
+// Exchange code from callback
+await client.exchangeCode(code, redirectUri);
 ```
+
+### Next.js (App Router)
+
+```typescript
+// app/auth.ts
+import { AuthClient } from '@upflame/sso';
+
+export const auth = AuthClient.autoDetect({
+  baseUrl: process.env.AUTH_URL,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+});
+```
+
+## Security
+
+- **Browser**: Uses Authorization Code Flow with PKCE. Tokens stored in secure storage (defaults to LocalStorage, configurable to Cookie/Memory).
+- **Server**: Uses Confidential Client flow. `clientSecret` never exposed to browser.
