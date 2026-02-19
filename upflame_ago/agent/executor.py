@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional
 import subprocess
 import sys
 import io
+import shlex
+import os
 
 class ToolExecutor:
     def __init__(self):
@@ -22,10 +24,15 @@ class ToolExecutor:
             return {"status": "error", "message": str(e)}
 
     def execute_python(self, params: Dict[str, Any]) -> str:
+        # sourcery skip: no-exec
+        if os.getenv("ALLOW_UNSAFE_EXECUTION", "false").lower() != "true":
+            return "Error: Python execution is disabled. Set ALLOW_UNSAFE_EXECUTION=true to enable."
+
         code = params.get("code", "")
         buffer = io.StringIO()
         sys.stdout = buffer
         try:
+            # WARNING: This is unsafe! Only run in sandboxed environments.
             exec(code, {"__name__": "__main__"})
             output = buffer.getvalue()
         except Exception as e:
@@ -35,9 +42,14 @@ class ToolExecutor:
         return output
 
     def execute_shell(self, params: Dict[str, Any]) -> str:
+        if os.getenv("ALLOW_UNSAFE_EXECUTION", "false").lower() != "true":
+            return "Error: Shell execution is disabled. Set ALLOW_UNSAFE_EXECUTION=true to enable."
+
         command = params.get("command", "")
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10)
+            # Use shlex to split command and shell=False for security
+            args = shlex.split(command)
+            result = subprocess.run(args, shell=False, capture_output=True, text=True, timeout=10)
             return result.stdout + result.stderr
         except Exception as e:
             return str(e)
