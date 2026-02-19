@@ -1,9 +1,9 @@
 from typing import Dict, Any, Optional
 import subprocess
 import sys
-import io
 import shlex
 import os
+import tempfile
 
 class ToolExecutor:
     def __init__(self):
@@ -24,21 +24,35 @@ class ToolExecutor:
             return {"status": "error", "message": str(e)}
 
     def execute_python(self, params: Dict[str, Any]) -> str:
-        # sourcery skip: no-exec
         if os.getenv("ALLOW_UNSAFE_EXECUTION", "false").lower() != "true":
             return "Error: Python execution is disabled. Set ALLOW_UNSAFE_EXECUTION=true to enable."
 
         code = params.get("code", "")
-        buffer = io.StringIO()
-        sys.stdout = buffer
+
+        # Use a temporary file to execute code in a separate process
+        # This avoids using `exec()` directly in the main process
         try:
-            # WARNING: This is unsafe! Only run in sandboxed environments.
-            exec(code, {"__name__": "__main__"})
-            output = buffer.getvalue()
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+                temp_file.write(code)
+                temp_file_path = temp_file.name
+
+            # Run the python script
+            result = subprocess.run(
+                [sys.executable, temp_file_path],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False
+            )
+            output = result.stdout + result.stderr
+
         except Exception as e:
             output = str(e)
         finally:
-            sys.stdout = sys.__stdout__
+            # Clean up
+            if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+
         return output
 
     def execute_shell(self, params: Dict[str, Any]) -> str:
