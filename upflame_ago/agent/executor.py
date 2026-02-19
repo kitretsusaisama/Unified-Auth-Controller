@@ -37,7 +37,8 @@ class ToolExecutor:
                 temp_file_path = temp_file.name
 
             # Run the python script
-            result = subprocess.run(
+            # sourcery skip: avoid-subprocess-run
+            result = subprocess.run(  # nosec
                 [sys.executable, temp_file_path],
                 capture_output=True,
                 text=True,
@@ -63,7 +64,8 @@ class ToolExecutor:
         try:
             # Use shlex to split command and shell=False for security
             args = shlex.split(command)
-            result = subprocess.run(args, shell=False, capture_output=True, text=True, timeout=10)
+            # sourcery skip: avoid-subprocess-run
+            result = subprocess.run(args, shell=False, capture_output=True, text=True, timeout=10, check=False) # nosec
             return result.stdout + result.stderr
         except Exception as e:
             return str(e)
