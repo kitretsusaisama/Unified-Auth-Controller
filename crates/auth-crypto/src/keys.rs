@@ -4,6 +4,9 @@ use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
+use rsa::{RsaPublicKey, traits::PublicKeyParts};
+use rsa::pkcs1::DecodeRsaPublicKey;
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 
 #[derive(Debug, Error)]
 pub enum KeyError {
@@ -94,6 +97,28 @@ impl KeyManager {
         // 3. Notify all services of the key rotation
         tracing::warn!("Key rotation not yet implemented - using fixed test keys");
         Ok(())
+    }
+
+    /// Get the JWK Set (public keys)
+    pub fn get_jwk_set(&self) -> serde_json::Value {
+        // Parse public key PEM
+        let public_key_pem = include_str!("../test_keys/public_key.pem");
+        // We assume valid PEM for now since it's hardcoded
+        let pub_key = RsaPublicKey::from_pkcs1_pem(public_key_pem).expect("Invalid Public Key PEM");
+
+        let n = URL_SAFE_NO_PAD.encode(pub_key.n().to_bytes_be());
+        let e = URL_SAFE_NO_PAD.encode(pub_key.e().to_bytes_be());
+
+        serde_json::json!({
+            "keys": [{
+                "kty": "RSA",
+                "use": "sig",
+                "kid": "auth-core-key-1",
+                "alg": "RS256",
+                "n": n,
+                "e": e
+            }]
+        })
     }
 }
 

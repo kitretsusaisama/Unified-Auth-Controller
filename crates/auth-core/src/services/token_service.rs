@@ -191,6 +191,11 @@ impl TokenEngine {
     /// Clean up expired tokens (No-op in trait-based implementation as DB handles it)
     #[allow(dead_code)]
     async fn cleanup_expired_tokens(&self) {}
+
+    /// Get JWK Set for OIDC
+    pub fn get_jwks(&self) -> serde_json::Value {
+        self.jwt_service.get_jwk_set()
+    }
 }
 
 #[async_trait::async_trait]

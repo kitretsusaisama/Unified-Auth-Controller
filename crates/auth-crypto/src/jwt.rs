@@ -146,6 +146,11 @@ impl JwtService {
     pub fn get_token_expiration(&self, claims: &JwtClaims) -> DateTime<Utc> {
         DateTime::from_timestamp(claims.exp, 0).unwrap_or_else(Utc::now)
     }
+
+    /// Get public keys as JWK Set
+    pub fn get_jwk_set(&self) -> serde_json::Value {
+        self.key_manager.get_jwk_set()
+    }
 }
 
 #[cfg(test)]

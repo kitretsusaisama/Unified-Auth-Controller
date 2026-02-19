@@ -9,9 +9,9 @@ use crate::AppState;
 /// GET /auth/certs
 /// Returns JWKS public keys
 pub async fn jwks(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    // Stub implementation returning 501 Not Implemented
-    // In a future phase, this will retrieve keys from the TokenProvider
-    Err::<Json<()>, StatusCode>(StatusCode::NOT_IMPLEMENTED)
+    // Retrieve JWKS from the token engine (backed by KeyManager)
+    let jwks = state.token_engine.get_jwks();
+    Ok(Json(jwks))
 }
