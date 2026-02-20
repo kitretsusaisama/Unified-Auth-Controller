@@ -14,8 +14,7 @@ pub struct UserTenant {
     pub last_accessed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum UserTenantStatus {
     Active,
     Suspended,
@@ -42,4 +41,3 @@ pub struct UserRole {
     pub revoked_at: Option<DateTime<Utc>>,
     pub revoked_by: Option<Uuid>,
 }
-

@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use std::collections::HashMap;
 use crate::error::AuthError;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum FlowState {
@@ -47,7 +47,11 @@ pub struct FlowResult {
 
 #[async_trait]
 pub trait StepHandler: Send + Sync {
-    async fn handle(&self, ctx: &mut FlowContext, action: FlowAction) -> Result<FlowState, AuthError>;
+    async fn handle(
+        &self,
+        ctx: &mut FlowContext,
+        action: FlowAction,
+    ) -> Result<FlowState, AuthError>;
     async fn validate(&self, ctx: &FlowContext) -> Result<(), AuthError>;
 }
 
@@ -67,11 +71,17 @@ impl WorkflowEngine {
         self.handlers.insert(state, handler);
     }
 
-    pub async fn process(&self, mut ctx: FlowContext, action: FlowAction) -> Result<(FlowContext, FlowResult), AuthError> {
+    pub async fn process(
+        &self,
+        mut ctx: FlowContext,
+        action: FlowAction,
+    ) -> Result<(FlowContext, FlowResult), AuthError> {
         // 1. Validate version (Optimistic Lock check would happen at persistence layer, but we can check logic here)
 
         // 2. Get Handler for current state
-        let handler = self.handlers.get(&ctx.current_state)
+        let handler = self
+            .handlers
+            .get(&ctx.current_state)
             .ok_or(AuthError::InternalError)?; // "No handler for state"
 
         // 3. Execute Handler
@@ -85,11 +95,14 @@ impl WorkflowEngine {
         // 5. Determine UI Hints based on new state
         let hints = self.get_ui_hints(&next_state);
 
-        Ok((ctx, FlowResult {
-            next_state,
-            ui_hints: Some(hints),
-            error: None,
-        }))
+        Ok((
+            ctx,
+            FlowResult {
+                next_state,
+                ui_hints: Some(hints),
+                error: None,
+            },
+        ))
     }
 
     fn get_ui_hints(&self, state: &FlowState) -> HashMap<String, serde_json::Value> {
@@ -98,13 +111,13 @@ impl WorkflowEngine {
             FlowState::Identify => {
                 hints.insert("view".to_string(), "login_identifier".into());
                 hints.insert("fields".to_string(), serde_json::json!(["email", "phone"]));
-            },
+            }
             FlowState::Authenticate => {
                 hints.insert("view".to_string(), "login_password".into());
-            },
+            }
             FlowState::MfaRequired => {
                 hints.insert("view".to_string(), "mfa_challenge".into());
-            },
+            }
             _ => {}
         }
         hints

@@ -1,10 +1,10 @@
+use auth_core::models::CreateRoleRequest;
 use auth_core::services::authorization::AuthorizationService;
 use auth_db::repositories::authorization::role_repository::RoleRepository;
-use auth_core::models::CreateRoleRequest;
+use dotenvy::dotenv;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::sync::Arc;
-use dotenvy::dotenv;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -35,7 +35,7 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     // Setup Test Data
     let org_id = Uuid::new_v4();
     let tenant_id = Uuid::new_v4();
-    
+
     println!("Setting up test organization and tenant...");
     sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
         .bind(org_id.to_string())
@@ -76,17 +76,17 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
 
     let child_role = role_service.create_role(tenant_id, req_child).await?;
     println!("   > Success! Child Role ID: {}", child_role.id);
-    
+
     // Test 3: Verify Persistence
     // We can use direct SQL to verify or add finding to service.
     // implementation_plan says we should have retrieval methods in service.
     // But RoleService currently only has create_role and new.
     // I should add find method to service or just use repo directly if I expose it (repo is private in service struct).
-    
+
     // I defined `find_by_id` in `RoleStore`. `RoleService` doesn't expose it yet.
     // I'll update `test_rbac` to use `RoleService` effectively. But `RoleService` needs `get_role` method.
     // For now, checking success of creation is good step.
-    
+
     println!("RBAC Integration Test Complete!");
     Ok(())
 }

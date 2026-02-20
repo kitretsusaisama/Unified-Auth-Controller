@@ -2,17 +2,17 @@
 //!
 //! Exposes Just-in-Time (JIT) account creation functionality.
 
-use axum::{
-    extract::{Json, State},
-    response::IntoResponse,
-    http::StatusCode,
-};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use std::sync::Arc;
 use crate::error::ApiError;
 use auth_core::models::user::IdentifierType;
 use auth_core::services::lazy_registration::LazyRegistrationService;
+use axum::{
+    extract::{Json, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct LazyRegisterRequest {
@@ -33,11 +33,16 @@ pub async fn lazy_register(
     State(lazy_reg_service): State<Arc<LazyRegistrationService>>,
     Json(payload): Json<LazyRegisterRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-
     let identifier_type = match payload.identifier_type.as_str() {
         "email" => IdentifierType::Email,
         "phone" => IdentifierType::Phone,
-        _ => return Err(ApiError::new(auth_core::error::AuthError::ValidationError { message: "Invalid identifier type".to_string() })),
+        _ => {
+            return Err(ApiError::new(
+                auth_core::error::AuthError::ValidationError {
+                    message: "Invalid identifier type".to_string(),
+                },
+            ))
+        }
     };
 
     let (user, is_new) = lazy_reg_service
@@ -51,6 +56,6 @@ pub async fn lazy_register(
             user_id: user.id,
             is_new,
             status: user.status.to_string(),
-        })
+        }),
     ))
 }

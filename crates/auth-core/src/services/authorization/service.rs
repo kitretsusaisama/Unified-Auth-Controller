@@ -1,8 +1,8 @@
-use uuid::Uuid;
-use std::sync::Arc;
 use crate::error::AuthError;
-use crate::models::{Role, CreateRoleRequest};
+use crate::models::{CreateRoleRequest, Role};
 use async_trait::async_trait;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[async_trait]
 pub trait RoleStore: Send + Sync {
@@ -23,7 +23,11 @@ impl AuthorizationService {
         Self { role_store }
     }
 
-    pub async fn create_role(&self, tenant_id: Uuid, request: CreateRoleRequest) -> Result<Role, AuthError> {
+    pub async fn create_role(
+        &self,
+        tenant_id: Uuid,
+        request: CreateRoleRequest,
+    ) -> Result<Role, AuthError> {
         // Validate scope
 
         let role = Role {

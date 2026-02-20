@@ -1,8 +1,8 @@
-use proptest::prelude::*;
 #[allow(unused_imports)]
 use auth_protocols::oidc::OidcConfig;
 #[allow(unused_imports)]
 use auth_protocols::OidcService;
+use proptest::prelude::*;
 
 #[allow(unused_imports)]
 fn main() {
@@ -31,7 +31,7 @@ proptest! {
         ).unwrap();
 
         let (url, _, _) = service.get_authorization_url();
-        
+
         assert!(url.contains(&client_id));
         assert!(url.contains("scope=openid"));
         // Basic URL encoding check - usually library handles this, we verify it happened
@@ -41,4 +41,3 @@ proptest! {
         assert!(url.contains(&redirect_uri.replace("/", "%2F").replace(":", "%3A")));
     }
 }
-

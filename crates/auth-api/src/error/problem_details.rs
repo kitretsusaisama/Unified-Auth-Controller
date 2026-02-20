@@ -1,11 +1,11 @@
 //! RFC 7807 Problem Details for HTTP APIs
 
-use serde::{Serialize, Deserialize};
 use axum::{
-    response::{IntoResponse, Response},
     http::StatusCode,
+    response::{IntoResponse, Response},
     Json,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -50,7 +50,11 @@ impl ProblemDetails {
         self
     }
 
-    pub fn with_extension(mut self, key: impl Into<String>, value: impl Into<serde_json::Value>) -> Self {
+    pub fn with_extension(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<serde_json::Value>,
+    ) -> Self {
         self.extensions.insert(key.into(), value.into());
         self
     }
@@ -64,7 +68,8 @@ impl IntoResponse for ProblemDetails {
         (
             status,
             [("content-type", "application/problem+json")],
-            Json(self)
-        ).into_response()
+            Json(self),
+        )
+            .into_response()
     }
 }

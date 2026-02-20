@@ -1,10 +1,10 @@
 use auth_core::prelude::token_service::{TokenEngine, TokenProvider};
 use auth_db::repositories::{RefreshTokenRepository, RevokedTokenRepository};
- // assuming this exists or I build config
+// assuming this exists or I build config
+use dotenvy::dotenv;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::sync::Arc;
-use dotenvy::dotenv;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let org_id = Uuid::new_v4();
 
     println!("Setting up test data (Org, Tenant, User)...");
-    
+
     // 1. Create Organization
     sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
         .bind(org_id.to_string())
@@ -66,11 +66,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("2. Verifying persistence...");
     // We can't query repo directly via engine public API easily except via refresh flow
     // But engine.refresh_tokens uses find_by_hash.
-    
+
     println!("3. Performing Token Refresh (Rotation)...");
     let token_pair = engine.refresh_tokens(&refresh_token.token_hash).await?;
-    println!("   > Success! New Access Token: {}...", &token_pair.access_token.token[0..20]);
-    println!("   > New Refresh Token: {}...", &token_pair.refresh_token[0..20]);
+    println!(
+        "   > Success! New Access Token: {}...",
+        &token_pair.access_token.token[0..20]
+    );
+    println!(
+        "   > New Refresh Token: {}...",
+        &token_pair.refresh_token[0..20]
+    );
 
     println!("4. Verifying Old Token Revocation (Rotation)...");
     let result = engine.refresh_tokens(&refresh_token.token_hash).await;
@@ -81,18 +87,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("5. Manual Revocation...");
     // Use JTI from access token
-    let claims = engine.validate_token(&token_pair.access_token.token).await?;
+    let claims = engine
+        .validate_token(&token_pair.access_token.token)
+        .await?;
     let jti = Uuid::parse_str(&claims.jti)?;
-    
+
     // Revoke using new signature (requires user_id, tenant_id)
     // We don't have tenant_id handy from refresh_token call return (TokenPair doesn't expose it)
-    // But we have it from claims logic? 
-    // Wait, TokenEngine::refresh_tokens uses placeholder keys? 
+    // But we have it from claims logic?
+    // Wait, TokenEngine::refresh_tokens uses placeholder keys?
     // No, it uses data from old token.
     // In our test, claims includes tenant_id.
     let tenant_id_from_claims = Uuid::parse_str(&claims.tenant_id)?;
-    
-    engine.revoke_token(jti, user_id, tenant_id_from_claims).await?;
+
+    engine
+        .revoke_token(jti, user_id, tenant_id_from_claims)
+        .await?;
     println!("   > Revoked access token JTI: {}", jti);
 
     println!("6. Verifying Revocation...");

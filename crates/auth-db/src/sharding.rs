@@ -1,9 +1,9 @@
+use sqlx::MySqlPool;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use sqlx::MySqlPool;
-use std::collections::hash_map::DefaultHasher;
 
 #[derive(Debug, Clone)]
 pub struct ShardConfig {
@@ -34,10 +34,10 @@ impl ShardManager {
 
     pub async fn add_shard(&self, config: ShardConfig) -> anyhow::Result<()> {
         let pool = MySqlPool::connect_lazy(&config.database_url)?;
-        
+
         let mut pools = self.pools.write().await;
         pools.insert(config.shard_id, pool);
-        
+
         // Update ring
         let mut ring = self.ring.write().await;
         // Add virtual nodes
@@ -48,7 +48,7 @@ impl ShardManager {
             ring.push((hash, config.shard_id));
         }
         ring.sort_by(|a, b| a.0.cmp(&b.0));
-        
+
         Ok(())
     }
 

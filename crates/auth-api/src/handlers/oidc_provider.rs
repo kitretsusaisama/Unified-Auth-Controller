@@ -1,17 +1,17 @@
+use crate::error::ApiError;
+use crate::AppState;
+use auth_core::error::AuthError;
 use axum::{
-    extract::{State, Query, Form},
+    extract::{Form, Query, State},
+    http::HeaderMap,
     response::{IntoResponse, Redirect},
     Json,
-    http::HeaderMap,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use serde::{Deserialize, Serialize};
-use crate::AppState;
-use crate::error::ApiError;
-use auth_core::error::AuthError;
-use uuid::Uuid;
+use sha2::{Digest, Sha256};
 use std::time::Duration;
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use sha2::{Sha256, Digest};
+use uuid::Uuid;
 
 // ============================================================================
 // Types
@@ -64,12 +64,16 @@ pub async fn authorize(
     // 1. Validate Client ID & Redirect URI
     // In production, verify client_id exists in DB and redirect_uri is allowed.
     if params.client_id.is_empty() {
-        return Err(ApiError::new(AuthError::ValidationError { message: "client_id required".to_string() }));
+        return Err(ApiError::new(AuthError::ValidationError {
+            message: "client_id required".to_string(),
+        }));
     }
 
     // 2. Validate Response Type
     if params.response_type != "code" {
-        return Err(ApiError::new(AuthError::ValidationError { message: "unsupported response_type".to_string() }));
+        return Err(ApiError::new(AuthError::ValidationError {
+            message: "unsupported response_type".to_string(),
+        }));
     }
 
     // 3. Check for Session Cookie
@@ -79,14 +83,14 @@ pub async fn authorize(
     // Cookie format: token=...;
     if let Some(cookie_header) = headers.get("cookie").and_then(|h| h.to_str().ok()) {
         for cookie in cookie_header.split(';') {
-             let parts: Vec<&str> = cookie.trim().splitn(2, '=').collect();
-             if parts.len() == 2 && parts[0] == "token" {
-                 let token = parts[1];
-                 // Validate Session
-                 if let Ok(session) = state.session_service.validate_session(token).await {
-                     user_id = Some(session.user_id);
-                 }
-             }
+            let parts: Vec<&str> = cookie.trim().splitn(2, '=').collect();
+            if parts.len() == 2 && parts[0] == "token" {
+                let token = parts[1];
+                // Validate Session
+                if let Ok(session) = state.session_service.validate_session(token).await {
+                    user_id = Some(session.user_id);
+                }
+            }
         }
     }
 
@@ -94,13 +98,18 @@ pub async fn authorize(
     if user_id.is_none() {
         // Construct return_to URL
         // Simple manual construction for now
-        let return_to = format!("/auth/authorize?response_type={}&client_id={}&redirect_uri={}&state={}",
-            params.response_type, params.client_id, params.redirect_uri, params.state);
+        let return_to = format!(
+            "/auth/authorize?response_type={}&client_id={}&redirect_uri={}&state={}",
+            params.response_type, params.client_id, params.redirect_uri, params.state
+        );
 
         // Assuming we have a frontend login page at /auth/login (or API that serves it)
         // For API-only, we might return 401, but OIDC flows usually redirect.
         // We'll redirect to a login handler that eventually sets the cookie and redirects back.
-        return Ok(Redirect::to(&format!("/auth/login?return_to={}", urlencoding::encode(&return_to))));
+        return Ok(Redirect::to(&format!(
+            "/auth/login?return_to={}",
+            urlencoding::encode(&return_to)
+        )));
     }
 
     // 4. User is authenticated. Generate Authorization Code.
@@ -118,13 +127,20 @@ pub async fn authorize(
         user_id,
     };
 
-    let val_str = serde_json::to_string(&auth_req).map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let val_str =
+        serde_json::to_string(&auth_req).map_err(|_| ApiError::new(AuthError::InternalError))?;
     let cache_key = format!("auth_code:{}", code);
-    state.cache.set(&cache_key, &val_str, Duration::from_secs(600)).await // 10 mins TTL
+    state
+        .cache
+        .set(&cache_key, &val_str, Duration::from_secs(600))
+        .await // 10 mins TTL
         .map_err(|_e| ApiError::new(AuthError::InternalError))?; // Log error in real app
 
     // 6. Redirect to Client
-    let target = format!("{}?code={}&state={}", params.redirect_uri, code, params.state);
+    let target = format!(
+        "{}?code={}&state={}",
+        params.redirect_uri, code, params.state
+    );
     Ok(Redirect::to(&target))
 }
 
@@ -138,11 +154,18 @@ pub async fn token(
 ) -> Result<impl IntoResponse, ApiError> {
     match payload.grant_type.as_str() {
         "authorization_code" => {
-            let code = payload.code.ok_or(ApiError::new(AuthError::ValidationError { message: "code required".to_string() }))?;
+            let code = payload
+                .code
+                .ok_or(ApiError::new(AuthError::ValidationError {
+                    message: "code required".to_string(),
+                }))?;
 
             // 1. Retrieve from Cache
             let cache_key = format!("auth_code:{}", code);
-            let val_opt = state.cache.get(&cache_key).await
+            let val_opt = state
+                .cache
+                .get(&cache_key)
+                .await
                 .map_err(|_| ApiError::new(AuthError::InternalError))?;
 
             let val_str = val_opt.ok_or(ApiError::new(AuthError::InvalidCredentials))?; // Invalid or expired code
@@ -151,44 +174,67 @@ pub async fn token(
 
             // 2. Validate Client
             if auth_req.client_id != payload.client_id {
-                 return Err(ApiError::new(AuthError::ValidationError { message: "client_id mismatch".to_string() }));
+                return Err(ApiError::new(AuthError::ValidationError {
+                    message: "client_id mismatch".to_string(),
+                }));
             }
 
             // 3. Validate Redirect URI
             if let Some(uri) = payload.redirect_uri {
                 if uri != auth_req.redirect_uri {
-                    return Err(ApiError::new(AuthError::ValidationError { message: "redirect_uri mismatch".to_string() }));
+                    return Err(ApiError::new(AuthError::ValidationError {
+                        message: "redirect_uri mismatch".to_string(),
+                    }));
                 }
             }
 
             // 4. PKCE Validation
             if let Some(challenge) = auth_req.code_challenge {
-                let verifier = payload.code_verifier.ok_or(ApiError::new(AuthError::ValidationError { message: "code_verifier required".to_string() }))?;
+                let verifier =
+                    payload
+                        .code_verifier
+                        .ok_or(ApiError::new(AuthError::ValidationError {
+                            message: "code_verifier required".to_string(),
+                        }))?;
 
                 // Only S256 supported for MNC grade (plain is deprecated/insecure)
                 if auth_req.code_challenge_method.as_deref() == Some("S256") {
-                     let mut hasher = Sha256::new();
-                     hasher.update(verifier.as_bytes());
-                     let result = hasher.finalize();
-                     let computed_challenge = URL_SAFE_NO_PAD.encode(result);
+                    let mut hasher = Sha256::new();
+                    hasher.update(verifier.as_bytes());
+                    let result = hasher.finalize();
+                    let computed_challenge = URL_SAFE_NO_PAD.encode(result);
 
-                     if computed_challenge != challenge {
-                         return Err(ApiError::new(AuthError::ValidationError { message: "PKCE verification failed".to_string() }));
-                     }
+                    if computed_challenge != challenge {
+                        return Err(ApiError::new(AuthError::ValidationError {
+                            message: "PKCE verification failed".to_string(),
+                        }));
+                    }
                 } else {
                     // Reject plain or other methods
-                    return Err(ApiError::new(AuthError::ValidationError { message: "Only S256 PKCE supported".to_string() }));
+                    return Err(ApiError::new(AuthError::ValidationError {
+                        message: "Only S256 PKCE supported".to_string(),
+                    }));
                 }
             }
 
             // 5. Issue Tokens
-            let user_id = auth_req.user_id.ok_or(ApiError::new(AuthError::InternalError))?;
+            let user_id = auth_req
+                .user_id
+                .ok_or(ApiError::new(AuthError::InternalError))?;
 
             // Fetch user details to pass to issue_tokens
-            let user = state.identity_service.get_user(user_id).await.map_err(ApiError::from)?;
+            let user = state
+                .identity_service
+                .get_user(user_id)
+                .await
+                .map_err(ApiError::from)?;
             let tenant_id = Uuid::new_v4(); // Should come from user context
 
-            let token_response = state.identity_service.issue_tokens_for_user(&user, tenant_id, Some(payload.client_id), auth_req.scope).await.map_err(ApiError::from)?;
+            let token_response = state
+                .identity_service
+                .issue_tokens_for_user(&user, tenant_id, Some(payload.client_id), auth_req.scope)
+                .await
+                .map_err(ApiError::from)?;
 
             // 6. Delete Code (Replay Protection)
             let _ = state.cache.delete(&cache_key).await;
@@ -205,17 +251,21 @@ pub async fn token(
                 "refresh_token": token_response.refresh_token,
                 "id_token": "mock_id_token_jwt" // Placeholder: Requires RSA signing which is complex to add here without auth-crypto helper
             })))
-        },
+        }
         "client_credentials" => {
             // 1. Verify Client ID & Secret
             // In a real implementation, look up client in DB and verify secret (bcrypt/argon2)
             if payload.client_id.is_empty() || payload.client_secret.is_none() {
-                 return Err(ApiError::new(AuthError::ValidationError { message: "client_id and client_secret required".to_string() }));
+                return Err(ApiError::new(AuthError::ValidationError {
+                    message: "client_id and client_secret required".to_string(),
+                }));
             }
 
             // Mock verify: assume client_123 / secret_123 is valid
-            if payload.client_id != "client_123" || payload.client_secret.as_deref() != Some("secret_123") {
-                 return Err(ApiError::new(AuthError::InvalidCredentials));
+            if payload.client_id != "client_123"
+                || payload.client_secret.as_deref() != Some("secret_123")
+            {
+                return Err(ApiError::new(AuthError::InvalidCredentials));
             }
 
             // 2. Issue Tokens
@@ -251,7 +301,11 @@ pub async fn token(
                 phone_verified_at: None,
             };
 
-            let token_response = state.identity_service.issue_tokens_for_user(&user, tenant_id, Some(payload.client_id), None).await.map_err(ApiError::from)?;
+            let token_response = state
+                .identity_service
+                .issue_tokens_for_user(&user, tenant_id, Some(payload.client_id), None)
+                .await
+                .map_err(ApiError::from)?;
 
             Ok(Json(serde_json::json!({
                 "access_token": token_response.access_token,
@@ -259,12 +313,16 @@ pub async fn token(
                 "expires_in": 3600,
                 "refresh_token": token_response.refresh_token
             })))
-        },
+        }
         "refresh_token" => {
             // TODO: Implement refresh logic using IdentityService
-             Err(ApiError::new(AuthError::ValidationError { message: "grant_type not implemented".to_string() }))
-        },
-        _ => Err(ApiError::new(AuthError::ValidationError { message: "unsupported grant_type".to_string() })),
+            Err(ApiError::new(AuthError::ValidationError {
+                message: "grant_type not implemented".to_string(),
+            }))
+        }
+        _ => Err(ApiError::new(AuthError::ValidationError {
+            message: "unsupported grant_type".to_string(),
+        })),
     }
 }
 
@@ -277,20 +335,34 @@ pub async fn userinfo(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
     // 1. Extract Bearer Token
-    let token = headers.get("authorization")
+    let token = headers
+        .get("authorization")
         .and_then(|h| h.to_str().ok())
         .and_then(|h| h.strip_prefix("Bearer "))
-        .ok_or(ApiError::new(AuthError::Unauthorized { message: "Missing token".to_string() }))?;
+        .ok_or(ApiError::new(AuthError::Unauthorized {
+            message: "Missing token".to_string(),
+        }))?;
 
     // 2. Validate Token using IdentityService
-    let claims = state.identity_service.validate_token(token).await.map_err(ApiError::from)?;
+    let claims = state
+        .identity_service
+        .validate_token(token)
+        .await
+        .map_err(ApiError::from)?;
 
     // 3. Extract User ID
-    let user_id = Uuid::parse_str(&claims.sub)
-        .map_err(|_| ApiError::new(AuthError::TokenError { kind: auth_core::error::TokenErrorKind::Invalid }))?;
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| {
+        ApiError::new(AuthError::TokenError {
+            kind: auth_core::error::TokenErrorKind::Invalid,
+        })
+    })?;
 
     // 4. Fetch User Profile
-    let user = state.identity_service.get_user(user_id).await.map_err(ApiError::from)?;
+    let user = state
+        .identity_service
+        .get_user(user_id)
+        .await
+        .map_err(ApiError::from)?;
 
     // 5. Construct Response
     // OIDC standard claims

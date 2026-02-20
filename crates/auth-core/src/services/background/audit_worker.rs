@@ -1,8 +1,8 @@
-use crate::audit::{AuditLogger, AuditEvent};
+use crate::audit::{AuditEvent, AuditLogger};
 use async_trait::async_trait;
-use tokio::sync::mpsc;
-use tracing::{info, error};
 use std::sync::Arc;
+use tokio::sync::mpsc;
+use tracing::{error, info};
 
 /// A channel-based audit logger that offloads writing to a background task
 pub struct AsyncAuditLogger {

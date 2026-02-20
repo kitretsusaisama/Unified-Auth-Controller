@@ -1,9 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use rand::rngs::OsRng;
-use rsa::{RsaPrivateKey, RsaPublicKey, Pkcs1v15Sign};
 use rsa::pkcs8::{EncodePublicKey, LineEnding};
-use sha2::{Sha256, Digest};
+use rsa::{Pkcs1v15Sign, RsaPrivateKey, RsaPublicKey};
+use sha2::{Digest, Sha256};
 
 #[async_trait]
 pub trait KeyProvider: Send + Sync {
@@ -32,7 +32,7 @@ impl KeyProvider for SoftKeyProvider {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let digest = hasher.finalize();
-        
+
         // Sign the hash using PKCS1v15
         let padding = Pkcs1v15Sign::new::<Sha256>();
         let signature = self.key.sign_with_rng(&mut OsRng, padding, &digest)?;
@@ -44,10 +44,10 @@ impl KeyProvider for SoftKeyProvider {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let digest = hasher.finalize();
-        
+
         let public_key = RsaPublicKey::from(&self.key);
         let padding = Pkcs1v15Sign::new::<Sha256>();
-         
+
         match public_key.verify(padding, &digest, signature) {
             Ok(_) => Ok(true),
             Err(_) => Ok(false),
@@ -56,7 +56,9 @@ impl KeyProvider for SoftKeyProvider {
 
     fn public_key_pem(&self) -> String {
         let public_key = RsaPublicKey::from(&self.key);
-        public_key.to_public_key_pem(LineEnding::LF).unwrap_or_default()
+        public_key
+            .to_public_key_pem(LineEnding::LF)
+            .unwrap_or_default()
     }
 }
 

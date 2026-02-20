@@ -1,8 +1,8 @@
 use auth_audit::AuditService;
+use serde_json::json;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use uuid::Uuid;
-use serde_json::json;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -15,14 +15,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let audit_service = AuditService::new(pool.clone());
-    
+
     let actor_id = Uuid::new_v4();
-    let log = audit_service.log(
-        "EXPORT_TEST",
-        actor_id,
-        "export_resource",
-        Some(json!({"test": "value"}))
-    ).await?;
+    let log = audit_service
+        .log(
+            "EXPORT_TEST",
+            actor_id,
+            "export_resource",
+            Some(json!({"test": "value"})),
+        )
+        .await?;
 
     let cef_string = audit_service.export_cef(&log);
     println!("Generated CEF: {}", cef_string);

@@ -1,7 +1,7 @@
-use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 use crate::models::Role;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Authorization Context
 /// Contains all necessary info to make an access decision

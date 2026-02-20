@@ -1,12 +1,15 @@
 //! Key management for JWT signing and verification
 
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use jsonwebtoken::{DecodingKey, EncodingKey};
+use rand::thread_rng;
+use rsa::{
+    pkcs1::DecodeRsaPublicKey, pkcs1::EncodeRsaPrivateKey, pkcs1::EncodeRsaPublicKey,
+    traits::PublicKeyParts, RsaPrivateKey, RsaPublicKey,
+};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use rsa::{RsaPrivateKey, RsaPublicKey, traits::PublicKeyParts, pkcs1::EncodeRsaPublicKey, pkcs1::EncodeRsaPrivateKey, pkcs1::DecodeRsaPublicKey};
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use rand::thread_rng;
 
 #[derive(Debug, Error)]
 pub enum KeyError {
@@ -44,14 +47,16 @@ impl KeyManager {
             .map_err(|e| KeyError::GenerationError(e.to_string()))?;
         let public_key = RsaPublicKey::from(&private_key);
 
-        let private_pem = private_key.to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
+        let private_pem = private_key
+            .to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| KeyError::GenerationError(e.to_string()))?;
-        let public_pem = public_key.to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
+        let public_pem = public_key
+            .to_pkcs1_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| KeyError::GenerationError(e.to_string()))?;
 
         let encoding_key = EncodingKey::from_rsa_pem(private_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
-        
+
         let decoding_key = DecodingKey::from_rsa_pem(public_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
 
@@ -64,16 +69,21 @@ impl KeyManager {
     }
 
     /// Load KeyManager from PEM files
-    pub async fn from_pem_files(private_key_path: &str, public_key_path: &str) -> Result<Self, KeyError> {
-        let private_key_pem = tokio::fs::read_to_string(private_key_path).await
+    pub async fn from_pem_files(
+        private_key_path: &str,
+        public_key_path: &str,
+    ) -> Result<Self, KeyError> {
+        let private_key_pem = tokio::fs::read_to_string(private_key_path)
+            .await
             .map_err(|e| KeyError::LoadingError(format!("Failed to read private key: {}", e)))?;
-        
-        let public_key_pem = tokio::fs::read_to_string(public_key_path).await
+
+        let public_key_pem = tokio::fs::read_to_string(public_key_path)
+            .await
             .map_err(|e| KeyError::LoadingError(format!("Failed to read public key: {}", e)))?;
 
         let encoding_key = EncodingKey::from_rsa_pem(private_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
-        
+
         let decoding_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
 
@@ -114,7 +124,8 @@ impl KeyManager {
     /// Get the JWK Set (public keys)
     pub fn get_jwk_set(&self) -> serde_json::Value {
         // Parse public key PEM
-        let pub_key = RsaPublicKey::from_pkcs1_pem(&self.public_key_pem).expect("Invalid Public Key PEM");
+        let pub_key =
+            RsaPublicKey::from_pkcs1_pem(&self.public_key_pem).expect("Invalid Public Key PEM");
 
         let n = URL_SAFE_NO_PAD.encode(pub_key.n().to_bytes_be());
         let e = URL_SAFE_NO_PAD.encode(pub_key.e().to_bytes_be());
@@ -139,7 +150,7 @@ mod tests {
     #[tokio::test]
     async fn test_key_generation() {
         let key_manager = KeyManager::new().await.unwrap();
-        
+
         // Should be able to get keys without error
         let _encoding_key = key_manager.get_encoding_key().await.unwrap();
         let _decoding_key = key_manager.get_decoding_key().await.unwrap();
@@ -148,7 +159,7 @@ mod tests {
     #[tokio::test]
     async fn test_key_rotation() {
         let key_manager = KeyManager::new().await.unwrap();
-        
+
         // Rotate keys (currently a no-op)
         key_manager.rotate_keys().await.unwrap();
     }

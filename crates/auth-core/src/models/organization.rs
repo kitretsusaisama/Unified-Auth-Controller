@@ -18,8 +18,7 @@ pub struct Organization {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum OrganizationStatus {
     #[default]
     Active,
@@ -63,4 +62,3 @@ impl Organization {
         !self.settings.is_null() && self.settings.as_object().is_some_and(|obj| !obj.is_empty())
     }
 }
-

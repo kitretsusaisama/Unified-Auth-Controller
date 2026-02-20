@@ -3,21 +3,22 @@
 //! Initializes the database with default system roles and permissions.
 //! Designed to be idempotent and environment-aware.
 
-use sqlx::mysql::MySqlPoolOptions;
-use uuid::Uuid;
-use chrono::Utc;
+use auth_config::{ConfigLoader, ConfigManager};
 use auth_core::models::{Role, RoleScope};
 use auth_db::repositories::RoleRepository;
-use std::sync::Arc;
+use chrono::Utc;
 use secrecy::ExposeSecret;
-use auth_config::{ConfigLoader, ConfigManager};
+use sqlx::mysql::MySqlPoolOptions;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🌱 Starting Advanced RBAC Seeder...");
 
     // 1. Load Config
-    let environment = std::env::var("AUTH__ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
+    let environment =
+        std::env::var("AUTH__ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
     let config_loader = ConfigLoader::new("config", &environment);
     let config_manager = ConfigManager::new(config_loader)?;
     let config = config_manager.get_config();

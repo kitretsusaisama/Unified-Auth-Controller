@@ -33,11 +33,7 @@ fn test_user_tenant_isolation_struct() {
 fn test_api_versioning_compliance() {
     // Ensure that key endpoints are reachable under /v1
     // This is a lightweight integration test simulation
-    let routes = vec![
-        "/v1/auth/login",
-        "/v1/auth/register",
-        "/v1/health"
-    ];
+    let routes = vec!["/v1/auth/login", "/v1/auth/register", "/v1/health"];
 
     for route in routes {
         assert!(route.contains("/v1/"));

@@ -39,7 +39,7 @@ impl OAuthService {
     pub async fn exchange_token(&self, code: &str, redirect_uri: &str) -> Result<String> {
         // Stub implementation effectively mimicking a real exchange for basic structure
         // In reality, this would make an HTTP POST to self.token_url
-        
+
         let _client = reqwest::Client::new();
         let _params = [
             ("grant_type", "authorization_code"),
@@ -49,15 +49,15 @@ impl OAuthService {
             ("client_secret", &self.client_secret),
         ];
 
-        // Since we don't have a real endpoint to hit in this standalone context, 
+        // Since we don't have a real endpoint to hit in this standalone context,
         // we'll simulate the response or try to hit it if it was real.
         // For the purpose of this task, we return a mock token if code is "valid_code"
         if code == "valid_code" {
-             Ok("mock_access_token".to_string())
+            Ok("mock_access_token".to_string())
         } else {
-             // Try to actually mock/hit but allow failure for stub traits
-             // Returning a dummy for the test flow to pass verification of "structure"
-             Ok("mock_access_token_from_exchange".to_string())
+            // Try to actually mock/hit but allow failure for stub traits
+            // Returning a dummy for the test flow to pass verification of "structure"
+            Ok("mock_access_token_from_exchange".to_string())
         }
     }
 }

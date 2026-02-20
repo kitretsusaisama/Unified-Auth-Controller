@@ -1,9 +1,9 @@
+use async_trait::async_trait;
+use auth_core::error::AuthError;
+use auth_core::models::{Role, RoleScope};
+use auth_core::services::authorization::RoleStore;
 use sqlx::MySqlPool;
 use uuid::Uuid;
-use auth_core::models::{Role, RoleScope};
-use auth_core::error::AuthError;
-use auth_core::services::authorization::RoleStore;
-use async_trait::async_trait;
 
 pub struct RoleRepository {
     pool: MySqlPool,
@@ -31,7 +31,7 @@ impl RoleStore for RoleRepository {
                 created_at, updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            "#
+            "#,
         )
         .bind(role.id.to_string())
         .bind(role.tenant_id.to_string())
@@ -49,7 +49,9 @@ impl RoleStore for RoleRepository {
 
         match result {
             Ok(_) => Ok(role),
-            Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+            Err(e) => Err(AuthError::DatabaseError {
+                message: e.to_string(),
+            }),
         }
     }
 
@@ -59,23 +61,25 @@ impl RoleStore for RoleRepository {
     }
 
     async fn delete(&self, id: Uuid, tenant_id: Uuid) -> Result<(), AuthError> {
-        let result = sqlx::query(
-            "DELETE FROM roles WHERE id = ? AND tenant_id = ?"
-        )
-        .bind(id.to_string())
-        .bind(tenant_id.to_string())
-        .execute(&self.pool)
-        .await;
+        let result = sqlx::query("DELETE FROM roles WHERE id = ? AND tenant_id = ?")
+            .bind(id.to_string())
+            .bind(tenant_id.to_string())
+            .execute(&self.pool)
+            .await;
 
         match result {
             Ok(res) => {
                 if res.rows_affected() == 0 {
-                    Err(AuthError::ValidationError { message: "Role not found or system role".to_string() })
+                    Err(AuthError::ValidationError {
+                        message: "Role not found or system role".to_string(),
+                    })
                 } else {
                     Ok(())
                 }
-            },
-            Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+            }
+            Err(e) => Err(AuthError::DatabaseError {
+                message: e.to_string(),
+            }),
         }
     }
 
@@ -89,13 +93,15 @@ impl RoleStore for RoleRepository {
                    constraints, organization_id, scope, metadata, created_at, updated_at
             FROM roles
             WHERE id = ? AND tenant_id = ?
-            "#
+            "#,
         )
         .bind(id.to_string())
         .bind(tenant_id.to_string())
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
+        .map_err(|e| AuthError::DatabaseError {
+            message: e.to_string(),
+        })?;
 
         use sqlx::Row;
 
@@ -117,7 +123,8 @@ impl RoleStore for RoleRepository {
             let constraints: Option<serde_json::Value> = row.try_get("constraints").ok();
             let org_id_str: Option<String> = row.try_get("organization_id").ok();
 
-            let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").unwrap_or(chrono::Utc::now());
+            let created_at: chrono::DateTime<chrono::Utc> =
+                row.try_get("created_at").unwrap_or(chrono::Utc::now());
             let updated_at: Option<chrono::DateTime<chrono::Utc>> = row.try_get("updated_at").ok();
 
             Ok(Some(Role {
@@ -146,17 +153,18 @@ impl RoleStore for RoleRepository {
     }
 
     async fn assign_permission(&self, role_id: Uuid, permission_id: Uuid) -> Result<(), AuthError> {
-        let result = sqlx::query(
-            "INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)"
-        )
-        .bind(role_id.to_string())
-        .bind(permission_id.to_string())
-        .execute(&self.pool)
-        .await;
+        let result =
+            sqlx::query("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)")
+                .bind(role_id.to_string())
+                .bind(permission_id.to_string())
+                .execute(&self.pool)
+                .await;
 
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+            Err(e) => Err(AuthError::DatabaseError {
+                message: e.to_string(),
+            }),
         }
     }
 }

@@ -3,38 +3,34 @@
 //! This file contains integration tests that test the complete workflow
 //! of the SSO platform with mocked external dependencies where possible.
 
-use std::sync::Arc;
-use auth_api::{AppState, app};
-use auth_cache::MultiLevelCache;
-use auth_core::services::{
-    identity::IdentityService,
-    session_service::SessionService,
-    authorization::AuthorizationService,
-    subscription_service::SubscriptionService,
-    otp_service::OtpService,
-    otp_delivery::OtpDeliveryService,
-    lazy_registration::LazyRegistrationService,
-    rate_limiter::RateLimiter,
-};
-use auth_core::audit::TracingAuditLogger;
-use auth_core::services::{
-    token_service::{TokenProvider, TokenIntrospectionResponse},
-    identity::UserStore,
-    otp_delivery::{OtpProvider, EmailProvider, DeliveryError},
-};
-use auth_core::models::user::{CreateUserRequest, UserStatus, User, UpdateUserRequest};
-use auth_core::models::token::{Claims, AccessToken, RefreshToken, TokenPair};
-use auth_core::error::AuthError;
 use async_trait::async_trait;
+use auth_api::{app, AppState};
+use auth_cache::MultiLevelCache;
+use auth_core::audit::TracingAuditLogger;
+use auth_core::error::AuthError;
+use auth_core::models::token::{AccessToken, Claims, RefreshToken, TokenPair};
+use auth_core::models::user::{CreateUserRequest, UpdateUserRequest, User, UserStatus};
+use auth_core::services::{
+    authorization::AuthorizationService, identity::IdentityService,
+    lazy_registration::LazyRegistrationService, otp_delivery::OtpDeliveryService,
+    otp_service::OtpService, rate_limiter::RateLimiter, session_service::SessionService,
+    subscription_service::SubscriptionService,
+};
+use auth_core::services::{
+    identity::UserStore,
+    otp_delivery::{DeliveryError, EmailProvider, OtpProvider},
+    token_service::{TokenIntrospectionResponse, TokenProvider},
+};
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use chrono::{Duration, Utc};
 use serde_json::json;
+use sqlx::{MySql, Pool};
+use std::sync::Arc;
 use tower::util::ServiceExt;
 use uuid::Uuid;
-use sqlx::{Pool, MySql};
-use chrono::{Utc, Duration};
 
 // Comprehensive Mock Services
 struct MockServices {
@@ -69,7 +65,11 @@ impl TokenProvider for MockTokenService {
         })
     }
 
-    async fn issue_refresh_token(&self, user_id: Uuid, tenant_id: Uuid) -> Result<RefreshToken, AuthError> {
+    async fn issue_refresh_token(
+        &self,
+        user_id: Uuid,
+        tenant_id: Uuid,
+    ) -> Result<RefreshToken, AuthError> {
         Ok(RefreshToken {
             id: Uuid::new_v4(),
             user_id,
@@ -114,11 +114,19 @@ impl TokenProvider for MockTokenService {
         })
     }
 
-    async fn revoke_token(&self, _token_jti: Uuid, _user_id: Uuid, _tenant_id: Uuid) -> Result<(), AuthError> {
+    async fn revoke_token(
+        &self,
+        _token_jti: Uuid,
+        _user_id: Uuid,
+        _tenant_id: Uuid,
+    ) -> Result<(), AuthError> {
         Ok(())
     }
 
-    async fn introspect_token(&self, _token: &str) -> Result<TokenIntrospectionResponse, AuthError> {
+    async fn introspect_token(
+        &self,
+        _token: &str,
+    ) -> Result<TokenIntrospectionResponse, AuthError> {
         Ok(TokenIntrospectionResponse {
             active: true,
             token_type: Some("Bearer".to_string()),
@@ -145,33 +153,72 @@ struct MockUserStore;
 
 #[async_trait]
 impl UserStore for MockUserStore {
-    async fn find_by_email(&self, email: &str, _tenant_id: Uuid) -> Result<Option<User>, AuthError> {
+    async fn find_by_email(
+        &self,
+        email: &str,
+        _tenant_id: Uuid,
+    ) -> Result<Option<User>, AuthError> {
         if email == "existing@example.com" {
-             Ok(Some(mock_user()))
+            Ok(Some(mock_user()))
         } else {
             Ok(None)
         }
     }
 
-    async fn find_by_phone(&self, _phone: &str, _tenant_id: Uuid) -> Result<Option<User>, AuthError> { Ok(None) }
-    async fn find_by_identifier(&self, _identifier: &str, _tenant_id: Uuid) -> Result<Option<User>, AuthError> { Ok(None) }
-    async fn find_by_id(&self, _id: Uuid) -> Result<Option<User>, AuthError> { Ok(Some(mock_user())) }
+    async fn find_by_phone(
+        &self,
+        _phone: &str,
+        _tenant_id: Uuid,
+    ) -> Result<Option<User>, AuthError> {
+        Ok(None)
+    }
+    async fn find_by_identifier(
+        &self,
+        _identifier: &str,
+        _tenant_id: Uuid,
+    ) -> Result<Option<User>, AuthError> {
+        Ok(None)
+    }
+    async fn find_by_id(&self, _id: Uuid) -> Result<Option<User>, AuthError> {
+        Ok(Some(mock_user()))
+    }
 
-    async fn create(&self, request: CreateUserRequest, _hash: String, _tenant_id: Uuid) -> Result<User, AuthError> {
+    async fn create(
+        &self,
+        request: CreateUserRequest,
+        _hash: String,
+        _tenant_id: Uuid,
+    ) -> Result<User, AuthError> {
         let mut user = mock_user();
         user.email = request.email;
         // user.tenant_id = tenant_id; // User struct doesn't have tenant_id
         Ok(user)
     }
 
-    async fn update_status(&self, _id: Uuid, _status: UserStatus) -> Result<(), AuthError> { Ok(()) }
-    async fn increment_failed_attempts(&self, _id: Uuid) -> Result<u32, AuthError> { Ok(1) }
-    async fn reset_failed_attempts(&self, _id: Uuid) -> Result<(), AuthError> { Ok(()) }
-    async fn record_login(&self, _id: Uuid, _ip: Option<String>) -> Result<(), AuthError> { Ok(()) }
-    async fn update(&self, _user: UpdateUserRequest) -> Result<User, AuthError> { Ok(mock_user()) }
-    async fn update_password_hash(&self, _id: Uuid, _hash: String) -> Result<(), AuthError> { Ok(()) }
-    async fn set_email_verified(&self, _id: Uuid, _verified: bool) -> Result<(), AuthError> { Ok(()) }
-    async fn set_phone_verified(&self, _id: Uuid, _verified: bool) -> Result<(), AuthError> { Ok(()) }
+    async fn update_status(&self, _id: Uuid, _status: UserStatus) -> Result<(), AuthError> {
+        Ok(())
+    }
+    async fn increment_failed_attempts(&self, _id: Uuid) -> Result<u32, AuthError> {
+        Ok(1)
+    }
+    async fn reset_failed_attempts(&self, _id: Uuid) -> Result<(), AuthError> {
+        Ok(())
+    }
+    async fn record_login(&self, _id: Uuid, _ip: Option<String>) -> Result<(), AuthError> {
+        Ok(())
+    }
+    async fn update(&self, _user: UpdateUserRequest) -> Result<User, AuthError> {
+        Ok(mock_user())
+    }
+    async fn update_password_hash(&self, _id: Uuid, _hash: String) -> Result<(), AuthError> {
+        Ok(())
+    }
+    async fn set_email_verified(&self, _id: Uuid, _verified: bool) -> Result<(), AuthError> {
+        Ok(())
+    }
+    async fn set_phone_verified(&self, _id: Uuid, _verified: bool) -> Result<(), AuthError> {
+        Ok(())
+    }
 }
 
 fn mock_user() -> User {
@@ -209,20 +256,29 @@ fn mock_user() -> User {
 struct MockSmsProvider;
 #[async_trait]
 impl OtpProvider for MockSmsProvider {
-    async fn send_otp(&self, _to: &str, _otp: &str) -> Result<String, DeliveryError> { Ok("sent".to_string()) }
+    async fn send_otp(&self, _to: &str, _otp: &str) -> Result<String, DeliveryError> {
+        Ok("sent".to_string())
+    }
 }
 
 // Mock Email Provider
 struct MockEmailProvider;
 #[async_trait]
 impl EmailProvider for MockEmailProvider {
-    async fn send_email(&self, _to: &str, _sub: &str, _body: &str) -> Result<String, DeliveryError> { Ok("sent".to_string()) }
+    async fn send_email(
+        &self,
+        _to: &str,
+        _sub: &str,
+        _body: &str,
+    ) -> Result<String, DeliveryError> {
+        Ok("sent".to_string())
+    }
 }
 
 fn create_test_app_state() -> AppState {
     let mock_services = MockServices::new();
     let audit_logger: Arc<dyn auth_core::audit::AuditLogger> = Arc::new(TracingAuditLogger);
-    
+
     let identity_service = Arc::new(IdentityService::new(
         mock_services.user_store,
         mock_services.token_service,
@@ -241,13 +297,18 @@ fn create_test_app_state() -> AppState {
 
     // Use REAL repositories with dummy pool
     let role_repo = Arc::new(auth_db::repositories::RoleRepository::new(pool.clone()));
-    let session_repo = Arc::new(auth_db::repositories::session_repository::SessionRepository::new(pool.clone()));
-    let subscription_repo = Arc::new(auth_db::repositories::subscription_repository::SubscriptionRepository::new(pool.clone()));
-    let otp_repo = Arc::new(auth_db::repositories::otp_repository::OtpRepository::new(pool.clone()));
+    let session_repo =
+        Arc::new(auth_db::repositories::session_repository::SessionRepository::new(pool.clone()));
+    let subscription_repo = Arc::new(
+        auth_db::repositories::subscription_repository::SubscriptionRepository::new(pool.clone()),
+    );
+    let otp_repo = Arc::new(auth_db::repositories::otp_repository::OtpRepository::new(
+        pool.clone(),
+    ));
 
     let session_service = Arc::new(SessionService::new(
         session_repo,
-        Arc::new(auth_core::services::risk_assessment::RiskEngine::new())
+        Arc::new(auth_core::services::risk_assessment::RiskEngine::new()),
     ));
     // Updated to AuthorizationService
     let role_service = Arc::new(AuthorizationService::new(role_repo));
@@ -257,7 +318,8 @@ fn create_test_app_state() -> AppState {
         mock_services.sms_provider,
         mock_services.email_provider,
     ));
-    let lazy_registration_service = Arc::new(LazyRegistrationService::new(identity_service.clone()));
+    let lazy_registration_service =
+        Arc::new(LazyRegistrationService::new(identity_service.clone()));
     let rate_limiter = Arc::new(RateLimiter::new());
     let cache = Arc::new(MultiLevelCache::new(None).unwrap());
 

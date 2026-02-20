@@ -59,7 +59,13 @@ impl Cache for MultiLevelCache {
                 Some(val_str) => {
                     debug!("L2 Cache Hit: {}", key);
                     // Populate L1 (Default TTL 60s)
-                    self.l1.insert(key.to_string(), (val_str.clone(), std::time::Instant::now() + Duration::from_secs(60)));
+                    self.l1.insert(
+                        key.to_string(),
+                        (
+                            val_str.clone(),
+                            std::time::Instant::now() + Duration::from_secs(60),
+                        ),
+                    );
 
                     Ok(Some(val_str))
                 }
@@ -72,7 +78,10 @@ impl Cache for MultiLevelCache {
 
     async fn set(&self, key: &str, value: &str, ttl: Duration) -> anyhow::Result<()> {
         // Update L1
-        self.l1.insert(key.to_string(), (value.to_string(), std::time::Instant::now() + ttl));
+        self.l1.insert(
+            key.to_string(),
+            (value.to_string(), std::time::Instant::now() + ttl),
+        );
 
         // Update L2
         if let Some(client) = &self.l2 {

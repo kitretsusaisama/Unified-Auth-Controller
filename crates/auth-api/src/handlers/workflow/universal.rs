@@ -1,12 +1,14 @@
+use crate::error::ApiError;
+use crate::AppState;
+use async_trait::async_trait;
+use auth_core::error::AuthError;
+use auth_core::services::workflow::{
+    FlowAction, FlowContext, FlowState, StepHandler, WorkflowEngine,
+};
 use axum::{
-    extract::{State, Path, Json},
+    extract::{Json, Path, State},
     response::IntoResponse,
 };
-use crate::AppState;
-use crate::error::ApiError;
-use auth_core::error::AuthError;
-use auth_core::services::workflow::{FlowContext, FlowAction, FlowState, WorkflowEngine, StepHandler};
-use async_trait::async_trait;
 use std::time::Duration;
 
 // ============================================================================
@@ -16,15 +18,25 @@ use std::time::Duration;
 pub struct IdentifyStep;
 #[async_trait]
 impl StepHandler for IdentifyStep {
-    async fn handle(&self, _ctx: &mut FlowContext, action: FlowAction) -> Result<FlowState, AuthError> {
+    async fn handle(
+        &self,
+        _ctx: &mut FlowContext,
+        action: FlowAction,
+    ) -> Result<FlowState, AuthError> {
         // Validate Action
         if action.name != "submit_identifier" {
-             return Err(AuthError::ValidationError { message: "Invalid action".to_string() });
+            return Err(AuthError::ValidationError {
+                message: "Invalid action".to_string(),
+            });
         }
 
-        let _identifier = action.payload.get("identifier")
+        let _identifier = action
+            .payload
+            .get("identifier")
             .and_then(|v| v.as_str())
-            .ok_or(AuthError::ValidationError { message: "Identifier required".to_string() })?;
+            .ok_or(AuthError::ValidationError {
+                message: "Identifier required".to_string(),
+            })?;
 
         // In real impl, we'd lookup user here.
         // ctx.user_id = Some(...);
@@ -41,9 +53,15 @@ impl StepHandler for IdentifyStep {
 pub struct AuthenticateStep;
 #[async_trait]
 impl StepHandler for AuthenticateStep {
-    async fn handle(&self, _ctx: &mut FlowContext, action: FlowAction) -> Result<FlowState, AuthError> {
+    async fn handle(
+        &self,
+        _ctx: &mut FlowContext,
+        action: FlowAction,
+    ) -> Result<FlowState, AuthError> {
         if action.name != "submit_password" {
-             return Err(AuthError::ValidationError { message: "Invalid action".to_string() });
+            return Err(AuthError::ValidationError {
+                message: "Invalid action".to_string(),
+            });
         }
 
         // Verify password logic...
@@ -71,13 +89,19 @@ pub async fn submit(
     Path(flow_id): Path<String>,
     Json(body): Json<SubmitFlowRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-
     // 1. Load Context (with Lock/Version check logic implied by cache/DB)
     let key = format!("flow:{}", flow_id);
-    let val_opt = state.cache.get(&key).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let val_opt = state
+        .cache
+        .get(&key)
+        .await
+        .map_err(|_| ApiError::new(AuthError::InternalError))?;
 
-    let val_str = val_opt.ok_or(ApiError::new(AuthError::ValidationError { message: "Flow not found".to_string() }))?;
-    let context: FlowContext = serde_json::from_str(&val_str).map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let val_str = val_opt.ok_or(ApiError::new(AuthError::ValidationError {
+        message: "Flow not found".to_string(),
+    }))?;
+    let context: FlowContext =
+        serde_json::from_str(&val_str).map_err(|_| ApiError::new(AuthError::InternalError))?;
 
     // 2. Instantiate Engine & Register Handlers (Ideally this is done once or factory-based)
     let mut engine = WorkflowEngine::new();
@@ -85,12 +109,23 @@ pub async fn submit(
     engine.register_handler(FlowState::Authenticate, Box::new(AuthenticateStep));
 
     // 3. Process
-    let action = FlowAction { name: body.action, payload: body.payload };
-    let (new_ctx, result) = engine.process(context, action).await.map_err(ApiError::from)?;
+    let action = FlowAction {
+        name: body.action,
+        payload: body.payload,
+    };
+    let (new_ctx, result) = engine
+        .process(context, action)
+        .await
+        .map_err(ApiError::from)?;
 
     // 4. Save Context (CAS/Version check should happen here)
-    let new_val = serde_json::to_string(&new_ctx).map_err(|_| ApiError::new(AuthError::InternalError))?;
-    state.cache.set(&key, &new_val, Duration::from_secs(900)).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let new_val =
+        serde_json::to_string(&new_ctx).map_err(|_| ApiError::new(AuthError::InternalError))?;
+    state
+        .cache
+        .set(&key, &new_val, Duration::from_secs(900))
+        .await
+        .map_err(|_| ApiError::new(AuthError::InternalError))?;
 
     Ok(Json(result))
 }

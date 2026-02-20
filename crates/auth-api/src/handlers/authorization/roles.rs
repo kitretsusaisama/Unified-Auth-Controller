@@ -1,12 +1,12 @@
+use crate::error::ApiError;
+use crate::AppState;
+use auth_core::models::CreateRoleRequest;
 use axum::{
-    extract::{State, Path, Json},
-    response::IntoResponse,
+    extract::{Json, Path, State},
     http::StatusCode,
+    response::IntoResponse,
 };
 use uuid::Uuid;
-use crate::AppState;
-use crate::error::ApiError;
-use auth_core::models::CreateRoleRequest;
 
 // ============================================================================
 // Create Role
@@ -27,7 +27,11 @@ pub async fn create_role(
     // We need to inject AuthorizationService into AppState or use RoleService if updated.
     // The previous step updated RoleService to handle the new Role struct.
 
-    let role = state.role_service.create_role(tenant_id, payload).await.map_err(ApiError::from)?;
+    let role = state
+        .role_service
+        .create_role(tenant_id, payload)
+        .await
+        .map_err(ApiError::from)?;
 
     Ok((StatusCode::CREATED, Json(role)))
 }
@@ -41,5 +45,7 @@ pub async fn get_role(
     Path(role_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ApiError> {
     // Stub
-    Ok(Json(serde_json::json!({"id": role_id, "name": "Stub Role"})))
+    Ok(Json(
+        serde_json::json!({"id": role_id, "name": "Stub Role"}),
+    ))
 }

@@ -22,9 +22,16 @@ impl Default for OidcProviderMetadata {
             token_endpoint: "http://localhost:8080/auth/token".to_string(),
             userinfo_endpoint: "http://localhost:8080/auth/userinfo".to_string(),
             jwks_uri: "http://localhost:8080/auth/certs".to_string(),
-            scopes_supported: vec!["openid".to_string(), "profile".to_string(), "email".to_string()],
+            scopes_supported: vec![
+                "openid".to_string(),
+                "profile".to_string(),
+                "email".to_string(),
+            ],
             response_types_supported: vec!["code".to_string()],
-            grant_types_supported: vec!["authorization_code".to_string(), "refresh_token".to_string()],
+            grant_types_supported: vec![
+                "authorization_code".to_string(),
+                "refresh_token".to_string(),
+            ],
             subject_types_supported: vec!["public".to_string()],
             id_token_signing_alg_values_supported: vec!["RS256".to_string()],
         }

@@ -1,9 +1,5 @@
-use axum::{
-    extract::Json,
-    response::IntoResponse,
-    http::StatusCode,
-};
 use auth_protocols::discovery::generate_oidc_metadata;
+use axum::{extract::Json, http::StatusCode, response::IntoResponse};
 use std::env;
 
 /// GET /.well-known/openid-configuration

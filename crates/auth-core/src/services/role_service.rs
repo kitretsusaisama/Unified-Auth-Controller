@@ -1,7 +1,7 @@
-use crate::models::{Role, UpdateRoleRequest, CreateRoleRequest, RoleScope};
 use crate::error::AuthError;
-use uuid::Uuid;
+use crate::models::{CreateRoleRequest, Role, RoleScope, UpdateRoleRequest};
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[async_trait::async_trait]
 pub trait RoleStore: Send + Sync {
@@ -22,10 +22,21 @@ impl RoleService {
         Self { store }
     }
 
-    pub async fn create_role(&self, tenant_id: Uuid, req: CreateRoleRequest) -> Result<Role, AuthError> {
+    pub async fn create_role(
+        &self,
+        tenant_id: Uuid,
+        req: CreateRoleRequest,
+    ) -> Result<Role, AuthError> {
         // Check if role name exists in tenant
-        if self.store.find_by_name(tenant_id, &req.name).await?.is_some() {
-             return Err(AuthError::ValidationError { message: "Role with this name already exists".to_string() });
+        if self
+            .store
+            .find_by_name(tenant_id, &req.name)
+            .await?
+            .is_some()
+        {
+            return Err(AuthError::ValidationError {
+                message: "Role with this name already exists".to_string(),
+            });
         }
 
         let role = Role {

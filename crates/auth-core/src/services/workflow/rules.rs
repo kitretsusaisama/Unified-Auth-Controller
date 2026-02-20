@@ -1,5 +1,5 @@
-use crate::error::AuthError;
 use super::FlowContext;
+use crate::error::AuthError;
 
 pub trait Rule: Send + Sync {
     fn evaluate(&self, ctx: &FlowContext) -> Result<bool, AuthError>;
@@ -24,7 +24,7 @@ impl RuleEngine {
             if !rule.evaluate(ctx)? {
                 return Err(AuthError::AuthorizationDenied {
                     permission: "workflow".to_string(),
-                    resource: "rule_violation".to_string()
+                    resource: "rule_violation".to_string(),
                 });
             }
         }

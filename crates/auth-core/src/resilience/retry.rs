@@ -1,10 +1,10 @@
 //! Resilience utilities for retry logic
-//! 
+//!
 //! Provides standardized retry policies for external operations.
 
-use std::time::Duration;
 use rand::Rng;
 use std::future::Future;
+use std::time::Duration;
 
 /// Configuration for retry logic
 #[derive(Debug, Clone, Copy)]
@@ -25,10 +25,7 @@ impl Default for RetryConfig {
 }
 
 /// Execute a future with exponential backoff retry
-pub async fn retry<F, Fut, T, E>(
-    config: RetryConfig, 
-    mut operation: F
-) -> Result<T, E> 
+pub async fn retry<F, Fut, T, E>(config: RetryConfig, mut operation: F) -> Result<T, E>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, E>>,
@@ -36,7 +33,7 @@ where
 {
     let mut attempt = 1;
     let mut delay = config.base_delay_ms;
-    
+
     loop {
         match operation().await {
             Ok(value) => return Ok(value),
@@ -44,14 +41,14 @@ where
                 if attempt >= config.max_attempts {
                     return Err(e);
                 }
-                
+
                 // Calculate delay with jitter
                 let jitter = rand::thread_rng().gen_range(0..=config.base_delay_ms / 2);
                 let current_delay = delay + jitter;
-                
+
                 // Cap at max delay
                 let sleep_ms = current_delay.min(config.max_delay_ms);
-                
+
                 tracing::warn!(
                     "Operation failed (attempt {}/{}): {}. Retrying in {}ms...",
                     attempt,
@@ -59,9 +56,9 @@ where
                     e,
                     sleep_ms
                 );
-                
+
                 tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
-                
+
                 attempt += 1;
                 delay = (delay * 2).min(config.max_delay_ms);
             }
