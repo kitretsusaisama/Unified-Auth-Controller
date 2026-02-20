@@ -68,6 +68,7 @@ async fn main() -> anyhow::Result<()> {
 
     // We need TokenEngine. It needs RevokedTokenStore and RefreshTokenStore.
     // We can use the default in-memory ones via `TokenEngine::new()`.
+    #[allow(deprecated)]
     let token_service: Arc<dyn TokenProvider> = Arc::new(TokenEngine::new().await?);
 
     let audit_logger: Arc<dyn AuditLogger> = Arc::new(TracingAuditLogger);
