@@ -195,7 +195,7 @@ impl UserRepository {
 
         let id_str: String = row.try_get("id")?;
         let tenant_id_str: String = row.try_get("tenant_id")?;
-        
+
         Ok(User {
             id: Uuid::parse_str(&id_str).unwrap_or_default(),
             tenant_id: Uuid::parse_str(&tenant_id_str).unwrap_or_default(),

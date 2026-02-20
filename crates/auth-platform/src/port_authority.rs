@@ -304,7 +304,6 @@ impl PortAuthority {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
