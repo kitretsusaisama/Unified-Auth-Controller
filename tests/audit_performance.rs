@@ -40,7 +40,10 @@ async fn benchmark_audit_log_throughput() {
     let iterations_per_task = 50;
     let total_ops = concurrency * iterations_per_task;
 
-    println!("Starting benchmark: {} tasks * {} iterations = {} total inserts", concurrency, iterations_per_task, total_ops);
+    println!(
+        "Starting benchmark: {} tasks * {} iterations = {} total inserts",
+        concurrency, iterations_per_task, total_ops
+    );
 
     let start = Instant::now();
 
@@ -51,12 +54,15 @@ async fn benchmark_audit_log_throughput() {
         let handle = task::spawn(async move {
             for _ in 0..iterations_per_task {
                 let actor_id = Uuid::new_v4();
-                let _ = service.log(
-                    "benchmark_action",
-                    actor_id,
-                    "benchmark_resource",
-                    Some(json!({"test": "data"}))
-                ).await.expect("Log failed");
+                let _ = service
+                    .log(
+                        "benchmark_action",
+                        actor_id,
+                        "benchmark_resource",
+                        Some(json!({"test": "data"})),
+                    )
+                    .await
+                    .expect("Log failed");
             }
         });
         handles.push(handle);
