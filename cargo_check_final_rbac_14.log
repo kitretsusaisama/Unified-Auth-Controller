@@ -1,0 +1,11 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-protocols v0.1.0 (/app/crates/auth-protocols)
+    Checking auth-extension v0.1.0 (/app/crates/auth-extension)
+    Checking auth-audit v0.1.0 (/app/crates/auth-audit)
+    Checking auth-api v0.1.0 (/app/crates/auth-api)
+    Checking auth-sso-platform v0.1.0 (/app)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.61s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`

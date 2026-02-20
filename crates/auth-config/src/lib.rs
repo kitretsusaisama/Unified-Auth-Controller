@@ -1,5 +1,5 @@
 //! Configuration management system
-//! 
+//!
 //! Provides dynamic configuration management with real-time updates,
 //! versioning, and validation capabilities.
 

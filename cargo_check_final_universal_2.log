@@ -1,0 +1,66 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-core v0.1.0 (/app/crates/auth-core)
+warning: unused imports: `Serialize` and `de::DeserializeOwned`
+ --> crates/auth-cache/src/lib.rs:4:13
+  |
+4 | use serde::{de::DeserializeOwned, Serialize};
+  |             ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `auth-cache` (lib) generated 1 warning (run `cargo fix --lib -p auth-cache` to apply 1 suggestion)
+error[E0599]: the method `get` exists for struct `HashMap<FlowState, Box<(dyn StepHandler + 'static)>>`, but its trait bounds were not satisfied
+  --> crates/auth-core/src/services/workflow/engine.rs:73:37
+   |
+ 8 | pub enum FlowState {
+   | ------------------ doesn't satisfy `FlowState: Hash` or `FlowState: std::cmp::Eq`
+...
+73 |         let handler = self.handlers.get(&ctx.current_state)
+   |                                     ^^^ method cannot be called due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `FlowState: std::cmp::Eq`
+           `FlowState: Hash`
+help: consider annotating `FlowState` with `#[derive(Eq, Hash, PartialEq)]`
+   |
+ 8 + #[derive(Eq, Hash, PartialEq)]
+ 9 | pub enum FlowState {
+   |
+
+error[E0282]: type annotations needed
+  --> crates/auth-core/src/services/workflow/engine.rs:77:13
+   |
+77 |         let next_state = handler.handle(&mut ctx, action).await?;
+   |             ^^^^^^^^^^
+...
+80 |         ctx.current_state = next_state.clone();
+   |                             ---------- type must be known at this point
+   |
+help: consider giving `next_state` an explicit type
+   |
+77 |         let next_state: /* Type */ = handler.handle(&mut ctx, action).await?;
+   |                       ++++++++++++
+
+error[E0599]: the method `insert` exists for struct `HashMap<FlowState, Box<(dyn StepHandler + 'static)>>`, but its trait bounds were not satisfied
+  --> crates/auth-core/src/services/workflow/engine.rs:66:23
+   |
+ 8 | pub enum FlowState {
+   | ------------------ doesn't satisfy `FlowState: Hash` or `FlowState: std::cmp::Eq`
+...
+66 |         self.handlers.insert(state, handler);
+   |                       ^^^^^^
+   |
+   = note: the following trait bounds were not satisfied:
+           `FlowState: std::cmp::Eq`
+           `FlowState: Hash`
+help: consider annotating `FlowState` with `#[derive(Eq, Hash, PartialEq)]`
+   |
+ 8 + #[derive(Eq, Hash, PartialEq)]
+ 9 | pub enum FlowState {
+   |
+
+Some errors have detailed explanations: E0282, E0599.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `auth-core` (lib) due to 3 previous errors

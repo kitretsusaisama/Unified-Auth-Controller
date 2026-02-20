@@ -1,26 +1,18 @@
-use axum::{
-    body::Body,
-    http::{Request, StatusCode},
-    middleware::Next,
-    response::Response,
-    extract::Extension,
-};
-use uuid::Uuid;
+use auth_core::audit::{AuditCategory, AuditEvent, AuditLogger, AuditOutcome, AuditSeverity};
+use axum::{body::Body, http::Request, middleware::Next, response::Response};
 use std::sync::Arc;
 use std::time::Instant;
-use auth_core::audit::{AuditLogger, AuditEvent, AuditCategory, AuditSeverity, AuditOutcome};
 
-pub async fn audit_middleware(
-    req: Request<Body>,
-    next: Next,
-) -> Response<Body> {
+pub async fn audit_middleware(req: Request<Body>, next: Next) -> Response<Body> {
     let start = Instant::now();
     let method = req.method().clone();
     let uri = req.uri().clone();
-    let user_agent = req.headers().get("user-agent")
+    let user_agent = req
+        .headers()
+        .get("user-agent")
         .and_then(|h| h.to_str().ok())
         .map(|s| s.to_string());
-    
+
     // Get audit logger from extensions
     let audit_logger = match req.extensions().get::<Arc<dyn AuditLogger>>() {
         Some(logger) => logger.clone(),
@@ -30,25 +22,35 @@ pub async fn audit_middleware(
             return response;
         }
     };
-    
+
     // TODO: Extract IP (needs SecureClientIp source or similar)
-    let ip_address: Option<String> = None; 
-    
+    let ip_address: Option<String> = None;
+
     // Run the handler
     let response = next.run(req).await;
-    
+
     let duration = start.elapsed();
     let status = response.status();
-    
+
     // Determine severity/outcome based on status
     let (severity, outcome) = if status.is_server_error() {
-        (AuditSeverity::Critical, AuditOutcome::Failure { reason: status.to_string() })
+        (
+            AuditSeverity::Critical,
+            AuditOutcome::Failure {
+                reason: status.to_string(),
+            },
+        )
     } else if status.is_client_error() {
-        (AuditSeverity::Warning, AuditOutcome::Failure { reason: status.to_string() })
+        (
+            AuditSeverity::Warning,
+            AuditOutcome::Failure {
+                reason: status.to_string(),
+            },
+        )
     } else {
         (AuditSeverity::Info, AuditOutcome::Success)
     };
-    
+
     // Create event
     // Note: To get Actor ID (User ID), we would need to extract it from Extensions populated by Auth middleware.
     // Assuming we might have `Extension<Claims>` or similar later.
@@ -65,7 +67,7 @@ pub async fn audit_middleware(
         "status": status.as_u16(),
         "duration_ms": duration.as_millis()
     }));
-    
+
     // We modify event outcome
     let event = match outcome {
         AuditOutcome::Success => event,

@@ -6,10 +6,10 @@
 //!
 //! Requirements Validated: 3.1, 3.2, 3.3, 3.4
 
-use auth_core::models::{Claims, AccessToken};
-use auth_core::services::{TokenProvider, TokenEngine};
-use auth_crypto::{JwtService, JwtConfig, KeyManager};
-use chrono::{Utc, Duration};
+use auth_core::models::{AccessToken, Claims};
+use auth_core::services::{TokenEngine, TokenProvider};
+use auth_crypto::{JwtConfig, JwtService, KeyManager};
+use chrono::{Duration, Utc};
 use proptest::prelude::*;
 use uuid::Uuid;
 
@@ -20,18 +20,12 @@ fn uuid_strategy() -> impl Strategy<Value = Uuid> {
 
 /// Strategy for generating valid permission strings
 fn permission_strategy() -> impl Strategy<Value = Vec<String>> {
-    prop::collection::vec(
-        prop::string::string_regex("[a-z]+:[a-z]+").unwrap(),
-        0..10
-    )
+    prop::collection::vec(prop::string::string_regex("[a-z]+:[a-z]+").unwrap(), 0..10)
 }
 
 /// Strategy for generating valid role strings
 fn role_strategy() -> impl Strategy<Value = Vec<String>> {
-    prop::collection::vec(
-        prop::string::string_regex("[a-z_]+").unwrap(),
-        0..5
-    )
+    prop::collection::vec(prop::string::string_regex("[a-z_]+").unwrap(), 0..5)
 }
 
 /// Strategy for generating valid Claims
@@ -41,21 +35,22 @@ fn claims_strategy() -> impl Strategy<Value = Claims> {
         uuid_strategy(),
         permission_strategy(),
         role_strategy(),
-    ).prop_map(|(user_id, tenant_id, permissions, roles)| {
-        let now = Utc::now();
-        Claims {
-            sub: user_id.to_string(),
-            iss: "auth-platform".to_string(),
-            aud: "auth-platform".to_string(),
-            exp: (now + Duration::minutes(15)).timestamp(),
-            iat: now.timestamp(),
-            nbf: now.timestamp(),
-            jti: Uuid::new_v4().to_string(),
-            tenant_id: tenant_id.to_string(),
-            permissions,
-            roles,
-        }
-    })
+    )
+        .prop_map(|(user_id, tenant_id, permissions, roles)| {
+            let now = Utc::now();
+            Claims {
+                sub: user_id.to_string(),
+                iss: "auth-platform".to_string(),
+                aud: "auth-platform".to_string(),
+                exp: (now + Duration::minutes(15)).timestamp(),
+                iat: now.timestamp(),
+                nbf: now.timestamp(),
+                jti: Uuid::new_v4().to_string(),
+                tenant_id: tenant_id.to_string(),
+                permissions,
+                roles,
+            }
+        })
 }
 
 proptest! {
@@ -272,7 +267,6 @@ async fn test_token_signature_tampering_detection() {
     /// For any token, if the payload is modified, validation must fail.
     ///
     /// Validates: RS256 signature catches any token modification
-    
     let engine = TokenEngine::new().await.unwrap();
 
     let claims = Claims {
@@ -303,10 +297,7 @@ async fn test_token_signature_tampering_detection() {
 
             // Validation must fail
             let result = engine.validate_token(&tampered_token).await;
-            assert!(
-                result.is_err(),
-                "Tampered token must fail validation"
-            );
+            assert!(result.is_err(), "Tampered token must fail validation");
         }
     }
 }
@@ -320,8 +311,7 @@ async fn test_algorithm_consistency() {
     /// For any configuration, only RS256 algorithm is used.
     ///
     /// Validates: Algorithm is consistently RS256
-    
-    use auth_crypto::{JwtService, JwtConfig, KeyManager};
+    use auth_crypto::{JwtConfig, JwtService, KeyManager};
     use jsonwebtoken::Algorithm;
 
     let config = JwtConfig::default();
@@ -352,11 +342,7 @@ async fn test_algorithm_consistency() {
 
         if let Some(header_json) = header {
             let alg = header_json.get("alg").and_then(|v| v.as_str());
-            assert_eq!(
-                alg,
-                Some("RS256"),
-                "Token algorithm must be RS256"
-            );
+            assert_eq!(alg, Some("RS256"), "Token algorithm must be RS256");
         }
     }
 }
@@ -370,8 +356,7 @@ async fn test_revocation_consistency() {
     /// For any token, after revocation it must never pass validation.
     ///
     /// Validates: Revoked tokens are permanently invalidated
-    
-    let engine = TokenEngine::new().await.unwrap ();
+    let engine = TokenEngine::new().await.unwrap();
 
     let claims = Claims {
         sub: Uuid::new_v4().to_string(),
@@ -398,8 +383,5 @@ async fn test_revocation_consistency() {
 
     // Token must fail validation after revocation
     let result = engine.validate_token(&token_str).await;
-    assert!(
-        result.is_err(),
-        "Revoked token must fail validation"
-    );
+    assert!(result.is_err(), "Revoked token must fail validation");
 }

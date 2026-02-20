@@ -1,0 +1,12 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+   Compiling auth-sso-platform v0.1.0 (/app)
+error[E0063]: missing field `cache` in initializer of `AppState`
+  --> tests/api_mock_tests.rs:52:5
+   |
+52 |     AppState {
+   |     ^^^^^^^^ missing `cache`
+
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `auth-sso-platform` (test "api_mock_tests") due to 1 previous error
