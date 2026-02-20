@@ -115,7 +115,7 @@ impl UserRepository {
     pub async fn find_by_email(&self, email: &str, tenant_id: Uuid) -> Result<Option<User>, sqlx::Error> {
         let row = sqlx::query(
             r#"
-            SELECT id, email, email_verified, email_verified_at, phone, phone_verified, phone_verified_at, password_hash, password_changed_at, failed_login_attempts, locked_until, last_login_at, last_login_ip, mfa_enabled, mfa_secret, backup_codes, risk_score, profile_data, preferences, status, created_at, updated_at, deleted_at, identifier_type, primary_identifier
+            SELECT id, tenant_id, email, email_verified, email_verified_at, phone, phone_verified, phone_verified_at, password_hash, password_changed_at, failed_login_attempts, locked_until, last_login_at, last_login_ip, mfa_enabled, mfa_secret, backup_codes, risk_score, profile_data, preferences, status, created_at, updated_at, deleted_at, identifier_type, primary_identifier
             FROM users 
             WHERE email = ? AND tenant_id = ? AND deleted_at IS NULL
             "#,
@@ -135,7 +135,7 @@ impl UserRepository {
     pub async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, sqlx::Error> {
          let row = sqlx::query(
             r#"
-            SELECT id, email, email_verified, email_verified_at, phone, phone_verified, phone_verified_at, password_hash, password_changed_at, failed_login_attempts, locked_until, last_login_at, last_login_ip, mfa_enabled, mfa_secret, backup_codes, risk_score, profile_data, preferences, status, created_at, updated_at, deleted_at, identifier_type, primary_identifier
+            SELECT id, tenant_id, email, email_verified, email_verified_at, phone, phone_verified, phone_verified_at, password_hash, password_changed_at, failed_login_attempts, locked_until, last_login_at, last_login_ip, mfa_enabled, mfa_secret, backup_codes, risk_score, profile_data, preferences, status, created_at, updated_at, deleted_at, identifier_type, primary_identifier
             FROM users 
             WHERE id = ?
             "#,
@@ -156,9 +156,11 @@ impl UserRepository {
         let status: UserStatus = serde_json::from_str(&status_str).unwrap_or(UserStatus::PendingVerification);
 
         let id_str: String = row.try_get("id")?;
-
+        let tenant_id_str: String = row.try_get("tenant_id")?;
+        
         Ok(User {
             id: Uuid::parse_str(&id_str).unwrap_or_default(),
+            tenant_id: Uuid::parse_str(&tenant_id_str).unwrap_or_default(),
             identifier_type: row.try_get("identifier_type")?,
             primary_identifier: row.try_get("primary_identifier")?,
             email: row.try_get("email")?,
@@ -286,7 +288,7 @@ impl UserRepository {
     pub async fn find_by_phone(&self, phone: &str, tenant_id: Uuid) -> Result<Option<User>, sqlx::Error> {
         let row = sqlx::query(
             r#"
-            SELECT id, email, email_verified, email_verified_at, phone, phone_verified, phone_verified_at, password_hash, password_changed_at, failed_login_attempts, locked_until, last_login_at, last_login_ip, mfa_enabled, mfa_secret, backup_codes, risk_score, profile_data, preferences, status, created_at, updated_at, deleted_at, identifier_type, primary_identifier
+            SELECT id, tenant_id, email, email_verified, email_verified_at, phone, phone_verified, phone_verified_at, password_hash, password_changed_at, failed_login_attempts, locked_until, last_login_at, last_login_ip, mfa_enabled, mfa_secret, backup_codes, risk_score, profile_data, preferences, status, created_at, updated_at, deleted_at, identifier_type, primary_identifier
             FROM users 
             WHERE phone = ? AND tenant_id = ? AND deleted_at IS NULL
             "#,

@@ -108,8 +108,7 @@ pub async fn send_email_verification(
 
     // 4. Create Session
     // We use a longer TTL (e.g., 24 hours) for email verification links
-    // TODO: Extract tenant_id from context or request; for now using default
-    let tenant_id = user.id; // Using user.id as placeholder since User model doesn't have tenant_id
+    let tenant_id = user.tenant_id;
     let (session, _) = otp_service.create_session(
         tenant_id,
         email.clone(),
@@ -208,8 +207,7 @@ pub async fn send_phone_verification(
     }
 
     // Generate numeric OTP (6 digits)
-    // TODO: Extract tenant_id from context or request; for now using default
-    let tenant_id = user.id; // Using user.id as placeholder since User model doesn't have tenant_id
+    let tenant_id = user.tenant_id;
     let (session, otp): (auth_core::services::otp_service::OtpSession, String) = otp_service.create_session(
         tenant_id,
         phone.clone(),

@@ -25,7 +25,8 @@ pub enum PrimaryIdentifier {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct User {
     pub id: Uuid,
-
+    pub tenant_id: Uuid,
+    
     // Multi-channel identifier fields
     pub identifier_type: IdentifierType,
     pub primary_identifier: PrimaryIdentifier,

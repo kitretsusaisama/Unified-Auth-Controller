@@ -3,7 +3,7 @@
 ## ✅ **Database Configuration**
 - Application successfully uses the database configuration from `.env` file
 - MySQL database connection established using `AUTH__DATABASE__MYSQL_URL` from .env
-- Remote MySQL server: `mysql://u413456342_sias:V&zTudOgd9v1@srv1873.hstgr.io/u413456342_sias`
+- Remote MySQL server: `mysql://u413456342_sias:your-password@srv1873.hstgr.io/u413456342_sias`
 - Database migrations already applied (as indicated by "Dirty" status)
 
 ## ✅ **Application Build Status**

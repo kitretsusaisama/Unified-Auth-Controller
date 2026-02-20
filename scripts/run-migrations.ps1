@@ -1,10 +1,24 @@
 # MySQL Migration Runner Script
 # Runs all migrations on the MySQL database
 
-$host = "srv1873.hstgr.io"
-$database = "u413456342_sias"
-$user = "u413456342_sias"
-$password = "V&zTudOgd9v1"
+$host = if ($env:DB_HOST) { $env:DB_HOST } else { "localhost" }
+$database = if ($env:DB_NAME) { $env:DB_NAME } else { "auth_platform" }
+$user = if ($env:DB_USER) { $env:DB_USER } else { "root" }
+$password = $env:DB_PASSWORD
+
+# Try to parse from AUTH__DATABASE__MYSQL_URL if provided
+if ($env:AUTH__DATABASE__MYSQL_URL -match "mysql://(.*?):(.*?)@(.*?)/(.*)") {
+    $user = $matches[1]
+    $password = $matches[2]
+    $host = $matches[3]
+    $database = $matches[4]
+}
+
+if (-not $password) {
+    Write-Host "ERROR: DB_PASSWORD environment variable is not set!" -ForegroundColor Red
+    Write-Host "Please set the DB_PASSWORD environment variable before running this script." -ForegroundColor Yellow
+    exit 1
+}
 
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host "MySQL Migration Runner" -ForegroundColor Cyan

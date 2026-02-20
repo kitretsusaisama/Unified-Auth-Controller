@@ -10,7 +10,7 @@
 - ✅ **Health Checks**: Ready to serve requests on port 8080
 
 ### **Database Configuration:**
-- **MySQL URL**: `mysql://u413456342_sias:V&zTudOgd9v1@srv1873.hstgr.io/u413456342_sias`
+- **MySQL URL**: `mysql://u413456342_sias:your-password@srv1873.hstgr.io/u413456342_sias`
 - **Connection Status**: ✅ Connected successfully
 - **Migration Status**: ✅ Schema already applied (expected for production)
 - **Database Type**: MySQL only (SQLite removed for production)
