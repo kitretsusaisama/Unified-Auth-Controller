@@ -23,9 +23,8 @@ pub struct Tenant {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TenantStatus {
-    #[default]
     Active,
     Suspended,
     Deleted,
@@ -71,11 +70,7 @@ impl Tenant {
 
     /// Check if tenant has custom branding configured
     pub fn has_custom_branding(&self) -> bool {
-        !self.branding_config.is_null()
-            && self
-                .branding_config
-                .as_object()
-                .is_some_and(|obj| !obj.is_empty())
+        !self.branding_config.is_null() && self.branding_config.as_object().map_or(false, |obj| !obj.is_empty())
     }
 
     /// Validate slug format (alphanumeric and hyphens only)
@@ -83,5 +78,11 @@ impl Tenant {
         slug.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
             && !slug.starts_with('-')
             && !slug.ends_with('-')
+    }
+}
+
+impl Default for TenantStatus {
+    fn default() -> Self {
+        Self::Active
     }
 }

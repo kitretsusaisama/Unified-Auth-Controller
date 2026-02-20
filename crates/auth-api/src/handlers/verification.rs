@@ -10,18 +10,18 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use uuid::Uuid;
+use std::sync::Arc;
 
-use crate::error::ApiError;
-use auth_core::error::TokenErrorKind;
 use auth_core::services::{
-    identity::IdentityService,
+    otp_service::{OtpService, OtpPurpose, DeliveryMethod, TokenType},
     otp_delivery::OtpDeliveryService,
-    otp_service::{DeliveryMethod, OtpPurpose, OtpService, TokenType},
-    rate_limiter::RateLimiter,
+    identity::IdentityService,
+    rate_limiter::{RateLimiter, identifier_key},
 };
 use auth_db::repositories::otp_repository::OtpRepository;
+use crate::error::ApiError;
+use auth_core::error::{AuthError, TokenErrorKind};
 
 // ============================================================================
 // Types
@@ -82,43 +82,24 @@ pub async fn send_email_verification(
     State(rate_limiter): State<Arc<RateLimiter>>,
     Json(payload): Json<SendEmailVerificationRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+
     // 1. Fetch User
-    let user = identity_service
-        .get_user(payload.user_id)
-        .await
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
-    let email = payload
-        .email
-        .unwrap_or_else(|| user.email.clone().unwrap_or_default()); // Handle Option<String> properly
+    let user = identity_service.get_user(payload.user_id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    let email = payload.email.unwrap_or_else(|| user.email.clone().unwrap_or_default()); // Handle Option<String> properly
 
     if email.is_empty() {
-        return Err(ApiError::new(
-            auth_core::error::AuthError::ValidationError {
-                message: "User has no email to verify".to_string(),
-            },
-        ));
+         return Err(ApiError::new(auth_core::error::AuthError::ValidationError { message: "User has no email to verify".to_string() }));
     }
 
-    if user.email_verified && (user.email.as_ref() == Some(&email)) {
-        // Check if email matches the one being verified
-        return Err(ApiError::new(auth_core::error::AuthError::Conflict {
-            message: "Email already verified".to_string(),
-        }));
+    if user.email_verified && user.email.as_ref().map_or(false, |e| e == &email) { // Check if email matches the one being verified
+        return Err(ApiError::new(auth_core::error::AuthError::Conflict { message: "Email already verified".to_string() }));
     }
 
     // 2. Rate Limiting
     let limit_key = format!("verify_email:{}", user.id);
-    let is_allowed: bool = rate_limiter
-        .check_limit(&limit_key, "email_verification")
-        .await
-        .map_err(|_e| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    let is_allowed: bool = rate_limiter.check_limit(&limit_key, "email_verification").await.map_err(|e| ApiError::new(auth_core::error::AuthError::InternalError))?;
     if !is_allowed {
-        return Err(ApiError::new(
-            auth_core::error::AuthError::RateLimitExceeded {
-                limit: 3,
-                window: "1 hour".to_string(),
-            },
-        ));
+         return Err(ApiError::new(auth_core::error::AuthError::RateLimitExceeded { limit: 3, window: "1 hour".to_string() }));
     }
 
     // 3. Generate Magic Link Token (High Entropy)
@@ -136,30 +117,20 @@ pub async fn send_email_verification(
         OtpPurpose::EmailVerification,
         Some(user.id),
         Some(token.clone()), // Explicit token
-        Some(1440),          // 24 hours
+        Some(1440), // 24 hours
     )?; // Removed .await as create_session is not async
 
     // 5. Save to DB
     let token_hash = otp_service.hash_otp(&token)?;
-    otp_repo
-        .create_session(&session, &token_hash)
-        .await
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    otp_repo.create_session(&session, &token_hash).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
 
     // 6. Send Email
     // Construct Link: https://api.upflame.com/auth/verify/email?token=...&verification_id=...
     // In production, this base URL should be configurable per tenant or env
-    let base_url =
-        std::env::var("APP_BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
-    let link = format!(
-        "{}/auth/verify/email?token={}&verification_id={}",
-        base_url, token, session.id
-    );
+    let base_url = std::env::var("APP_BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let link = format!("{}/auth/verify/email?token={}&verification_id={}", base_url, token, session.id);
 
-    otp_delivery
-        .send_verification_email(&email, &link)
-        .await
-        .map_err(ApiError::from)?;
+    otp_delivery.send_verification_email(&email, &link).await.map_err(|e| ApiError::from(e))?;
 
     Ok((
         StatusCode::OK,
@@ -168,7 +139,7 @@ pub async fn send_email_verification(
             sent_to: email,
             method: "magic_link".to_string(),
             expires_at: session.expires_at.to_rfc3339(),
-        }),
+        })
     ))
 }
 
@@ -180,51 +151,30 @@ pub async fn verify_email_link(
     State(otp_repo): State<Arc<OtpRepository>>,
     Query(query): Query<MagicLinkQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
+
     // 1. Fetch Session
-    let (session, token_hash): (auth_core::services::otp_service::OtpSession, String) = otp_repo
-        .find_by_id(query.verification_id)
-        .await?
-        .ok_or(ApiError::new(auth_core::error::AuthError::TokenError {
-            kind: TokenErrorKind::Invalid,
-        }))?;
+    let (session, token_hash): (auth_core::services::otp_service::OtpSession, String) = otp_repo.find_by_id(query.verification_id).await?
+        .ok_or(ApiError::new(auth_core::error::AuthError::TokenError { kind: TokenErrorKind::Invalid }))?;
 
     // 2. Validate
-    if otp_service.is_expired(&session) {
-        // is_expired returns bool directly
-        return Err(ApiError::new(auth_core::error::AuthError::TokenError {
-            kind: TokenErrorKind::Expired,
-        }));
+    if otp_service.is_expired(&session) { // is_expired returns bool directly
+        return Err(ApiError::new(auth_core::error::AuthError::TokenError { kind: TokenErrorKind::Expired }));
     }
-    if otp_service.is_verified(&session) {
-        // is_verified is not fallible and doesn't need map_err
-        // Already verified, return success idempotent
+    if otp_service.is_verified(&session) { // is_verified is not fallible and doesn't need map_err
+         // Already verified, return success idempotent
         return Ok("Email already verified".to_string());
     }
 
     // 3. Verify Token
-    if !otp_service
-        .verify_otp(&query.token, &token_hash)
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?
-    {
-        otp_repo
-            .increment_attempts(session.id)
-            .await
-            .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
-        return Err(ApiError::new(auth_core::error::AuthError::TokenError {
-            kind: TokenErrorKind::Invalid,
-        }));
+    if !otp_service.verify_otp(&query.token, &token_hash).map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))? {
+        otp_repo.increment_attempts(session.id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+        return Err(ApiError::new(auth_core::error::AuthError::TokenError { kind: TokenErrorKind::Invalid }));
     }
 
     // 4. Update User Status
     if let Some(user_id) = session.user_id {
-        identity_service
-            .mark_email_verified(user_id)
-            .await
-            .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
-        otp_repo
-            .mark_verified(session.id)
-            .await
-            .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+        identity_service.mark_email_verified(user_id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+        otp_repo.mark_verified(session.id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
         Ok("Email verified successfully! You can now close this window.".to_string())
     } else {
         Err(ApiError::new(auth_core::error::AuthError::InternalError))
@@ -245,29 +195,15 @@ pub async fn send_phone_verification(
     State(rate_limiter): State<Arc<RateLimiter>>,
     Json(payload): Json<SendPhoneVerificationRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let user = identity_service
-        .get_user(payload.user_id)
-        .await
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
-    let phone = payload.phone.or(user.phone).ok_or(ApiError::new(
-        auth_core::error::AuthError::ValidationError {
-            message: "No phone number".to_string(),
-        },
-    ))?;
+
+    let user = identity_service.get_user(payload.user_id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    let phone = payload.phone.or(user.phone).ok_or(ApiError::new(auth_core::error::AuthError::ValidationError { message: "No phone number".to_string() }))?;
 
     // Rate Limit
     let limit_key = format!("verify_phone:{}", user.id);
-    let is_allowed: bool = rate_limiter
-        .check_limit(&limit_key, "phone_verification")
-        .await
-        .map_err(|_e| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    let is_allowed: bool = rate_limiter.check_limit(&limit_key, "phone_verification").await.map_err(|e| ApiError::new(auth_core::error::AuthError::InternalError))?;
     if !is_allowed {
-        return Err(ApiError::new(
-            auth_core::error::AuthError::RateLimitExceeded {
-                limit: 3,
-                window: "1 hour".to_string(),
-            },
-        ));
+         return Err(ApiError::new(auth_core::error::AuthError::RateLimitExceeded { limit: 3, window: "1 hour".to_string() }));
     }
 
     // Generate numeric OTP (6 digits)
@@ -284,15 +220,9 @@ pub async fn send_phone_verification(
     )?; // Removed .await as create_session is not async
 
     let otp_hash = otp_service.hash_otp(&otp)?;
-    otp_repo
-        .create_session(&session, &otp_hash)
-        .await
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    otp_repo.create_session(&session, &otp_hash).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
 
-    otp_delivery
-        .send_phone_otp(&phone, &otp)
-        .await
-        .map_err(ApiError::from)?;
+    otp_delivery.send_phone_otp(&phone, &otp).await.map_err(|e| ApiError::from(e))?;
 
     Ok((
         StatusCode::OK,
@@ -301,7 +231,7 @@ pub async fn send_phone_verification(
             sent_to: phone,
             method: "sms".to_string(),
             expires_at: session.expires_at.to_rfc3339(),
-        }),
+        })
     ))
 }
 
@@ -313,47 +243,27 @@ pub async fn confirm_phone_verification(
     State(otp_repo): State<Arc<OtpRepository>>,
     Json(payload): Json<ConfirmVerificationRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let (session, otp_hash): (auth_core::services::otp_service::OtpSession, String) = otp_repo
-        .find_by_id(payload.verification_id)
-        .await?
-        .ok_or(ApiError::new(auth_core::error::AuthError::TokenError {
-            kind: TokenErrorKind::Invalid,
-        }))?;
 
-    if otp_service.is_expired(&session) {
-        // is_expired returns bool directly
-        return Err(ApiError::new(auth_core::error::AuthError::TokenError {
-            kind: TokenErrorKind::Expired,
-        }));
+    let (session, otp_hash): (auth_core::services::otp_service::OtpSession, String) = otp_repo.find_by_id(payload.verification_id).await?
+        .ok_or(ApiError::new(auth_core::error::AuthError::TokenError { kind: TokenErrorKind::Invalid }))?;
+
+    if otp_service.is_expired(&session) { // is_expired returns bool directly
+         return Err(ApiError::new(auth_core::error::AuthError::TokenError { kind: TokenErrorKind::Expired }));
     }
 
-    if !otp_service
-        .verify_otp(&payload.code, &otp_hash)
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?
-    {
-        otp_repo
-            .increment_attempts(session.id)
-            .await
-            .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
-        return Err(ApiError::new(auth_core::error::AuthError::TokenError {
-            kind: TokenErrorKind::Invalid,
-        }));
+    if !otp_service.verify_otp(&payload.code, &otp_hash).map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))? {
+        otp_repo.increment_attempts(session.id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+        return Err(ApiError::new(auth_core::error::AuthError::TokenError { kind: TokenErrorKind::Invalid }));
     }
 
-    identity_service
-        .mark_phone_verified(payload.user_id)
-        .await
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
-    otp_repo
-        .mark_verified(session.id)
-        .await
-        .map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    identity_service.mark_phone_verified(payload.user_id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
+    otp_repo.mark_verified(session.id).await.map_err(|_| ApiError::new(auth_core::error::AuthError::InternalError))?;
 
     Ok((
         StatusCode::OK,
         Json(serde_json::json!({
             "success": true,
             "message": "Phone verified successfully"
-        })),
+        }))
     ))
 }

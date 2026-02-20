@@ -1,8 +1,8 @@
-pub mod hashing;
+pub mod kms;
 pub mod jwt;
 pub mod keys;
-pub mod kms;
+pub mod hashing;
 
-pub use jwt::{JwtClaims, JwtConfig, JwtError, JwtService};
-pub use keys::{KeyError, KeyManager};
-pub use kms::{HsmKeyProvider, KeyProvider, SoftKeyProvider};
+pub use kms::{KeyProvider, SoftKeyProvider, HsmKeyProvider};
+pub use jwt::{JwtService, JwtConfig, JwtClaims, JwtError};
+pub use keys::{KeyManager, KeyError};

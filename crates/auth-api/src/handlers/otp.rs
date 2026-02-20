@@ -10,17 +10,17 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use uuid::Uuid;
+use std::sync::Arc;
 
-use crate::error::ApiError;
-use auth_core::error::{AuthError, TokenErrorKind};
 use auth_core::services::{
+    otp_service::{OtpService, OtpPurpose, DeliveryMethod},
     otp_delivery::OtpDeliveryService,
-    otp_service::{DeliveryMethod, OtpPurpose, OtpService},
-    rate_limiter::{identifier_key, RateLimiter},
+    rate_limiter::{RateLimiter, identifier_key, ip_key},
 };
 use auth_db::repositories::otp_repository::OtpRepository;
+use crate::error::ApiError;
+use auth_core::error::{AuthError, TokenErrorKind};
 
 // ============================================================================
 // Request/Response Types
@@ -82,7 +82,7 @@ pub async fn request_otp(
     let is_allowed = rate_limiter
         .check_limit(&identifier_limit_key, "otp_request_per_identifier")
         .await
-        .map_err(|_e| ApiError::new(AuthError::InternalError))?;
+        .map_err(|e| ApiError::new(AuthError::InternalError))?;
     if !is_allowed {
         return Err(ApiError::new(AuthError::RateLimitExceeded {
             limit: 5,
@@ -97,11 +97,7 @@ pub async fn request_otp(
         "phone".to_string()
     };
 
-    let delivery_method = match payload
-        .delivery_method
-        .as_deref()
-        .unwrap_or(&identifier_type)
-    {
+    let delivery_method = match payload.delivery_method.as_deref().unwrap_or(&identifier_type) {
         "email" => DeliveryMethod::Email,
         "phone" | "sms" => DeliveryMethod::Sms,
         _ => DeliveryMethod::Email,
@@ -130,26 +126,19 @@ pub async fn request_otp(
     )?;
 
     // 5. Hash OTP and save to database
-    let otp_hash = otp_service
-        .hash_otp(&otp)
-        .map_err(|_| ApiError::new(AuthError::InternalError))?;
-    otp_repo
-        .create_session(&session, &otp_hash)
-        .await
-        .map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let otp_hash = otp_service.hash_otp(&otp).map_err(|_| ApiError::new(AuthError::InternalError))?;
+    otp_repo.create_session(&session, &otp_hash).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
 
     // 6. Send OTP via appropriate channel
     let delivery_channel = match delivery_method {
         DeliveryMethod::Email => {
-            otp_delivery
-                .send_email_otp(&payload.identifier, &otp)
+            otp_delivery.send_email_otp(&payload.identifier, &otp)
                 .await
                 .map_err(|_| ApiError::new(AuthError::InternalError))?;
             "email"
         }
         DeliveryMethod::Sms => {
-            otp_delivery
-                .send_phone_otp(&payload.identifier, &otp)
+            otp_delivery.send_phone_otp(&payload.identifier, &otp)
                 .await
                 .map_err(|_| ApiError::new(AuthError::InternalError))?;
             "sms"
@@ -191,7 +180,7 @@ pub async fn verify_otp(
     let is_allowed = rate_limiter
         .check_limit(&session_key, "otp_verification_per_session")
         .await
-        .map_err(|_e| ApiError::new(AuthError::InternalError))?;
+        .map_err(|e| ApiError::new(AuthError::InternalError))?;
     if !is_allowed {
         return Err(ApiError::new(AuthError::TokenError {
             kind: TokenErrorKind::Invalid,
@@ -202,22 +191,18 @@ pub async fn verify_otp(
     let (session, otp_hash) = otp_repo
         .find_by_id(payload.session_id)
         .await?
-        .ok_or_else(|| {
-            ApiError::new(AuthError::TokenError {
-                kind: TokenErrorKind::Invalid,
-            })
-        })?;
+        .ok_or_else(|| ApiError::new(AuthError::TokenError {
+            kind: TokenErrorKind::Invalid,
+        }))?;
 
     // 3. Validate session
-    if otp_service.is_expired(&session) {
-        // is_expired returns bool directly
+    if otp_service.is_expired(&session) { // is_expired returns bool directly
         return Err(ApiError::new(AuthError::TokenError {
             kind: TokenErrorKind::Expired,
         }));
     }
 
-    if otp_service.is_verified(&session) {
-        // is_verified returns bool directly
+    if otp_service.is_verified(&session) { // is_verified returns bool directly
         return Ok((
             StatusCode::OK,
             Json(OtpVerifyResponse {
@@ -228,24 +213,18 @@ pub async fn verify_otp(
         ));
     }
 
-    if otp_service.is_max_attempts_exceeded(&session) {
-        // is_max_attempts_exceeded returns bool directly
+    if otp_service.is_max_attempts_exceeded(&session) { // is_max_attempts_exceeded returns bool directly
         return Err(ApiError::new(AuthError::TokenError {
             kind: TokenErrorKind::Invalid,
         }));
     }
 
     // 4. Verify OTP
-    let is_valid = otp_service
-        .verify_otp(&payload.otp, &otp_hash)
-        .map_err(|_| ApiError::new(AuthError::InternalError))?;
+    let is_valid = otp_service.verify_otp(&payload.otp, &otp_hash).map_err(|_| ApiError::new(AuthError::InternalError))?;
 
     if !is_valid {
         // Increment attempts
-        otp_repo
-            .increment_attempts(payload.session_id)
-            .await
-            .map_err(|_| ApiError::new(AuthError::InternalError))?;
+        otp_repo.increment_attempts(payload.session_id).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
 
         return Ok((
             StatusCode::UNAUTHORIZED,
@@ -258,10 +237,7 @@ pub async fn verify_otp(
     }
 
     // 5. Mark as verified
-    otp_repo
-        .mark_verified(payload.session_id)
-        .await
-        .map_err(|_| ApiError::new(AuthError::InternalError))?;
+    otp_repo.mark_verified(payload.session_id).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
 
     // 6. Return success
     Ok((
@@ -284,7 +260,7 @@ fn mask_email(email: &str) -> String {
         if local.len() <= 3 {
             format!("{}****{}", &local[..1], domain)
         } else {
-            format!("{}****{}{}", &local[..2], &local[local.len() - 1..], domain)
+            format!("{}****{}{}", &local[..2], &local[local.len()-1..], domain)
         }
     } else {
         email.to_string()
@@ -293,7 +269,7 @@ fn mask_email(email: &str) -> String {
 
 fn mask_phone(phone: &str) -> String {
     if phone.len() > 6 {
-        format!("{}****{}", &phone[..3], &phone[phone.len() - 3..])
+        format!("{}****{}", &phone[..3], &phone[phone.len()-3..])
     } else {
         phone.to_string()
     }

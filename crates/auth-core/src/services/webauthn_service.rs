@@ -1,7 +1,7 @@
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
+use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Passkey;
@@ -36,26 +36,11 @@ impl WebauthnService {
         Self { store }
     }
 
-    pub async fn start_registration(
-        &self,
-        _user_id: Uuid,
-        _username: &str,
-    ) -> anyhow::Result<(
-        CreationChallengeResponse,
-        RegisterPublicKeyCredentialCreationOptions,
-    )> {
-        Ok((
-            CreationChallengeResponse,
-            RegisterPublicKeyCredentialCreationOptions,
-        ))
+    pub async fn start_registration(&self, _user_id: Uuid, _username: &str) -> anyhow::Result<(CreationChallengeResponse, RegisterPublicKeyCredentialCreationOptions)> {
+        Ok((CreationChallengeResponse, RegisterPublicKeyCredentialCreationOptions))
     }
 
-    pub async fn finish_registration(
-        &self,
-        user_id: Uuid,
-        _challenge: &PasskeyRegistration,
-        _response: &RegisterPublicKeyCredential,
-    ) -> anyhow::Result<()> {
+    pub async fn finish_registration(&self, user_id: Uuid, _challenge: &PasskeyRegistration, _response: &RegisterPublicKeyCredential) -> anyhow::Result<()> {
         let passkey = Passkey;
         self.store.save_passkey(user_id, &passkey).await?;
         Ok(())

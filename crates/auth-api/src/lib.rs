@@ -1,22 +1,29 @@
-use auth_core::services::{
-    authorization::AuthorizationService, lazy_registration::LazyRegistrationService,
-    otp_delivery::OtpDeliveryService, otp_service::OtpService, rate_limiter::RateLimiter,
-    session_service::SessionService, subscription_service::SubscriptionService,
-};
-use auth_db::repositories::otp_repository::OtpRepository;
 use axum::Router;
 use sqlx::MySqlPool;
 use std::sync::Arc;
+use auth_core::services::{
+    role_service::RoleService,
+    session_service::SessionService,
+    subscription_service::SubscriptionService,
+    otp_service::OtpService,
+    otp_delivery::OtpDeliveryService,
+    lazy_registration::LazyRegistrationService,
+    rate_limiter::RateLimiter,
+};
+use auth_db::repositories::{
+    role_repository::RoleRepository,
+    session_repository::SessionRepository,
+    subscription_repository::SubscriptionRepository,
+    otp_repository::OtpRepository,
+};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod error;
-pub mod handlers;
-pub mod middleware;
 pub mod router;
+pub mod handlers;
+pub mod error;
 pub mod validation;
-
-use auth_cache::Cache;
+pub mod middleware;
 
 // Admin UI (feature-gated)
 #[cfg(feature = "admin-ui")]
@@ -63,7 +70,7 @@ pub struct ApiDoc;
 #[derive(Clone)]
 pub struct AppState {
     pub db: MySqlPool,
-    pub role_service: Arc<AuthorizationService>,
+    pub role_service: Arc<RoleService>,
     pub session_service: Arc<SessionService>,
     pub subscription_service: Arc<SubscriptionService>,
     pub identity_service: Arc<auth_core::services::identity::IdentityService>,
@@ -73,7 +80,6 @@ pub struct AppState {
     pub rate_limiter: Arc<RateLimiter>,
     pub otp_repository: Arc<OtpRepository>,
     pub audit_logger: Arc<dyn auth_core::audit::AuditLogger>,
-    pub cache: Arc<dyn Cache>,
 }
 
 pub fn app(state: AppState) -> Router {
@@ -84,42 +90,27 @@ pub fn app(state: AppState) -> Router {
     // Add admin UI routes if feature is enabled
     #[cfg(feature = "admin-ui")]
     let router = {
-        use axum::middleware;
         use axum::routing::get;
+        use axum::middleware;
 
         router
             // Public auth pages (no middleware)
             .route("/admin/login", get(admin::handlers::login_page))
             .route("/admin/register", get(admin::handlers::register_page))
+
             // Protected dashboard pages (with JWT auth middleware)
-            .route(
-                "/admin/dashboard",
-                get(admin::handlers::dashboard_page).route_layer(middleware::from_fn_with_state(
-                    state.clone(),
-                    crate::middleware::auth::jwt_auth,
-                )),
-            )
-            .route(
-                "/admin/users",
-                get(admin::handlers::users_page).route_layer(middleware::from_fn_with_state(
-                    state.clone(),
-                    crate::middleware::auth::jwt_auth,
-                )),
-            )
-            .route(
-                "/admin/roles",
-                get(admin::handlers::roles_page).route_layer(middleware::from_fn_with_state(
-                    state.clone(),
-                    crate::middleware::auth::jwt_auth,
-                )),
-            )
-            .route(
-                "/admin/settings",
-                get(admin::handlers::settings_page).route_layer(middleware::from_fn_with_state(
-                    state.clone(),
-                    crate::middleware::auth::jwt_auth,
-                )),
-            )
+            .route("/admin/dashboard",
+                get(admin::handlers::dashboard_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/users",
+                get(admin::handlers::users_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/roles",
+                get(admin::handlers::roles_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route("/admin/settings",
+                get(admin::handlers::settings_page)
+                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
             .route("/admin/logout", get(admin::handlers::logout))
     };
 
@@ -166,11 +157,5 @@ impl axum::extract::FromRef<AppState> for Arc<OtpRepository> {
 impl axum::extract::FromRef<AppState> for Arc<dyn auth_core::audit::AuditLogger> {
     fn from_ref(state: &AppState) -> Self {
         state.audit_logger.clone()
-    }
-}
-
-impl axum::extract::FromRef<AppState> for Arc<dyn Cache> {
-    fn from_ref(state: &AppState) -> Self {
-        state.cache.clone()
     }
 }

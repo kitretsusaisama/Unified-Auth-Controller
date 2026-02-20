@@ -10,7 +10,7 @@ fn main() {
         let val = 10.0 + (rand::random::<f64>() - 0.5); // 9.5 to 10.5
         let is_anomaly = detector.record("ip:1.2.3.4", val);
         if is_anomaly {
-            println!("❌ False positive at step {}: val={}", i, val);
+             println!("❌ False positive at step {}: val={}", i, val);
         }
         assert!(!is_anomaly, "Normal data should not be anomalous");
     }
@@ -22,17 +22,11 @@ fn main() {
     if !is_anomaly {
         println!("❌ False negative: val={}", val);
     }
-    assert!(
-        is_anomaly,
-        "Spike (50.0) should be detected as anomaly vs Mean ~10.0"
-    );
+    assert!(is_anomaly, "Spike (50.0) should be detected as anomaly vs Mean ~10.0");
     println!("✅ Anomaly Detection (Spike) Passed");
 
     // 3. Return to normal
     let is_anomaly_return = detector.record("ip:1.2.3.4", 10.0);
-    assert!(
-        !is_anomaly_return,
-        "Return to normal should not be anomalous"
-    );
+    assert!(!is_anomaly_return, "Return to normal should not be anomalous");
     println!("✅ Recovery Phase Passed");
 }

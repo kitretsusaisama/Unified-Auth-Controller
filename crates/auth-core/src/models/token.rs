@@ -46,5 +46,4 @@ pub struct Claims {
     pub tenant_id: String,
     pub permissions: Vec<String>,
     pub roles: Vec<String>,
-    pub scope: Option<String>,
 }

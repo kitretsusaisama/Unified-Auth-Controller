@@ -1,12 +1,12 @@
 //! JWT Authentication Middleware
 
-use crate::AppState;
 use axum::{
     extract::{Request, State},
     http::header,
     middleware::Next,
-    response::{IntoResponse, Redirect, Response},
+    response::{Response, Redirect, IntoResponse},
 };
+use crate::AppState;
 
 /// JWT authentication middleware
 /// Validates JWT from Authorization header or cookies
@@ -27,13 +27,15 @@ pub async fn jwt_auth(
                 .get(header::COOKIE)
                 .and_then(|h| h.to_str().ok())
                 .and_then(|cookies| {
-                    cookies.split(';').find_map(|cookie| {
-                        let mut parts = cookie.trim().splitn(2, '=');
-                        match (parts.next(), parts.next()) {
-                            (Some("token"), Some(value)) => Some(value),
-                            _ => None,
-                        }
-                    })
+                    cookies
+                        .split(';')
+                        .find_map(|cookie| {
+                            let mut parts = cookie.trim().splitn(2, '=');
+                            match (parts.next(), parts.next()) {
+                                (Some("token"), Some(value)) => Some(value),
+                                _ => None,
+                            }
+                        })
                 })
         })
         .is_some();

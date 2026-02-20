@@ -1,10 +1,18 @@
-use axum::{extract::Request, http::HeaderValue, middleware::Next, response::Response};
+use axum::{
+    extract::Request,
+    http::HeaderValue,
+    middleware::Next,
+    response::Response,
+};
 use uuid::Uuid;
 
 pub const REQUEST_ID_HEADER: &str = "x-request-id";
 
 /// Middleware to generate and attach request ID
-pub async fn request_id_middleware(mut req: Request, next: Next) -> Response {
+pub async fn request_id_middleware(
+    mut req: Request,
+    next: Next,
+) -> Response {
     // Check if request already has an ID (from load balancer/proxy)
     let request_id = req
         .headers()
@@ -20,9 +28,7 @@ pub async fn request_id_middleware(mut req: Request, next: Next) -> Response {
 
     // Add request ID to response headers
     if let Ok(header_value) = HeaderValue::from_str(&request_id.to_string()) {
-        response
-            .headers_mut()
-            .insert(REQUEST_ID_HEADER, header_value);
+        response.headers_mut().insert(REQUEST_ID_HEADER, header_value);
     }
 
     response

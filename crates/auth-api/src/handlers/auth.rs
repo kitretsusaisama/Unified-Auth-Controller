@@ -1,14 +1,11 @@
+use axum::{Json, extract::{State, Extension}};
+use crate::AppState;
+use auth_core::services::identity::{AuthRequest, AuthResponse};
+use auth_core::models::user::{CreateUserRequest, User};
 use crate::error::ApiError;
 use crate::validation;
-use crate::AppState;
-use auth_core::models::user::{CreateUserRequest, User};
-use auth_core::services::identity::{AuthRequest, AuthResponse};
-use axum::{
-    extract::{Extension, State},
-    Json,
-};
-use tracing::{info, warn};
 use uuid::Uuid;
+use tracing::{info, warn};
 
 /// Authenticate user and issue tokens
 #[utoipa::path(
@@ -78,10 +75,8 @@ pub async fn register(
     Json(mut payload): Json<CreateUserRequest>,
 ) -> Result<Json<User>, ApiError> {
     // Validate and normalize email
-    payload.email = Some(
-        validation::validate_email(payload.email.as_deref().unwrap_or(""))
-            .map_err(|e| ApiError::new(e).with_request_id(request_id))?,
-    );
+    payload.email = Some(validation::validate_email(payload.email.as_deref().unwrap_or(""))
+        .map_err(|e| ApiError::new(e).with_request_id(request_id))?);
 
     // Validate password strength
     if let Some(ref password) = payload.password {
@@ -90,8 +85,7 @@ pub async fn register(
     } else {
         return Err(ApiError::new(auth_core::error::AuthError::ValidationError {
             message: "Password is required".to_string(),
-        })
-        .with_request_id(request_id));
+        }).with_request_id(request_id));
     }
 
     info!(
@@ -104,11 +98,7 @@ pub async fn register(
     // For now, we default to the "default" tenant or nil
     let tenant_id = Uuid::default();
 
-    match state
-        .identity_service
-        .register(payload.clone(), tenant_id)
-        .await
-    {
+    match state.identity_service.register(payload.clone(), tenant_id).await {
         Ok(user) => {
             info!(
                 request_id = %request_id,

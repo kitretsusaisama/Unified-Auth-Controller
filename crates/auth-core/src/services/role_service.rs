@@ -1,7 +1,7 @@
+use crate::models::{Role, UpdateRoleRequest, CreateRoleRequest};
 use crate::error::AuthError;
-use crate::models::{CreateRoleRequest, Role, RoleScope, UpdateRoleRequest};
-use std::sync::Arc;
 use uuid::Uuid;
+use std::sync::Arc;
 
 #[async_trait::async_trait]
 pub trait RoleStore: Send + Sync {
@@ -22,21 +22,10 @@ impl RoleService {
         Self { store }
     }
 
-    pub async fn create_role(
-        &self,
-        tenant_id: Uuid,
-        req: CreateRoleRequest,
-    ) -> Result<Role, AuthError> {
+    pub async fn create_role(&self, tenant_id: Uuid, req: CreateRoleRequest) -> Result<Role, AuthError> {
         // Check if role name exists in tenant
-        if self
-            .store
-            .find_by_name(tenant_id, &req.name)
-            .await?
-            .is_some()
-        {
-            return Err(AuthError::ValidationError {
-                message: "Role with this name already exists".to_string(),
-            });
+        if let Some(_) = self.store.find_by_name(tenant_id, &req.name).await? {
+             return Err(AuthError::ValidationError { message: "Role with this name already exists".to_string() });
         }
 
         let role = Role {
@@ -46,11 +35,8 @@ impl RoleService {
             description: req.description,
             parent_role_id: req.parent_role_id,
             is_system_role: false,
-            permissions: req.permissions,
-            constraints: req.constraints,
-            organization_id: None, // Assuming tenant level for now, can extend Request to include org_id
-            scope: RoleScope::Tenant,
-            metadata: None,
+            permissions: sqlx::types::Json(req.permissions),
+            constraints: sqlx::types::Json(req.constraints.unwrap_or_default()),
             created_at: chrono::Utc::now(),
             updated_at: None,
         };

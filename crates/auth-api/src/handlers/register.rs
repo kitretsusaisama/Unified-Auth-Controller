@@ -11,16 +11,13 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use uuid::Uuid;
+use std::sync::Arc;
 
-use auth_core::error::AuthError;
 use auth_core::models::user::{IdentifierType, PrimaryIdentifier};
 use auth_core::models::validation::{normalize_phone, validate_email};
 use auth_core::services::identity::IdentityService;
-use auth_core::services::otp_delivery::OtpDeliveryService;
-use auth_core::services::otp_service::{DeliveryMethod, OtpPurpose, OtpService};
-use auth_db::repositories::otp_repository::OtpRepository;
+use auth_core::error::AuthError;
 
 // ============================================================================
 // Request/Response Types
@@ -95,9 +92,6 @@ pub struct ErrorResponse {
 /// Multi-channel user registration
 pub async fn register(
     State(identity_service): State<Arc<IdentityService>>,
-    State(otp_service): State<Arc<OtpService>>,
-    State(otp_delivery): State<Arc<OtpDeliveryService>>,
-    State(otp_repo): State<Arc<OtpRepository>>,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // 1. Validate identifier type
@@ -109,8 +103,7 @@ pub async fn register(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
-                    error: "Invalid identifier_type. Must be 'email', 'phone', or 'both'"
-                        .to_string(),
+                    error: "Invalid identifier_type. Must be 'email', 'phone', or 'both'".to_string(),
                     code: "AUTH_038".to_string(),
                     field: Some("identifier_type".to_string()),
                 }),
@@ -149,8 +142,7 @@ pub async fn register(
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ErrorResponse {
-                        error: "Both email and phone are required when identifier_type is 'both'"
-                            .to_string(),
+                        error: "Both email and phone are required when identifier_type is 'both'".to_string(),
                         code: "AUTH_004".to_string(),
                         field: None,
                     }),
@@ -161,8 +153,7 @@ pub async fn register(
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ErrorResponse {
-                        error: "primary_identifier is required when identifier_type is 'both'"
-                            .to_string(),
+                        error: "primary_identifier is required when identifier_type is 'both'".to_string(),
                         code: "AUTH_004".to_string(),
                         field: Some("primary_identifier".to_string()),
                     }),
@@ -191,8 +182,7 @@ pub async fn register(
             (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
-                    error: "Invalid phone format. Use E.164 format (e.g., +14155552671)"
-                        .to_string(),
+                    error: "Invalid phone format. Use E.164 format (e.g., +14155552671)".to_string(),
                     code: "AUTH_002".to_string(),
                     field: Some("phone".to_string()),
                 }),
@@ -206,20 +196,22 @@ pub async fn register(
     let primary_identifier = match identifier_type {
         IdentifierType::Email => PrimaryIdentifier::Email,
         IdentifierType::Phone => PrimaryIdentifier::Phone,
-        IdentifierType::Both => match payload.primary_identifier.as_deref() {
-            Some("email") => PrimaryIdentifier::Email,
-            Some("phone") => PrimaryIdentifier::Phone,
-            _ => {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ErrorResponse {
-                        error: "Invalid primary_identifier. Must be 'email' or 'phone'".to_string(),
-                        code: "AUTH_004".to_string(),
-                        field: Some("primary_identifier".to_string()),
-                    }),
-                ));
+        IdentifierType::Both => {
+            match payload.primary_identifier.as_deref() {
+                Some("email") => PrimaryIdentifier::Email,
+                Some("phone") => PrimaryIdentifier::Phone,
+                _ => {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ErrorResponse {
+                            error: "Invalid primary_identifier. Must be 'email' or 'phone'".to_string(),
+                            code: "AUTH_004".to_string(),
+                            field: Some("primary_identifier".to_string()),
+                        }),
+                    ));
+                }
             }
-        },
+        }
     };
 
     // 6. Validate password (if provided)
@@ -247,104 +239,35 @@ pub async fn register(
         require_verification: Some(payload.require_verification),
     };
 
-    let user = identity_service
-        .register(create_request, payload.tenant_id)
+    let user = identity_service.register(create_request, payload.tenant_id)
         .await
         .map_err(|e| {
-            // Map AuthError to API Error
-            match e {
-                AuthError::Conflict { message } => (
-                    StatusCode::CONFLICT,
-                    Json(ErrorResponse {
-                        error: message,
-                        code: "AUTH_005".to_string(),
-                        field: None,
-                    }),
-                ),
-                _ => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ErrorResponse {
-                        error: "Internal server error".to_string(),
-                        code: "AUTH_026".to_string(),
-                        field: None,
-                    }),
-                ),
-            }
+             // Map AuthError to API Error
+             match e {
+                 AuthError::Conflict { message } => (
+                     StatusCode::CONFLICT,
+                     Json(ErrorResponse {
+                         error: message,
+                         code: "AUTH_005".to_string(),
+                         field: None
+                     })
+                 ),
+                 _ => (
+                     StatusCode::INTERNAL_SERVER_ERROR,
+                     Json(ErrorResponse {
+                         error: "Internal server error".to_string(),
+                         code: "AUTH_026".to_string(),
+                         field: None,
+                     })
+                 )
+             }
         })?;
 
     // 8. Send verification if required
     let verification_sent_to = if payload.require_verification {
-        let identifier_opt = match primary_identifier {
-            PrimaryIdentifier::Email => user.email.clone().map(|e| (DeliveryMethod::Email, e)),
-            PrimaryIdentifier::Phone => user.phone.clone().map(|p| (DeliveryMethod::Sms, p)),
-        };
-
-        if let Some((method, identifier)) = identifier_opt {
-            // Create OTP Session
-            // TODO: Use actual tenant_id logic
-            let session_result = otp_service.create_session(
-                payload.tenant_id,
-                identifier.clone(),
-                match method {
-                    DeliveryMethod::Email => "email".to_string(),
-                    DeliveryMethod::Sms => "phone".to_string(),
-                },
-                method.clone(),
-                match method {
-                    DeliveryMethod::Email => OtpPurpose::EmailVerification,
-                    DeliveryMethod::Sms => OtpPurpose::PhoneVerification,
-                },
-                Some(user.id),
-                None,
-                None,
-            );
-
-            match session_result {
-                Ok((session, token)) => {
-                    let token_hash = otp_service.hash_otp(&token).unwrap_or_default();
-                    if let Err(e) = otp_repo.create_session(&session, &token_hash).await {
-                        tracing::error!("Failed to save OTP session: {:?}", e);
-                        // Non-blocking error? Or should we fail registration?
-                        // Usually better to return success but log error, or fail.
-                        // Since user is created, failing here leaves user in pending state without email.
-                        // Client can request resend.
-                    } else {
-                        // Send
-                        match method {
-                            DeliveryMethod::Email => {
-                                // Construct Link
-                                let base_url = std::env::var("APP_BASE_URL")
-                                    .unwrap_or_else(|_| "http://localhost:3000".to_string());
-                                let link = format!(
-                                    "{}/auth/verify/email?token={}&verification_id={}",
-                                    base_url, token, session.id
-                                );
-                                if let Err(e) = otp_delivery
-                                    .send_verification_email(&identifier, &link)
-                                    .await
-                                {
-                                    tracing::error!("Failed to send verification email: {:?}", e);
-                                }
-                            }
-                            DeliveryMethod::Sms => {
-                                if let Err(e) =
-                                    otp_delivery.send_phone_otp(&identifier, &token).await
-                                {
-                                    tracing::error!("Failed to send verification SMS: {:?}", e);
-                                }
-                            }
-                        }
-                    }
-                    Some(identifier)
-                }
-                Err(e) => {
-                    tracing::error!("Failed to create OTP session: {:?}", e);
-                    None
-                }
-            }
-        } else {
-            tracing::warn!("Verification required but user has no primary identifier set");
-            None
+        match primary_identifier {             // Use the original (cloned) value
+             PrimaryIdentifier::Email => user.email.clone(),
+             PrimaryIdentifier::Phone => user.phone.clone(),
         }
     } else {
         None

@@ -52,7 +52,11 @@ pub enum PolicyError {
 
 impl PortPolicy {
     /// Create a new port policy
-    pub fn new(preferred_port: u16, class: PortClass, service_name: impl Into<String>) -> Self {
+    pub fn new(
+        preferred_port: u16,
+        class: PortClass,
+        service_name: impl Into<String>,
+    ) -> Self {
         Self {
             preferred_port,
             fallback_range: None,
@@ -139,8 +143,8 @@ mod tests {
 
     #[test]
     fn test_admin_fallback_rejected() {
-        let policy =
-            PortPolicy::new(9000, PortClass::Admin, "admin").with_fallback_range(9001..=9010);
+        let policy = PortPolicy::new(9000, PortClass::Admin, "admin")
+            .with_fallback_range(9001..=9010);
 
         assert!(matches!(
             policy.validate(),
@@ -150,16 +154,16 @@ mod tests {
 
     #[test]
     fn test_valid_public_policy() {
-        let policy =
-            PortPolicy::new(8081, PortClass::Public, "http").with_fallback_range(8082..=8090);
+        let policy = PortPolicy::new(8081, PortClass::Public, "http")
+            .with_fallback_range(8082..=8090);
 
         assert!(policy.validate().is_ok());
     }
 
     #[test]
     fn test_candidate_ports() {
-        let policy =
-            PortPolicy::new(8081, PortClass::Public, "http").with_fallback_range(8082..=8084);
+        let policy = PortPolicy::new(8081, PortClass::Public, "http")
+            .with_fallback_range(8082..=8084);
 
         let candidates = policy.candidate_ports();
         assert_eq!(candidates, vec![8081, 8082, 8083, 8084]);

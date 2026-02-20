@@ -1,10 +1,9 @@
-use async_graphql::{Context, EmptyMutation, EmptySubscription, Object, Schema, SimpleObject};
-use std::sync::OnceLock;
+use async_graphql::{Context, Object, Schema, EmptyMutation, EmptySubscription, SimpleObject};
 use uuid::Uuid;
+use std::sync::OnceLock;
 
 // Lazy-initialized global schema (built on first request)
-static GRAPHQL_SCHEMA: OnceLock<Schema<QueryRoot, EmptyMutation, EmptySubscription>> =
-    OnceLock::new();
+static GRAPHQL_SCHEMA: OnceLock<Schema<QueryRoot, EmptyMutation, EmptySubscription>> = OnceLock::new();
 
 pub struct QueryRoot;
 

@@ -1,9 +1,10 @@
-use sqlx::MySqlPool;
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use sqlx::MySqlPool;
+use std::collections::hash_map::DefaultHasher;
 
 #[derive(Debug, Clone)]
 pub struct ShardConfig {
@@ -19,7 +20,6 @@ pub struct ShardManager {
     // Consistent hashing ring (simplified: virtual nodes -> shard_id)
     ring: RwLock<Vec<(u64, u32)>>,
     // Total number of virtual nodes
-    #[allow(dead_code)]
     validation_key: String,
 }
 
@@ -84,11 +84,5 @@ impl ShardManager {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
         hasher.finish()
-    }
-}
-
-impl Default for ShardManager {
-    fn default() -> Self {
-        Self::new()
     }
 }

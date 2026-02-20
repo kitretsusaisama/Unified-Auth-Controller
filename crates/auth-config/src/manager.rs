@@ -7,7 +7,7 @@ use dashmap::DashMap;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::sync::watch;
-use tracing::{error, info, warn};
+use tracing::{info, warn, error};
 
 pub struct ConfigManager {
     current_config: Arc<RwLock<AppConfig>>,
@@ -19,8 +19,7 @@ pub struct ConfigManager {
 
 impl ConfigManager {
     pub fn new(loader: ConfigLoader) -> Result<Self> {
-        let initial_config = loader
-            .load()
+        let initial_config = loader.load()
             .map_err(|e| anyhow::anyhow!("Failed to load initial configuration: {}", e))?;
 
         let (config_sender, config_receiver) = watch::channel(initial_config.clone());
@@ -86,8 +85,7 @@ impl ConfigManager {
     }
 
     pub fn set_tenant_override(&self, tenant_id: String, key: String, value: serde_json::Value) {
-        let mut overrides = self
-            .tenant_overrides
+        let mut overrides = self.tenant_overrides
             .entry(tenant_id)
             .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
 
@@ -97,7 +95,10 @@ impl ConfigManager {
     }
 
     pub fn get_tenant_override(&self, tenant_id: &str, key: &str) -> Option<serde_json::Value> {
-        self.tenant_overrides.get(tenant_id)?.get(key).cloned()
+        self.tenant_overrides
+            .get(tenant_id)?
+            .get(key)
+            .cloned()
     }
 
     pub fn remove_tenant_override(&self, tenant_id: &str, key: &str) -> bool {
@@ -112,8 +113,9 @@ impl ConfigManager {
     pub async fn start_auto_reload(&self, interval_seconds: u64) {
         let manager = self.clone();
         tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(tokio::time::Duration::from_secs(interval_seconds));
+            let mut interval = tokio::time::interval(
+                tokio::time::Duration::from_secs(interval_seconds)
+            );
 
             loop {
                 interval.tick().await;
@@ -145,21 +147,11 @@ mod tests {
 
     // Property test generators
     fn arb_server_config() -> impl Strategy<Value = ServerConfig> {
-        (
-            1u16..=65535,
-            any::<String>(),
-            any::<Option<usize>>(),
-            any::<Option<u32>>(),
-            any::<Option<u64>>(),
-        )
+        (1u16..=65535, any::<String>(), any::<Option<usize>>(), any::<Option<u32>>(), any::<Option<u64>>())
             .prop_map(|(port, host, workers, max_connections, timeout_seconds)| {
                 ServerConfig {
                     port,
-                    host: if host.is_empty() {
-                        "localhost".to_string()
-                    } else {
-                        host
-                    },
+                    host: if host.is_empty() { "localhost".to_string() } else { host },
                     workers,
                     max_connections,
                     timeout_seconds,
@@ -176,31 +168,19 @@ mod tests {
             1u32..=100,
             1u32..=1440,
             any::<bool>(),
-            prop::collection::vec(any::<String>(), 0..5),
-        )
-            .prop_map(
-                |(
-                    jwt_secret,
-                    jwt_expiry_minutes,
-                    refresh_token_expiry_days,
-                    password_min_length,
-                    max_login_attempts,
-                    lockout_duration_minutes,
-                    require_mfa,
-                    allowed_origins,
-                )| {
-                    SecurityConfig {
-                        jwt_secret: secrecy::Secret::new(jwt_secret),
-                        jwt_expiry_minutes,
-                        refresh_token_expiry_days,
-                        password_min_length,
-                        max_login_attempts,
-                        lockout_duration_minutes,
-                        require_mfa,
-                        allowed_origins,
-                    }
-                },
-            )
+            prop::collection::vec(any::<String>(), 0..5)
+        ).prop_map(|(jwt_secret, jwt_expiry_minutes, refresh_token_expiry_days, password_min_length, max_login_attempts, lockout_duration_minutes, require_mfa, allowed_origins)| {
+            SecurityConfig {
+                jwt_secret: secrecy::Secret::new(jwt_secret),
+                jwt_expiry_minutes,
+                refresh_token_expiry_days,
+                password_min_length,
+                max_login_attempts,
+                lockout_duration_minutes,
+                require_mfa,
+                allowed_origins,
+            }
+        })
     }
 
     fn arb_database_config() -> impl Strategy<Value = DatabaseConfig> {
@@ -211,58 +191,38 @@ mod tests {
             1u32..=50,
             1u64..=300,
             1u64..=3600,
-            1u64..=86400,
-        )
-            .prop_map(
-                |(
-                    mysql_url,
-                    sqlite_url,
-                    max_connections,
-                    min_connections,
-                    connection_timeout,
-                    idle_timeout,
-                    max_lifetime,
-                )| {
-                    let min_connections = std::cmp::min(min_connections, max_connections);
-                    DatabaseConfig {
-                        mysql_url: secrecy::Secret::new(format!("mysql://{}", mysql_url)),
-                        sqlite_url,
-                        max_connections,
-                        min_connections,
-                        connection_timeout,
-                        idle_timeout,
-                        max_lifetime,
-                    }
-                },
-            )
+            1u64..=86400
+        ).prop_map(|(mysql_url, sqlite_url, max_connections, min_connections, connection_timeout, idle_timeout, max_lifetime)| {
+            let min_connections = std::cmp::min(min_connections, max_connections);
+            DatabaseConfig {
+                mysql_url: secrecy::Secret::new(format!("mysql://{}", mysql_url)),
+                sqlite_url,
+                max_connections,
+                min_connections,
+                connection_timeout,
+                idle_timeout,
+                max_lifetime,
+            }
+        })
     }
 
     fn arb_feature_config() -> impl Strategy<Value = FeatureConfig> {
         (
             prop::collection::hash_map(any::<String>(), any::<bool>(), 0..10),
             prop::collection::hash_map(any::<String>(), 1u64..=1000000, 0..10),
-            prop::collection::hash_map(
-                any::<String>(),
-                prop::collection::hash_map(
-                    any::<String>(),
-                    prop_oneof![
-                        Just(serde_json::Value::Bool(true)),
-                        Just(serde_json::Value::Bool(false)),
-                        any::<u64>().prop_map(serde_json::Value::from),
-                        any::<String>().prop_map(serde_json::Value::from)
-                    ],
-                    0..5,
-                ),
-                0..5,
-            ),
-        )
-            .prop_map(|(enabled_features, feature_limits, tenant_overrides)| {
-                FeatureConfig {
-                    enabled_features,
-                    feature_limits,
-                    tenant_overrides,
-                }
-            })
+            prop::collection::hash_map(any::<String>(), prop::collection::hash_map(any::<String>(), prop_oneof![
+                Just(serde_json::Value::Bool(true)),
+                Just(serde_json::Value::Bool(false)),
+                any::<u64>().prop_map(serde_json::Value::from),
+                any::<String>().prop_map(serde_json::Value::from)
+            ], 0..5), 0..5)
+        ).prop_map(|(enabled_features, feature_limits, tenant_overrides)| {
+            FeatureConfig {
+                enabled_features,
+                feature_limits,
+                tenant_overrides,
+            }
+        })
     }
 
     fn arb_app_config() -> impl Strategy<Value = AppConfig> {
@@ -307,18 +267,17 @@ mod tests {
                         timeout_seconds: 30,
                     }),
                 }),
-            ],
-        )
-            .prop_map(
-                |(server, database, security, features, logging, external_services)| AppConfig {
-                    server,
-                    database,
-                    security,
-                    features,
-                    logging,
-                    external_services,
-                },
-            )
+            ]
+        ).prop_map(|(server, database, security, features, logging, external_services)| {
+            AppConfig {
+                server,
+                database,
+                security,
+                features,
+                logging,
+                external_services,
+            }
+        })
     }
 
     proptest! {

@@ -6,12 +6,11 @@
 //! - Email/Phone verification
 //! - Password reset
 
-use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{DateTime, Duration, Utc};
 use rand::{distributions::Alphanumeric, Rng};
-use thiserror::Error;
-use totp_rs::{Algorithm, Secret, TOTP};
 use uuid::Uuid;
+use bcrypt::{hash, verify, DEFAULT_COST};
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum OtpError {
@@ -113,21 +112,20 @@ impl OtpService {
                 // Ensure we don't overflow u32 for length > 9, though for OTPs usually < 10
                 // For longer tokens, we might want string manipulation
                 if length > 9 {
-                    (0..length)
-                        .map(|_| rng.gen_range(0..10).to_string())
-                        .collect()
+                    (0..length).map(|_| rng.gen_range(0..10).to_string()).collect()
                 } else {
                     let min = 10_u32.pow((length as u32) - 1);
                     let max = 10_u32.pow(length as u32) - 1;
                     let num: u32 = rng.gen_range(min..=max);
                     num.to_string()
                 }
+            },
+            TokenType::Alphanumeric => {
+                rng.sample_iter(&Alphanumeric)
+                    .take(length)
+                    .map(char::from)
+                    .collect()
             }
-            TokenType::Alphanumeric => rng
-                .sample_iter(&Alphanumeric)
-                .take(length)
-                .map(char::from)
-                .collect(),
         }
     }
 
@@ -138,37 +136,18 @@ impl OtpService {
 
     /// Hash OTP for secure storage
     pub fn hash_otp(&self, otp: &str) -> Result<String, OtpError> {
-        hash(otp, DEFAULT_COST).map_err(|_| OtpError::GenerationFailed)
+        hash(otp, DEFAULT_COST)
+            .map_err(|_| OtpError::GenerationFailed)
     }
 
     /// Verify OTP against hash
     pub fn verify_otp(&self, otp: &str, hash: &str) -> Result<bool, OtpError> {
-        verify(otp, hash).map_err(|_| OtpError::Invalid)
-    }
-
-    /// Verify TOTP code against a secret
-    pub fn verify_totp(&self, secret_str: &str, code: &str) -> Result<bool, OtpError> {
-        let secret = Secret::Encoded(secret_str.to_string())
-            .to_bytes()
-            .map_err(|_| OtpError::Invalid)?;
-
-        let totp = TOTP::new(
-            Algorithm::SHA1,
-            6,
-            1,
-            30,
-            secret,
-            Some("AuthPlatform".to_string()),
-            "user".to_string(),
-        )
-        .map_err(|_| OtpError::GenerationFailed)?;
-
-        Ok(totp.check_current(code).unwrap_or(false))
+        verify(otp, hash)
+            .map_err(|_| OtpError::Invalid)
     }
 
     /// Create new OTP session
     /// If `explicit_token` is provided, it is used. Otherwise, one is generated.
-    #[allow(clippy::too_many_arguments)]
     pub fn create_session(
         &self,
         tenant_id: Uuid,
@@ -181,7 +160,7 @@ impl OtpService {
         ttl_minutes: Option<i64>,
     ) -> Result<(OtpSession, String), OtpError> {
         let otp = explicit_token.unwrap_or_else(|| self.generate_otp());
-        let _otp_hash = self.hash_otp(&otp)?;
+        let otp_hash = self.hash_otp(&otp)?;
 
         let now = Utc::now();
         let ttl = ttl_minutes.unwrap_or(self.default_ttl_minutes);
@@ -249,18 +228,16 @@ mod tests {
     #[test]
     fn test_create_session_defaults() {
         let service = OtpService::new();
-        let (session, otp) = service
-            .create_session(
-                Uuid::new_v4(),
-                "test@example.com".to_string(),
-                "email".to_string(),
-                DeliveryMethod::Email,
-                OtpPurpose::Login,
-                None,
-                None,
-                None,
-            )
-            .unwrap();
+        let (session, otp) = service.create_session(
+            Uuid::new_v4(),
+            "test@example.com".to_string(),
+            "email".to_string(),
+            DeliveryMethod::Email,
+            OtpPurpose::Login,
+            None,
+            None,
+            None,
+        ).unwrap();
 
         assert_eq!(otp.len(), 6);
         assert_eq!(session.attempts, 0);
@@ -270,18 +247,16 @@ mod tests {
     fn test_create_session_explicit() {
         let service = OtpService::new();
         let custom_token = "ABC123XYZ";
-        let (session, otp) = service
-            .create_session(
-                Uuid::new_v4(),
-                "test@example.com".to_string(),
-                "email".to_string(),
-                DeliveryMethod::Email,
-                OtpPurpose::Login,
-                None,
-                Some(custom_token.to_string()),
-                Some(60),
-            )
-            .unwrap();
+        let (session, otp) = service.create_session(
+            Uuid::new_v4(),
+            "test@example.com".to_string(),
+            "email".to_string(),
+            DeliveryMethod::Email,
+            OtpPurpose::Login,
+            None,
+            Some(custom_token.to_string()),
+            Some(60),
+        ).unwrap();
 
         assert_eq!(otp, custom_token);
         assert!(session.expires_at > Utc::now() + Duration::minutes(59));
