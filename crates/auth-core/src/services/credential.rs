@@ -13,15 +13,9 @@ use validator::Validate;
 #[derive(Debug, Clone)]
 struct PasswordHasher;
 impl PasswordHasher {
-    fn new() -> Self {
-        Self
-    }
-    fn hash_password(&self, _password: &str) -> Result<String, String> {
-        Ok("stubbed".to_string())
-    }
-    fn verify_password(&self, _password: &str, _hash: &str) -> Result<bool, String> {
-        Ok(false)
-    }
+    fn new() -> Self { Self }
+    fn hash_password(&self, _password: &str) -> Result<String, String> { Ok("stubbed".to_string()) }
+    fn verify_password(&self, _password: &str, _hash: &str) -> Result<bool, String> { Ok(false) }
 }
 
 #[derive(Debug, Clone)]
@@ -105,19 +99,13 @@ impl CredentialService {
 
         // Length validation
         if password.len() < self.policy.min_length {
-            errors.push(format!(
-                "Password must be at least {} characters long",
-                self.policy.min_length
-            ));
+            errors.push(format!("Password must be at least {} characters long", self.policy.min_length));
         } else if password.len() >= self.policy.min_length {
             score += 20;
         }
 
         if password.len() > self.policy.max_length {
-            errors.push(format!(
-                "Password must not exceed {} characters",
-                self.policy.max_length
-            ));
+            errors.push(format!("Password must not exceed {} characters", self.policy.max_length));
         }
 
         // Character requirements
@@ -127,18 +115,10 @@ impl CredentialService {
         let special_char_count = password.chars().filter(|c| !c.is_alphanumeric()).count();
 
         let mut character_classes = 0;
-        if has_uppercase {
-            character_classes += 1;
-        }
-        if has_lowercase {
-            character_classes += 1;
-        }
-        if has_numbers {
-            character_classes += 1;
-        }
-        if special_char_count > 0 {
-            character_classes += 1;
-        }
+        if has_uppercase { character_classes += 1; }
+        if has_lowercase { character_classes += 1; }
+        if has_numbers { character_classes += 1; }
+        if special_char_count > 0 { character_classes += 1; }
 
         if self.policy.require_uppercase && !has_uppercase {
             errors.push("Password must contain at least one uppercase letter".to_string());
@@ -219,10 +199,7 @@ impl CredentialService {
 
         // Provide constructive feedback
         if password.len() < self.policy.min_length + 4 {
-            feedback.push(format!(
-                "Consider using a longer password ({}+ characters)",
-                self.policy.min_length + 4
-            ));
+            feedback.push(format!("Consider using a longer password ({}+ characters)", self.policy.min_length + 4));
         }
 
         if !password.chars().any(|c| !c.is_alphanumeric()) {
@@ -259,9 +236,7 @@ impl CredentialService {
 
     /// Check if password change is required based on age
     pub fn is_password_change_required(&self, password_changed_at: Option<DateTime<Utc>>) -> bool {
-        if let (Some(max_age_days), Some(changed_at)) =
-            (self.policy.max_age_days, password_changed_at)
-        {
+        if let (Some(max_age_days), Some(changed_at)) = (self.policy.max_age_days, password_changed_at) {
             let max_age = Duration::days(max_age_days as i64);
             Utc::now() - changed_at > max_age
         } else {
@@ -271,9 +246,7 @@ impl CredentialService {
 
     /// Check if password can be changed (minimum age check)
     pub fn can_change_password(&self, password_changed_at: Option<DateTime<Utc>>) -> bool {
-        if let (Some(min_age_hours), Some(changed_at)) =
-            (self.policy.min_age_hours, password_changed_at)
-        {
+        if let (Some(min_age_hours), Some(changed_at)) = (self.policy.min_age_hours, password_changed_at) {
             let min_age = Duration::hours(min_age_hours as i64);
             Utc::now() - changed_at >= min_age
         } else {
@@ -292,11 +265,7 @@ impl CredentialService {
     }
 
     /// Check if password is in history (would need to be implemented with database)
-    pub fn is_password_in_history(
-        &self,
-        password: &str,
-        history: &[PasswordHistoryEntry],
-    ) -> Result<bool, AuthError> {
+    pub fn is_password_in_history(&self, password: &str, history: &[PasswordHistoryEntry]) -> Result<bool, AuthError> {
         for entry in history.iter().take(self.policy.history_count) {
             if self.verify_password(password, &entry.password_hash)? {
                 return Ok(true);
@@ -306,10 +275,7 @@ impl CredentialService {
     }
 
     /// Validate credential request
-    pub fn validate_credential_request(
-        &self,
-        request: &CredentialRequest,
-    ) -> Result<(), AuthError> {
+    pub fn validate_credential_request(&self, request: &CredentialRequest) -> Result<(), AuthError> {
         // Validate the request structure
         request.validate().map_err(|e| AuthError::ValidationError {
             message: format!("Invalid credential request: {}", e),
@@ -329,15 +295,14 @@ impl CredentialService {
     /// Check for common password patterns
     fn has_common_patterns(&self, password: &str) -> bool {
         let common_patterns = [
-            "password", "123456", "qwerty", "admin", "letmein", "welcome", "monkey", "dragon",
-            "master", "shadow", "login", "pass", "root", "user", "test", "guest", "demo", "temp",
-            "default", "changeme", "secret",
+            "password", "123456", "qwerty", "admin", "letmein",
+            "welcome", "monkey", "dragon", "master", "shadow",
+            "login", "pass", "root", "user", "test", "guest",
+            "demo", "temp", "default", "changeme", "secret"
         ];
 
         let lower_password = password.to_lowercase();
-        common_patterns
-            .iter()
-            .any(|&pattern| lower_password.contains(pattern))
+        common_patterns.iter().any(|&pattern| lower_password.contains(pattern))
     }
 
     /// Check for repeated characters
@@ -348,8 +313,7 @@ impl CredentialService {
         for i in 0..chars.len().saturating_sub(1) {
             if chars[i] == chars[i + 1] {
                 repeat_count += 1;
-                if repeat_count >= 2 {
-                    // Allow some repetition but not too much
+                if repeat_count >= 2 { // Allow some repetition but not too much
                     return true;
                 }
             } else {
@@ -377,9 +341,7 @@ impl CredentialService {
     /// Check for custom dictionary words
     fn contains_custom_words(&self, password: &str) -> bool {
         let lower_password = password.to_lowercase();
-        self.policy
-            .custom_dictionary
-            .iter()
+        self.policy.custom_dictionary.iter()
             .any(|word| lower_password.contains(&word.to_lowercase()))
     }
 

@@ -1,14 +1,13 @@
-use auth_core::audit::{AuditLogger, TracingAuditLogger};
-use auth_core::models::user::{CreateUserRequest, UserStatus};
-use auth_core::services::identity::UserStore;
-use auth_core::services::identity::{AuthRequest, IdentityService};
+use auth_core::services::identity::{IdentityService, AuthRequest};
 use auth_core::services::token_service::{TokenEngine, TokenProvider}; // TokenEngine implements TokenProvider
-use auth_db::repositories::user_repository::UserRepository;
-use sqlx::MySqlPool;
+use auth_core::models::user::{CreateUserRequest, UserStatus};
+use auth_db::repositories::UserRepository;
+use auth_core::services::identity::UserStore;
+use sqlx::{MySqlPool, Row};
 use std::sync::Arc;
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
 use uuid::Uuid;
+use tracing::{info, error, Level};
+use tracing_subscriber::FmtSubscriber;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -21,19 +20,15 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting Auth Flow Verification...");
 
     // 2. Connect to DB
-    let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "mysql://root:password@localhost:3306/sso".to_string());
+    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "mysql://root:password@localhost:3306/sso".to_string());
     info!("Connecting to database at {}...", db_url);
 
-    let pool = MySqlPool::connect(&db_url)
-        .await
-        .expect("Failed to connect to DB. Ensure MySQL is running and DATABASE_URL is set.");
+    let pool = MySqlPool::connect(&db_url).await.expect("Failed to connect to DB. Ensure MySQL is running and DATABASE_URL is set.");
 
     // 3. Setup Schema (Temporary Migration)
     // We create the users table if it doesn't exist matching UserRepository expectation.
     info!("Ensuring schema...");
-    sqlx::query(
-        r#"
+    sqlx::query(r#"
     CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(36) PRIMARY KEY,
         tenant_id VARCHAR(36) NOT NULL,
@@ -58,10 +53,7 @@ async fn main() -> anyhow::Result<()> {
         deleted_at TIMESTAMP NULL,
         UNIQUE KEY unique_email (email, tenant_id)
     )
-    "#,
-    )
-    .execute(&pool)
-    .await?;
+    "#).execute(&pool).await?;
 
     // 4. Initialize Services (Explicit casting to Arc<dyn Trait>)
     let user_repo: Arc<dyn UserStore> = Arc::new(UserRepository::new(pool.clone()));
@@ -70,9 +62,7 @@ async fn main() -> anyhow::Result<()> {
     // We can use the default in-memory ones via `TokenEngine::new()`.
     let token_service: Arc<dyn TokenProvider> = Arc::new(TokenEngine::new().await?);
 
-    let audit_logger: Arc<dyn AuditLogger> = Arc::new(TracingAuditLogger);
-    let identity_service =
-        IdentityService::new(user_repo.clone(), token_service.clone(), audit_logger);
+    let identity_service = IdentityService::new(user_repo.clone(), token_service.clone());
 
     // 5. Run Scenario
     let tenant_id = Uuid::new_v4();
@@ -102,10 +92,7 @@ async fn main() -> anyhow::Result<()> {
     identity_service.activate_user(user.id).await?;
 
     // Verify status in DB
-    let user_fetched = user_repo
-        .find_by_id(user.id)
-        .await?
-        .expect("User should exist");
+    let user_fetched = user_repo.find_by_id(user.id).await?.expect("User should exist");
     assert!(matches!(user_fetched.status, UserStatus::Active));
 
     // C. Login (Success)
@@ -119,10 +106,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let auth_resp = identity_service.login(login_req.clone()).await?;
-    info!(
-        "Login successful! Access Token: {}...",
-        &auth_resp.access_token[..10]
-    );
+    info!("Login successful! Access Token: {}...", &auth_resp.access_token[..10]);
 
     // D. Login (Failure - Wrong Password)
     info!("Step D: Login with wrong network...");

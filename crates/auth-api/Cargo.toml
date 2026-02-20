@@ -28,9 +28,6 @@ utoipa-swagger-ui = { version = "6.0", features = ["axum"] }
 regex = "1.10"
 once_cell = { workspace = true }
 dashmap = { workspace = true }
-sha2 = "0.10"
-base64 = "0.22"
-urlencoding = "2.1"
 
 # Template engine (optional, for admin UI)
 askama = { workspace = true, optional = true }
@@ -45,8 +42,6 @@ auth-protocols = { path = "../auth-protocols" }
 
 auth-extension = { path = "../auth-extension" }
 auth-telemetry = { path = "../auth-telemetry" }
-auth-cache = { path = "../auth-cache" }
-async-trait.workspace = true
 
 [dev-dependencies]
 proptest = { workspace = true }

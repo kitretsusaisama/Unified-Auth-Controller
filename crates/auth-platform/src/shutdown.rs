@@ -5,7 +5,6 @@
 
 use std::future::Future;
 use std::time::Duration;
-#[cfg(not(unix))]
 use tokio::signal;
 use tracing::info;
 
@@ -31,10 +30,10 @@ impl GracefulShutdown {
         {
             use tokio::signal::unix::{signal, SignalKind};
 
-            let mut sigterm =
-                signal(SignalKind::terminate()).expect("Failed to register SIGTERM handler");
-            let mut sigint =
-                signal(SignalKind::interrupt()).expect("Failed to register SIGINT handler");
+            let mut sigterm = signal(SignalKind::terminate())
+                .expect("Failed to register SIGTERM handler");
+            let mut sigint = signal(SignalKind::interrupt())
+                .expect("Failed to register SIGINT handler");
 
             tokio::select! {
                 _ = sigterm.recv() => {
@@ -48,7 +47,9 @@ impl GracefulShutdown {
 
         #[cfg(not(unix))]
         {
-            signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
+            signal::ctrl_c()
+                .await
+                .expect("Failed to listen for Ctrl+C");
             info!("Received Ctrl+C");
         }
     }
@@ -80,10 +81,10 @@ pub async fn shutdown_signal() {
     {
         use tokio::signal::unix::{signal, SignalKind};
 
-        let mut sigterm =
-            signal(SignalKind::terminate()).expect("Failed to register SIGTERM handler");
-        let mut sigint =
-            signal(SignalKind::interrupt()).expect("Failed to register SIGINT handler");
+        let mut sigterm = signal(SignalKind::terminate())
+            .expect("Failed to register SIGTERM handler");
+        let mut sigint = signal(SignalKind::interrupt())
+            .expect("Failed to register SIGINT handler");
 
         tokio::select! {
             _ = sigterm.recv() => {
@@ -97,7 +98,9 @@ pub async fn shutdown_signal() {
 
     #[cfg(not(unix))]
     {
-        signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
+        signal::ctrl_c()
+            .await
+            .expect("Failed to listen for Ctrl+C");
         info!("Received Ctrl+C");
     }
 }

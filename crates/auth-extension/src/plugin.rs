@@ -1,8 +1,8 @@
-use rhai::{Engine, EvalAltResult, Scope, AST};
+use rhai::{Engine, Scope, AST, EvalAltResult};
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::info;
+use tracing::{info, error};
 
 #[derive(Clone)]
 pub struct PluginEngine {
@@ -12,7 +12,7 @@ pub struct PluginEngine {
 
 impl PluginEngine {
     pub fn new() -> Self {
-        let engine = Engine::new();
+        let mut engine = Engine::new();
         // Configure engine for safety (e.g., limit iterations/depth if needed in prod)
         // engine.set_max_expr_depths(50, 50);
 
@@ -30,11 +30,7 @@ impl PluginEngine {
         Ok(())
     }
 
-    pub async fn execute_hook(
-        &self,
-        hook_name: &str,
-        payload: Value,
-    ) -> Result<Value, Box<EvalAltResult>> {
+    pub async fn execute_hook(&self, hook_name: &str, payload: Value) -> Result<Value, Box<EvalAltResult>> {
         let scripts = self.scripts.lock().await;
         let mut result = payload.clone();
 
@@ -53,15 +49,12 @@ impl PluginEngine {
             let _options = rhai::CallFnOptions::new().eval_ast(false); // Don't re-eval global
 
             // Try calling the hook function if defined
-            match self
-                .engine
-                .call_fn::<String>(&mut scope, ast, hook_name, (result.to_string(),))
-            {
+             match self.engine.call_fn::<String>(&mut scope, ast, hook_name, ( result.to_string(), )) {
                 Ok(new_json) => {
-                    // If script returns new JSON, update result (chaining)
-                    if let Ok(val) = serde_json::from_str(&new_json) {
-                        result = val;
-                    }
+                     // If script returns new JSON, update result (chaining)
+                     if let Ok(val) = serde_json::from_str(&new_json) {
+                         result = val;
+                     }
                 }
                 Err(_e) => {
                     // Ignore if function not found, otherwise log error
@@ -78,11 +71,5 @@ impl PluginEngine {
     // Simplified execution for verifying basic logic
     pub fn eval_simple(&self, script: &str) -> Result<i64, Box<EvalAltResult>> {
         self.engine.eval(script)
-    }
-}
-
-impl Default for PluginEngine {
-    fn default() -> Self {
-        Self::new()
     }
 }

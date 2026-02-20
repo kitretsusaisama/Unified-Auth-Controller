@@ -1,3 +1,4 @@
+
 #[derive(Debug, Clone)]
 pub struct TelemetryConfig {
     pub service_name: String,

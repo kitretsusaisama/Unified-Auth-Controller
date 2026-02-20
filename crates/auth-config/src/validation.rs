@@ -1,9 +1,9 @@
 //! Configuration validation utilities
 
 use crate::config::AppConfig;
-use secrecy::ExposeSecret;
 use thiserror::Error;
 use validator::{Validate, ValidationErrors};
+use secrecy::ExposeSecret;
 
 #[derive(Debug, Error)]
 pub enum ConfigValidationError {
@@ -72,15 +72,13 @@ impl ConfigValidator {
         // Connection pool should be reasonable
         if db.max_connections < db.min_connections {
             return Err(ConfigValidationError::DatabaseValidationFailed {
-                message: "Max connections must be greater than or equal to min connections"
-                    .to_string(),
+                message: "Max connections must be greater than or equal to min connections".to_string(),
             });
         }
 
         if db.max_connections > 1000 {
             return Err(ConfigValidationError::DatabaseValidationFailed {
-                message: "Max connections should not exceed 1000 for performance reasons"
-                    .to_string(),
+                message: "Max connections should not exceed 1000 for performance reasons".to_string(),
             });
         }
 

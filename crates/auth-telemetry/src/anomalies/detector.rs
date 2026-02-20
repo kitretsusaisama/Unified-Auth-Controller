@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tracing::warn;
 
@@ -22,21 +22,16 @@ impl AnomalyDetector {
 
     pub fn record(&self, key: &str, value: f64) -> bool {
         let mut windows = self.windows.lock().unwrap();
-        let window = windows.entry(key.to_string()).or_default();
+        let window = windows.entry(key.to_string()).or_insert_with(VecDeque::new);
 
         // Calculate stats on CURRENT window
-        let is_anomaly = if window.len() >= 10 {
-            // Min samples
+        let is_anomaly = if window.len() >= 10 { // Min samples
             let mean: f64 = window.iter().sum::<f64>() / window.len() as f64;
-            let variance: f64 =
-                window.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / window.len() as f64;
+            let variance: f64 = window.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / window.len() as f64;
             let std_dev = variance.sqrt();
 
             if std_dev > 0.0 && (value - mean).abs() > (self.threshold * std_dev) {
-                warn!(
-                    "Anomaly Detected for {}: Value={}, Mean={}, StdDev={}",
-                    key, value, mean, std_dev
-                );
+                warn!("Anomaly Detected for {}: Value={}, Mean={}, StdDev={}", key, value, mean, std_dev);
                 true
             } else {
                 false

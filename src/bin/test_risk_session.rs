@@ -1,13 +1,13 @@
 use auth_core::models::{User, UserStatus};
-use auth_core::services::risk_assessment::{LoginHistory, RiskContext, RiskEngine};
+use auth_core::services::risk_assessment::{RiskContext, RiskEngine, LoginHistory};
 use auth_core::services::session_service::SessionService;
 use auth_db::repositories::session_repository::SessionRepository;
-use chrono::Utc;
-use dotenvy::dotenv;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::sync::Arc;
 use uuid::Uuid;
+use dotenvy::dotenv;
+use chrono::Utc;
 
 #[tokio::main]
 async fn main() {
@@ -32,7 +32,9 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
 
     // Run Migrations (to ensure sessions table exists)
     println!("Running Migrations...");
-    sqlx::migrate!("./migrations").run(&pool).await?;
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await?;
     println!("Migrations Complete!");
 
     // Initialize Services
@@ -46,25 +48,22 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     let user_id = Uuid::new_v4();
 
     println!("Setting up test organization, tenant, and user...");
-    sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
-        .bind(org_id.to_string())
-        .bind("Risk Test Org")
+    sqlx::query!("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')",
+        org_id.to_string(), "Risk Test Org")
         .execute(&pool)
         .await?;
 
-    sqlx::query("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')")
-        .bind(tenant_id.to_string())
-        .bind(org_id.to_string())
-        .bind("Risk Test Tenant")
-        .bind("risk-tenant")
+    sqlx::query!("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')",
+        tenant_id.to_string(), org_id.to_string(), "Risk Test Tenant", "risk-tenant")
         .execute(&pool)
         .await?;
 
-    sqlx::query("INSERT INTO users (id, email, status) VALUES (?, ?, 'active')")
-        .bind(user_id.to_string())
-        .bind("risk_user@example.com")
-        .execute(&pool)
-        .await?;
+    sqlx::query!(
+        "INSERT INTO users (id, email, status) VALUES (?, ?, 'active')",
+        user_id.to_string(), "risk_user@example.com"
+    )
+    .execute(&pool)
+    .await?;
 
     // Create a mock User object for the service
     let user = User {
@@ -92,7 +91,7 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
         email_verified_at: Some(Utc::now()),
         identifier_type: auth_core::models::user::IdentifierType::Email,
         phone_verified_at: None,
-        primary_identifier: auth_core::models::user::PrimaryIdentifier::Email,
+        tenant_id,
     };
 
     // Test 1: Low Risk Login
@@ -104,20 +103,13 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
         user_agent: Some("Mozilla/5.0".to_string()),
         device_fingerprint: Some("device_123".to_string()),
         geolocation: None,
-        previous_logins: vec![LoginHistory {
-            timestamp: Utc::now(),
-            ip_address: "192.168.1.1".to_string(),
-            success: true,
-        }],
+        previous_logins: vec![
+            LoginHistory { timestamp: Utc::now(), ip_address: "192.168.1.1".to_string(), success: true }
+        ],
     };
 
-    let session_low = session_service
-        .create_session(user.clone(), context_low)
-        .await?;
-    println!(
-        "   > Session Created: Token={}, Risk={}",
-        session_low.session_token, session_low.risk_score
-    );
+    let session_low = session_service.create_session(user.clone(), context_low).await?;
+    println!("   > Session Created: Token={}, Risk={}", session_low.session_token, session_low.risk_score);
     assert!(session_low.risk_score < 0.3, "Expected low risk score");
 
     // Test 2: High Risk Login (New IP)
@@ -129,53 +121,32 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
         user_agent: Some("Mozilla/5.0".to_string()),
         device_fingerprint: Some("device_123".to_string()),
         geolocation: None,
-        previous_logins: vec![LoginHistory {
-            timestamp: Utc::now(),
-            ip_address: "192.168.1.1".to_string(),
-            success: true,
-        }],
+        previous_logins: vec![
+            LoginHistory { timestamp: Utc::now(), ip_address: "192.168.1.1".to_string(), success: true }
+        ],
     };
 
-    let session_high = session_service
-        .create_session(user.clone(), context_high)
-        .await?;
-    println!(
-        "   > Session Created: Token={}, Risk={}",
-        session_high.session_token, session_high.risk_score
-    );
-    assert!(
-        session_high.risk_score >= 0.3,
-        "Expected elevated risk score due to new IP"
-    );
+    let session_high = session_service.create_session(user.clone(), context_high).await?;
+    println!("   > Session Created: Token={}, Risk={}", session_high.session_token, session_high.risk_score);
+    assert!(session_high.risk_score >= 0.3, "Expected elevated risk score due to new IP");
 
     // Test 3: Session Validation
     println!("3. Validating Session...");
-    let valid_session = session_service
-        .validate_session(&session_low.session_token)
-        .await?;
+    let valid_session = session_service.validate_session(&session_low.session_token).await?;
     assert_eq!(valid_session.id, session_low.id);
     println!("   > Session Validated");
 
     // Test 4: Revocation
     println!("4. Revoking Session...");
-    session_service
-        .revoke_session(&session_low.session_token)
-        .await?;
-    let result = session_service
-        .validate_session(&session_low.session_token)
-        .await;
-    assert!(
-        result.is_err(),
-        "Session should be invalid after revocation"
-    );
+    session_service.revoke_session(&session_low.session_token).await?;
+    let result = session_service.validate_session(&session_low.session_token).await;
+    assert!(result.is_err(), "Session should be invalid after revocation");
     println!("   > Session Revoked Successfully");
 
     // Test 5: Revoke All
     println!("5. Revoking All User Sessions...");
     session_service.revoke_user_sessions(user_id).await?;
-    let result_high = session_service
-        .validate_session(&session_high.session_token)
-        .await;
+    let result_high = session_service.validate_session(&session_high.session_token).await;
     assert!(result_high.is_err(), "All sessions should be revoked");
     println!("   > All Sessions Revoked");
 

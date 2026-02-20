@@ -3,8 +3,9 @@
 //! These tests ensure that all functionality works properly with MySQL database only
 //! and that no SQLite dependencies remain in the production code.
 
+use auth_config::{ConfigLoader, ConfigManager};
 use auth_db::connection::create_mysql_pool;
-use sqlx::Row;
+use sqlx::{Executor, Row};
 use uuid::Uuid;
 
 #[tokio::test]
@@ -25,7 +26,9 @@ async fn test_mysql_connection() {
     let pool = pool.unwrap();
 
     // Test a simple query
-    let result = sqlx::query("SELECT 1 as value").fetch_one(&pool).await;
+    let result = sqlx::query("SELECT 1 as value")
+        .fetch_one(&pool)
+        .await;
 
     assert!(result.is_ok(), "Should be able to execute query");
 
@@ -44,9 +47,7 @@ async fn test_mysql_tables_exist() {
     }
 
     let database_url = result.unwrap();
-    let pool = create_mysql_pool(&create_test_database_config(&database_url))
-        .await
-        .unwrap();
+    let pool = create_mysql_pool(&create_test_database_config(&database_url)).await.unwrap();
 
     // Check if users table exists
     let result = sqlx::query("SHOW TABLES LIKE 'users'")
@@ -67,9 +68,7 @@ async fn test_mysql_uuid_support() {
     }
 
     let database_url = result.unwrap();
-    let pool = create_mysql_pool(&create_test_database_config(&database_url))
-        .await
-        .unwrap();
+    let pool = create_mysql_pool(&create_test_database_config(&database_url)).await.unwrap();
 
     let test_uuid = Uuid::new_v4();
 
@@ -112,9 +111,7 @@ async fn test_mysql_json_support() {
     }
 
     let database_url = result.unwrap();
-    let pool = create_mysql_pool(&create_test_database_config(&database_url))
-        .await
-        .unwrap();
+    let pool = create_mysql_pool(&create_test_database_config(&database_url)).await.unwrap();
 
     // Create a temporary table for testing
     sqlx::query("CREATE TEMPORARY TABLE test_json (id INT PRIMARY KEY AUTO_INCREMENT, data JSON)")
@@ -156,9 +153,7 @@ async fn test_mysql_datetime_support() {
     }
 
     let database_url = result.unwrap();
-    let pool = create_mysql_pool(&create_test_database_config(&database_url))
-        .await
-        .unwrap();
+    let pool = create_mysql_pool(&create_test_database_config(&database_url)).await.unwrap();
 
     let now = chrono::Utc::now();
 
@@ -176,20 +171,15 @@ async fn test_mysql_datetime_support() {
         .expect("Should insert datetime");
 
     // Query datetime back
-    let result: (chrono::DateTime<chrono::Utc>,) =
-        sqlx::query_as("SELECT created_at FROM test_datetime")
-            .fetch_one(&pool)
-            .await
-            .expect("Should fetch datetime");
+    let result: (chrono::DateTime<chrono::Utc>,) = sqlx::query_as("SELECT created_at FROM test_datetime")
+        .fetch_one(&pool)
+        .await
+        .expect("Should fetch datetime");
 
     // Compare timestamps (allowing for microsecond precision differences)
     let stored_time = result.0;
     let diff = (stored_time.timestamp_micros() - now.timestamp_micros()).abs();
-    assert!(
-        diff < 1000,
-        "Datetime should be preserved (diff: {} microseconds)",
-        diff
-    );
+    assert!(diff < 1000, "Datetime should be preserved (diff: {} microseconds)", diff);
 
     // Clean up
     sqlx::query("DROP TEMPORARY TABLE test_datetime")
@@ -218,9 +208,7 @@ fn verify_no_sqlite_references_in_main_code() {
 
     // The fact that we removed SQLite imports from main.rs should satisfy this
     // We can verify by ensuring our main code only uses MySQL-specific code
-    println!(
-        "Main application code verified to use MySQL only (SQLite imports removed from main.rs)"
-    );
+    println!("Main application code verified to use MySQL only (SQLite imports removed from main.rs)");
 }
 
 #[tokio::test]
@@ -233,9 +221,7 @@ async fn test_mysql_transaction_support() {
     }
 
     let database_url = result.unwrap();
-    let pool = create_mysql_pool(&create_test_database_config(&database_url))
-        .await
-        .unwrap();
+    let pool = create_mysql_pool(&create_test_database_config(&database_url)).await.unwrap();
 
     // Create a temporary table for testing
     sqlx::query("CREATE TEMPORARY TABLE test_transaction (id INT PRIMARY KEY, value VARCHAR(255))")
@@ -261,10 +247,7 @@ async fn test_mysql_transaction_support() {
         .await
         .expect("Should fetch in transaction");
 
-    assert_eq!(
-        result.0, "test_value",
-        "Should see uncommitted data in same transaction"
-    );
+    assert_eq!(result.0, "test_value", "Should see uncommitted data in same transaction");
 
     // Rollback transaction
     tx.rollback().await.expect("Should rollback transaction");

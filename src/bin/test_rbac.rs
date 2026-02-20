@@ -1,10 +1,10 @@
+use auth_core::services::role_service::{RoleService, RoleStore};
 use auth_core::models::CreateRoleRequest;
-use auth_core::services::authorization::AuthorizationService;
-use auth_db::repositories::authorization::role_repository::RoleRepository;
-use dotenvy::dotenv;
+use auth_db::repositories::RoleRepository;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::sync::Arc;
+use dotenvy::dotenv;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -30,24 +30,20 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize Store & Service
     let role_repo = Arc::new(RoleRepository::new(pool.clone()));
-    let role_service = AuthorizationService::new(role_repo);
+    let role_service = RoleService::new(role_repo);
 
     // Setup Test Data
     let org_id = Uuid::new_v4();
     let tenant_id = Uuid::new_v4();
 
     println!("Setting up test organization and tenant...");
-    sqlx::query("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')")
-        .bind(org_id.to_string())
-        .bind("RBAC Test Org")
+    sqlx::query!("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')",
+        org_id.to_string(), "RBAC Test Org")
         .execute(&pool)
         .await?;
 
-    sqlx::query("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')")
-        .bind(tenant_id.to_string())
-        .bind(org_id.to_string())
-        .bind("RBAC Test Tenant")
-        .bind("rbac-tenant")
+    sqlx::query!("INSERT INTO tenants (id, organization_id, name, slug, status) VALUES (?, ?, ?, ?, 'active')",
+        tenant_id.to_string(), org_id.to_string(), "RBAC Test Tenant", "rbac-tenant")
         .execute(&pool)
         .await?;
 

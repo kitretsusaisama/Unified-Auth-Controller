@@ -1,6 +1,6 @@
-use reqwest::Client;
 use serde_json::Value;
-use tracing::info;
+use tracing::{info, error};
+use reqwest::Client;
 
 #[derive(Clone)]
 pub struct WebhookDispatcher {
@@ -14,12 +14,7 @@ impl WebhookDispatcher {
         }
     }
 
-    pub async fn dispatch(
-        &self,
-        url: &str,
-        event: &str,
-        payload: Value,
-    ) -> Result<(), reqwest::Error> {
+    pub async fn dispatch(&self, url: &str, event: &str, payload: Value) -> Result<(), reqwest::Error> {
         info!("Dispatching webhook: {} -> {}", event, url);
 
         let _body = serde_json::json!({
@@ -40,18 +35,12 @@ impl WebhookDispatcher {
         // For test safety (not hitting real URLs), we log only unless confident.
         // But to implement "real" code:
         if !url.starts_with("mock") {
-            // self.client.post(url).json(&body).send().await?;
-            // Commented out to prevent unintended network calls during 'cargo run' unless strictly controlled.
-            // We will simulate success for safety.
+             // self.client.post(url).json(&body).send().await?;
+             // Commented out to prevent unintended network calls during 'cargo run' unless strictly controlled.
+             // We will simulate success for safety.
         }
 
         info!("Webhook dispatched successfully (simulated)");
         Ok(())
-    }
-}
-
-impl Default for WebhookDispatcher {
-    fn default() -> Self {
-        Self::new()
     }
 }
