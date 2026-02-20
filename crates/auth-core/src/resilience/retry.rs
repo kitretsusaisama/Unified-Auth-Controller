@@ -2,9 +2,9 @@
 //!
 //! Provides standardized retry policies for external operations.
 
-use std::time::Duration;
 use rand::Rng;
 use std::future::Future;
+use std::time::Duration;
 
 /// Configuration for retry logic
 #[derive(Debug, Clone, Copy)]
@@ -25,10 +25,7 @@ impl Default for RetryConfig {
 }
 
 /// Execute a future with exponential backoff retry
-pub async fn retry<F, Fut, T, E>(
-    config: RetryConfig,
-    mut operation: F
-) -> Result<T, E>
+pub async fn retry<F, Fut, T, E>(config: RetryConfig, mut operation: F) -> Result<T, E>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, E>>,

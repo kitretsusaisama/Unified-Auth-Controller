@@ -1,7 +1,6 @@
-use auth_db::sharding::{ShardManager, ShardConfig};
-use uuid::Uuid;
-use tokio;
+use auth_db::sharding::{ShardConfig, ShardManager};
 use proptest::prelude::*;
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
@@ -9,9 +8,21 @@ async fn main() {
 
     // Add shards
     let shards = vec![
-        ShardConfig { shard_id: 1, database_url: "mysql://mock1".to_string(), weight: 1 },
-        ShardConfig { shard_id: 2, database_url: "mysql://mock2".to_string(), weight: 1 },
-        ShardConfig { shard_id: 3, database_url: "mysql://mock3".to_string(), weight: 1 },
+        ShardConfig {
+            shard_id: 1,
+            database_url: "mysql://mock1".to_string(),
+            weight: 1,
+        },
+        ShardConfig {
+            shard_id: 2,
+            database_url: "mysql://mock2".to_string(),
+            weight: 1,
+        },
+        ShardConfig {
+            shard_id: 3,
+            database_url: "mysql://mock3".to_string(),
+            weight: 1,
+        },
     ];
 
     for shard in shards {
@@ -20,8 +31,14 @@ async fn main() {
 
     // Property: Same tenant always routes to same shard
     let tenant_id = Uuid::new_v4();
-    let shard1 = manager.determine_shard_id(&tenant_id.to_string()).await.unwrap();
-    let shard2 = manager.determine_shard_id(&tenant_id.to_string()).await.unwrap();
+    let shard1 = manager
+        .determine_shard_id(&tenant_id.to_string())
+        .await
+        .unwrap();
+    let shard2 = manager
+        .determine_shard_id(&tenant_id.to_string())
+        .await
+        .unwrap();
 
     assert_eq!(shard1, shard2, "Shard selection must be deterministic");
     println!("✅ Deterministic Routing: PASSED");

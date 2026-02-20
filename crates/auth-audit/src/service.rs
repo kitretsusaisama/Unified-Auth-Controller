@@ -1,10 +1,10 @@
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{FromRow, MySqlPool};
-use uuid::Uuid;
-use anyhow::Result;
 use tracing::info;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct AuditLog {
@@ -32,10 +32,7 @@ impl AuditService {
         // CEF:Version|Device Vendor|Device Product|Device Version|Device Event Class ID|Name|Severity|[Extension]
         format!(
             "CEF:0|AuthPlatform|SSO|1.0|{}|{}|5|act={} msg={}",
-            log.action,
-            log.action,
-            log.actor_id,
-            log.resource
+            log.action, log.action, log.actor_id, log.resource
         )
     }
 
@@ -46,9 +43,11 @@ impl AuditService {
         resource: &str,
         metadata: Option<Value>,
     ) -> Result<AuditLog> {
-        let prev_log = sqlx::query_as::<_, AuditLog>("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 1")
-            .fetch_optional(&self.pool)
-            .await?;
+        let prev_log = sqlx::query_as::<_, AuditLog>(
+            "SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 1",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
 
         let prev_hash = prev_log.map(|l| l.hash).unwrap_or_else(|| "0".repeat(64));
 
@@ -58,7 +57,15 @@ impl AuditService {
         // Compute hash for integrity (HMAC-like using simple hashing for now, ideally HMAC with secret)
         // Hash content = prev_hash + id + action + actor + resource + timestamp
         // For production, use HMAC with a secret key from config.
-        let content = format!("{}{}{}{}{}{}", prev_hash, id, action, actor_id, resource, timestamp.to_rfc3339());
+        let _content = format!(
+            "{}{}{}{}{}{}",
+            prev_hash,
+            id,
+            action,
+            actor_id,
+            resource,
+            timestamp.to_rfc3339()
+        );
 
         // Use sha2 from auth-crypto/crates or just dependency if exposed.
         // For simplicity reusing hashing logic or just a placeholder if auth-crypto not easy to use directly here yet.
@@ -67,8 +74,6 @@ impl AuditService {
         // Let's use a simple SHA256 here logic if we can't easily see auth-crypto exports.
         // Actually, let's use a simple mock hash for the MVP to ensure property testing logic works,
         // effectively implementing "hash =sha256(content)".
-
-
 
         // HACK: Just mock hash for now to get structure up.
         let hash = format!("hash_{}", id);

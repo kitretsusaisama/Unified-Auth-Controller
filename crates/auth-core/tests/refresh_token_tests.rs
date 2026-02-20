@@ -1,9 +1,7 @@
-/*
 //! Unit tests for Refresh Token System
 //! Task 3.4: Write unit tests for refresh token system
 //!
 //! Requirements Covered: 3.4, 7.1
-*/
 
 use auth_core::models::Claims;
 use auth_core::services::{TokenEngine, TokenProvider};

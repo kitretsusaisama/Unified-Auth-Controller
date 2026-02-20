@@ -7,7 +7,7 @@
 
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{SocketAddr, TcpListener};
-use tracing::debug;
+use tracing::{debug, warn};
 
 /// Managed TCP listener with ownership tracking
 pub struct ManagedListener {
@@ -97,7 +97,11 @@ pub fn bind_with_reuse(addr: SocketAddr, service_name: &str) -> std::io::Result<
     let listener: TcpListener = socket.into();
     let port = listener.local_addr()?.port();
 
-    Ok(ManagedListener::new(listener, port, service_name.to_string()))
+    Ok(ManagedListener::new(
+        listener,
+        port,
+        service_name.to_string(),
+    ))
 }
 
 #[cfg(test)]

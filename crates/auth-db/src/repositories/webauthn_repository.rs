@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use sqlx::{MySql, Pool, Result};
-use uuid::Uuid;
-use auth_core::services::webauthn_service::{Passkey, WebauthnStore};
 use async_trait::async_trait;
+use auth_core::services::webauthn_service::{Passkey, WebauthnStore};
+use serde::{Deserialize, Serialize};
+use sqlx::{MySql, Pool};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PasskeyRecord {
@@ -32,7 +32,7 @@ impl WebauthnStore for WebauthnRepository {
             r#"
             INSERT INTO passkeys (id, user_id, passkey_json, created_at)
             VALUES (?, ?, ?, NOW())
-            "#
+            "#,
         )
         .bind(passkey.cred_id().to_string())
         .bind(user_id.to_string())

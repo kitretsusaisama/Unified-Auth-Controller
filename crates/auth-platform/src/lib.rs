@@ -17,7 +17,7 @@ pub use port_authority::PortAuthority;
 pub use port_lease::PortLease;
 pub use port_policy::{PortClass, PortPolicy};
 pub use safe_socket::ManagedListener;
-pub use shutdown::{GracefulShutdown, shutdown_signal};
+pub use shutdown::{shutdown_signal, GracefulShutdown};
 
 /// Platform-level errors
 #[derive(Debug, thiserror::Error)]

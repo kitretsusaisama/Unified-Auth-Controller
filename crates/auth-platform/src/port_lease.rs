@@ -71,12 +71,12 @@ impl PortLease {
     }
 
     /// Save lease to file
-    pub async fn save(&self, lease_dir: &Path) -> std::io::Result<()> {
-        tokio::fs::create_dir_all(lease_dir).await?;
+    pub fn save(&self, lease_dir: &Path) -> std::io::Result<()> {
+        fs::create_dir_all(lease_dir)?;
 
         let lease_path = Self::lease_path(lease_dir, self.port);
         let json = serde_json::to_string_pretty(self)?;
-        tokio::fs::write(&lease_path, json).await?;
+        fs::write(&lease_path, json)?;
 
         debug!(
             port = self.port,
@@ -92,11 +92,11 @@ impl PortLease {
     pub async fn load(lease_dir: &Path, port: u16) -> std::io::Result<Option<Self>> {
         let lease_path = Self::lease_path(lease_dir, port);
 
-        if !tokio::fs::try_exists(&lease_path).await? {
+        if !lease_path.exists() {
             return Ok(None);
         }
 
-        let json = tokio::fs::read_to_string(&lease_path).await?;
+        let json = fs::read_to_string(&lease_path)?;
         let lease: Self = serde_json::from_str(&json)?;
 
         Ok(Some(lease))
@@ -106,8 +106,8 @@ impl PortLease {
     pub async fn delete(lease_dir: &Path, port: u16) -> std::io::Result<()> {
         let lease_path = Self::lease_path(lease_dir, port);
 
-        if tokio::fs::try_exists(&lease_path).await? {
-            tokio::fs::remove_file(&lease_path).await?;
+        if lease_path.exists() {
+            fs::remove_file(&lease_path)?;
             debug!(port = port, path = ?lease_path, "Lease deleted");
         }
 
@@ -125,7 +125,7 @@ impl PortLease {
                     "Reclaiming zombie lease"
                 );
 
-                Self::delete(lease_dir, port).await?;
+                Self::delete(lease_dir, port)?;
                 return Ok(true);
             }
         }
@@ -136,7 +136,7 @@ impl PortLease {
     /// Check if port is available (no valid lease exists)
     pub async fn is_port_available(lease_dir: &Path, port: u16) -> std::io::Result<bool> {
         // First try to reclaim any zombie leases
-        Self::reclaim(lease_dir, port).await?;
+        Self::reclaim(lease_dir, port)?;
 
         // Then check if a valid lease exists
         if let Some(lease) = Self::load(lease_dir, port).await? {
@@ -177,9 +177,9 @@ mod tests {
         let lease_dir = temp_dir.path();
 
         let lease = PortLease::new(8081, "test-service");
-        lease.save(lease_dir).await.unwrap();
+        lease.save(lease_dir).unwrap();
 
-        let loaded = PortLease::load(lease_dir, 8081).await.unwrap();
+        let loaded = PortLease::load(lease_dir, 8081).unwrap();
         assert!(loaded.is_some());
 
         let loaded = loaded.unwrap();
@@ -210,7 +210,7 @@ mod tests {
         // Create a lease with a dead PID
         let mut zombie_lease = PortLease::new(8081, "zombie");
         zombie_lease.pid = 99999;
-        zombie_lease.save(lease_dir).await.unwrap();
+        zombie_lease.save(lease_dir).unwrap();
 
         // Reclaim should succeed
         let reclaimed = PortLease::reclaim(lease_dir, 8081).await.unwrap();
@@ -227,17 +227,17 @@ mod tests {
         let lease_dir = temp_dir.path();
 
         // Port should be available initially
-        assert!(PortLease::is_port_available(lease_dir, 8081).await.unwrap());
+        assert!(PortLease::is_port_available(lease_dir, 8081).unwrap());
 
         // Lease the port
         let lease = PortLease::new(8081, "test");
-        lease.save(lease_dir).await.unwrap();
+        lease.save(lease_dir).unwrap();
 
         // Port should NOT be available
-        assert!(!PortLease::is_port_available(lease_dir, 8081).await.unwrap());
+        assert!(!PortLease::is_port_available(lease_dir, 8081).unwrap());
 
         // Delete the lease
-        PortLease::delete(lease_dir, 8081).await.unwrap();
+        PortLease::delete(lease_dir, 8081).unwrap();
 
         // Port should be available again
         assert!(PortLease::is_port_available(lease_dir, 8081).await.unwrap());

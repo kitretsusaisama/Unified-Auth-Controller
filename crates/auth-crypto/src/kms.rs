@@ -1,9 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use rand::rngs::OsRng;
-use rsa::{RsaPrivateKey, RsaPublicKey, Pkcs1v15Sign};
 use rsa::pkcs8::{EncodePublicKey, LineEnding};
-use sha2::{Sha256, Digest};
+use rsa::{Pkcs1v15Sign, RsaPrivateKey, RsaPublicKey};
+use sha2::{Digest, Sha256};
 
 #[async_trait]
 pub trait KeyProvider: Send + Sync {
@@ -56,7 +56,9 @@ impl KeyProvider for SoftKeyProvider {
 
     fn public_key_pem(&self) -> String {
         let public_key = RsaPublicKey::from(&self.key);
-        public_key.to_public_key_pem(LineEnding::LF).unwrap_or_default()
+        public_key
+            .to_public_key_pem(LineEnding::LF)
+            .unwrap_or_default()
     }
 }
 
@@ -84,5 +86,11 @@ impl KeyProvider for HsmKeyProvider {
 
     fn public_key_pem(&self) -> String {
         "-----BEGIN PUBLIC KEY-----\nMOCK_HSM_KEY\n-----END PUBLIC KEY-----".to_string()
+    }
+}
+
+impl Default for SoftKeyProvider {
+    fn default() -> Self {
+        Self::new()
     }
 }

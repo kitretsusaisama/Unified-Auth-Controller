@@ -1,8 +1,4 @@
-use axum::{
-    extract::ConnectInfo,
-    http::StatusCode,
-    response::IntoResponse,
-};
+use axum::{extract::ConnectInfo, http::StatusCode, response::IntoResponse};
 use dashmap::DashMap;
 use std::{
     net::SocketAddr,
@@ -34,16 +30,20 @@ impl RateLimiter {
 
     /// Check if request is allowed for given key (e.g., IP address)
     pub fn check_rate_limit(&self, key: &str) -> bool {
-        let mut bucket = self.buckets.entry(key.to_string()).or_insert_with(|| TokenBucket {
-            tokens: self.max_tokens as f64,
-            last_refill: Instant::now(),
-        });
+        let mut bucket = self
+            .buckets
+            .entry(key.to_string())
+            .or_insert_with(|| TokenBucket {
+                tokens: self.max_tokens as f64,
+                last_refill: Instant::now(),
+            });
 
         let now = Instant::now();
         let elapsed = now.duration_since(bucket.last_refill);
 
         // Refill tokens based on elapsed time
-        let tokens_to_add = (elapsed.as_secs_f64() / self.refill_rate.as_secs_f64()) * self.max_tokens as f64;
+        let tokens_to_add =
+            (elapsed.as_secs_f64() / self.refill_rate.as_secs_f64()) * self.max_tokens as f64;
         bucket.tokens = (bucket.tokens + tokens_to_add).min(self.max_tokens as f64);
         bucket.last_refill = now;
 
