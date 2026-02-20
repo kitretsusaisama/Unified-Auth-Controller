@@ -10,6 +10,8 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
+const DEFAULT_CACHE_CAPACITY: usize = 10_000;
+
 /// Trait for refresh token persistent storage
 #[async_trait::async_trait]
 pub trait RefreshTokenStore: Send + Sync {
@@ -81,7 +83,9 @@ pub struct InMemoryRefreshTokenStore {
 
 impl InMemoryRefreshTokenStore {
     pub fn new(capacity: usize) -> Self {
-        let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| NonZeroUsize::new(10_000).unwrap());
+        let cap = NonZeroUsize::new(capacity)
+            .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_CAPACITY)
+                .expect("DEFAULT_CACHE_CAPACITY must be non-zero"));
         Self {
             tokens: Arc::new(RwLock::new(LruCache::new(cap))),
         }
@@ -135,7 +139,9 @@ pub struct InMemoryRevokedTokenStore {
 
 impl InMemoryRevokedTokenStore {
     pub fn new(capacity: usize) -> Self {
-        let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| NonZeroUsize::new(10_000).unwrap());
+        let cap = NonZeroUsize::new(capacity)
+            .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_CAPACITY)
+                .expect("DEFAULT_CACHE_CAPACITY must be non-zero"));
         Self {
             revoked: Arc::new(RwLock::new(LruCache::new(cap))),
         }
