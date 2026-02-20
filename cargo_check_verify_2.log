@@ -1,0 +1,43 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking moxcms v0.7.11
+    Checking sqlx v0.7.4
+    Checking compression-codecs v0.4.36
+    Checking auth-cache v0.1.0 (/app/crates/auth-cache)
+    Checking async-compression v0.4.39
+    Checking tower-http v0.5.2
+    Checking image v0.25.9
+    Checking qrcodegen-image v1.5.1
+    Checking totp-rs v5.7.0
+    Checking auth-core v0.1.0 (/app/crates/auth-core)
+error[E0061]: this function takes 7 arguments but 5 arguments were supplied
+   --> crates/auth-core/src/services/otp_service.rs:156:20
+    |
+156 |           let totp = TOTP::new(
+    |  ____________________^^^^^^^^^-
+157 | |             Algorithm::SHA1,
+158 | |             6,
+159 | |             1,
+160 | |             30,
+161 | |             secret,
+162 | |         ).map_err(|_| OtpError::GenerationFailed)?;
+    | |_________- two arguments of type `std::option::Option<std::string::String>` and `std::string::String` are missing
+    |
+note: associated function defined here
+   --> /home/jules/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/totp-rs-5.7.0/src/lib.rs:280:12
+    |
+280 |     pub fn new(
+    |            ^^^
+help: provide the arguments
+    |
+156 |         let totp = TOTP::new(
+...
+161 |             secret,
+162 ~             /* std::option::Option<std::string::String> */,
+163 +             /* std::string::String */,
+164 ~         ).map_err(|_| OtpError::GenerationFailed)?;
+    |
+
+For more information about this error, try `rustc --explain E0061`.
+error: could not compile `auth-core` (lib) due to 1 previous error

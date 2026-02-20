@@ -55,12 +55,10 @@ impl RateLimiter {
     }
 
     /// Check if rate limit is exceeded
-    pub async fn check_limit(
-        &self,
-        key: &str,
-        rule_name: &str,
-    ) -> Result<bool, String> {
-        let rule = self.rules.get(rule_name)
+    pub async fn check_limit(&self, key: &str, rule_name: &str) -> Result<bool, String> {
+        let rule = self
+            .rules
+            .get(rule_name)
             .ok_or_else(|| "Rate limit rule not found".to_string())?;
 
         let mut counts = self.request_counts.write().await;
@@ -68,8 +66,7 @@ impl RateLimiter {
         let window_start = now - Duration::minutes(rule.window_minutes);
 
         // Get or create request history for this key
-        let requests = counts.entry(key.to_string())
-            .or_insert_with(Vec::new);
+        let requests = counts.entry(key.to_string()).or_insert_with(Vec::new);
 
         // Remove requests outside the window
         requests.retain(|ts| ts > &window_start);
@@ -86,12 +83,10 @@ impl RateLimiter {
     }
 
     /// Get remaining requests for a key
-    pub async fn get_remaining(
-        &self,
-        key: &str,
-        rule_name: &str,
-    ) -> Result<u32, String> {
-        let rule = self.rules.get(rule_name)
+    pub async fn get_remaining(&self, key: &str, rule_name: &str) -> Result<u32, String> {
+        let rule = self
+            .rules
+            .get(rule_name)
             .ok_or_else(|| "Rate limit rule not found".to_string())?;
 
         let counts = self.request_counts.read().await;
@@ -99,9 +94,7 @@ impl RateLimiter {
         let window_start = now - Duration::minutes(rule.window_minutes);
 
         if let Some(requests) = counts.get(key) {
-            let recent_count = requests.iter()
-                .filter(|ts| ts > &&window_start)
-                .count() as u32;
+            let recent_count = requests.iter().filter(|ts| ts > &&window_start).count() as u32;
 
             Ok(rule.max_requests.saturating_sub(recent_count))
         } else {
@@ -115,7 +108,9 @@ impl RateLimiter {
         key: &str,
         rule_name: &str,
     ) -> Result<Option<DateTime<Utc>>, String> {
-        let rule = self.rules.get(rule_name)
+        let rule = self
+            .rules
+            .get(rule_name)
             .ok_or_else(|| "Rate limit rule not found".to_string())?;
 
         let counts = self.request_counts.read().await;
@@ -167,11 +162,17 @@ mod tests {
 
         // First 5 requests should succeed
         for _ in 0..5 {
-            assert!(limiter.check_limit(key, "otp_request_per_identifier").await.unwrap());
+            assert!(limiter
+                .check_limit(key, "otp_request_per_identifier")
+                .await
+                .unwrap());
         }
 
         // 6th request should fail
-        assert!(!limiter.check_limit(key, "otp_request_per_identifier").await.unwrap());
+        assert!(!limiter
+            .check_limit(key, "otp_request_per_identifier")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -179,12 +180,21 @@ mod tests {
         let limiter = RateLimiter::new();
         let key = "test:remaining";
 
-        let remaining = limiter.get_remaining(key, "otp_request_per_identifier").await.unwrap();
+        let remaining = limiter
+            .get_remaining(key, "otp_request_per_identifier")
+            .await
+            .unwrap();
         assert_eq!(remaining, 5);
 
-        limiter.check_limit(key, "otp_request_per_identifier").await.unwrap();
+        limiter
+            .check_limit(key, "otp_request_per_identifier")
+            .await
+            .unwrap();
 
-        let remaining = limiter.get_remaining(key, "otp_request_per_identifier").await.unwrap();
+        let remaining = limiter
+            .get_remaining(key, "otp_request_per_identifier")
+            .await
+            .unwrap();
         assert_eq!(remaining, 4);
     }
 
@@ -195,16 +205,25 @@ mod tests {
 
         // Use up the limit
         for _ in 0..5 {
-            limiter.check_limit(key, "otp_request_per_identifier").await.unwrap();
+            limiter
+                .check_limit(key, "otp_request_per_identifier")
+                .await
+                .unwrap();
         }
 
         // Should be rate limited
-        assert!(!limiter.check_limit(key, "otp_request_per_identifier").await.unwrap());
+        assert!(!limiter
+            .check_limit(key, "otp_request_per_identifier")
+            .await
+            .unwrap());
 
         // Clear the limit
         limiter.clear_limit(key).await;
 
         // Should work again
-        assert!(limiter.check_limit(key, "otp_request_per_identifier").await.unwrap());
+        assert!(limiter
+            .check_limit(key, "otp_request_per_identifier")
+            .await
+            .unwrap());
     }
 }

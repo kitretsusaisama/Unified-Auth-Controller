@@ -1,23 +1,15 @@
-use axum::{
-    body::Body,
-    http::{Request, StatusCode},
-    middleware::Next,
-    response::Response,
-    extract::Extension,
-};
-use uuid::Uuid;
+use auth_core::audit::{AuditCategory, AuditEvent, AuditLogger, AuditOutcome, AuditSeverity};
+use axum::{body::Body, http::Request, middleware::Next, response::Response};
 use std::sync::Arc;
 use std::time::Instant;
-use auth_core::audit::{AuditLogger, AuditEvent, AuditCategory, AuditSeverity, AuditOutcome};
 
-pub async fn audit_middleware(
-    req: Request<Body>,
-    next: Next,
-) -> Response<Body> {
+pub async fn audit_middleware(req: Request<Body>, next: Next) -> Response<Body> {
     let start = Instant::now();
     let method = req.method().clone();
     let uri = req.uri().clone();
-    let user_agent = req.headers().get("user-agent")
+    let user_agent = req
+        .headers()
+        .get("user-agent")
         .and_then(|h| h.to_str().ok())
         .map(|s| s.to_string());
 
@@ -42,9 +34,19 @@ pub async fn audit_middleware(
 
     // Determine severity/outcome based on status
     let (severity, outcome) = if status.is_server_error() {
-        (AuditSeverity::Critical, AuditOutcome::Failure { reason: status.to_string() })
+        (
+            AuditSeverity::Critical,
+            AuditOutcome::Failure {
+                reason: status.to_string(),
+            },
+        )
     } else if status.is_client_error() {
-        (AuditSeverity::Warning, AuditOutcome::Failure { reason: status.to_string() })
+        (
+            AuditSeverity::Warning,
+            AuditOutcome::Failure {
+                reason: status.to_string(),
+            },
+        )
     } else {
         (AuditSeverity::Info, AuditOutcome::Success)
     };

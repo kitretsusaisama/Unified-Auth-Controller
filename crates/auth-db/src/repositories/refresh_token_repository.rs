@@ -46,6 +46,7 @@ impl RefreshTokenRepository {
     }
 
     /// Create a new refresh token in the database
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         user_id: Uuid,
@@ -279,8 +280,11 @@ impl RefreshTokenRepository {
 
         if let Some(row) = row {
             let family_str: String = row.try_get("token_family")?;
-            let family = Uuid::parse_str(&family_str)
-                .map_err(|_| RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("token_family".to_string())))?;
+            let family = Uuid::parse_str(&family_str).map_err(|_| {
+                RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound(
+                    "token_family".to_string(),
+                ))
+            })?;
             Ok(Some(family))
         } else {
             Ok(None)
@@ -288,21 +292,32 @@ impl RefreshTokenRepository {
     }
 
     /// Helper to convert database row to RefreshTokenRecord
-    fn row_to_record(&self, row: sqlx::mysql::MySqlRow) -> Result<RefreshTokenRecord, RefreshTokenError> {
+    fn row_to_record(
+        &self,
+        row: sqlx::mysql::MySqlRow,
+    ) -> Result<RefreshTokenRecord, RefreshTokenError> {
         let id_str: String = row.try_get("id")?;
         let user_id_str: String = row.try_get("user_id")?;
         let tenant_id_str: String = row.try_get("tenant_id")?;
         let family_str: String = row.try_get("token_family")?;
 
         Ok(RefreshTokenRecord {
-            id: Uuid::parse_str(&id_str)
-                .map_err(|_| RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("id".to_string())))?,
-            user_id: Uuid::parse_str(&user_id_str)
-                .map_err(|_| RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("user_id".to_string())))?,
-            tenant_id: Uuid::parse_str(&tenant_id_str)
-                .map_err(|_| RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("tenant_id".to_string())))?,
-            token_family: Uuid::parse_str(&family_str)
-                .map_err(|_| RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("token_family".to_string())))?,
+            id: Uuid::parse_str(&id_str).map_err(|_| {
+                RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("id".to_string()))
+            })?,
+            user_id: Uuid::parse_str(&user_id_str).map_err(|_| {
+                RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound("user_id".to_string()))
+            })?,
+            tenant_id: Uuid::parse_str(&tenant_id_str).map_err(|_| {
+                RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound(
+                    "tenant_id".to_string(),
+                ))
+            })?,
+            token_family: Uuid::parse_str(&family_str).map_err(|_| {
+                RefreshTokenError::DatabaseError(sqlx::Error::ColumnNotFound(
+                    "token_family".to_string(),
+                ))
+            })?,
             token_hash: row.try_get("token_hash")?,
             device_fingerprint: row.try_get("device_fingerprint")?,
             user_agent: row.try_get("user_agent")?,
@@ -316,9 +331,9 @@ impl RefreshTokenRepository {
 }
 
 // Imports for trait implementation
-use auth_core::services::RefreshTokenStore;
-use auth_core::models::RefreshToken;
 use auth_core::error::AuthError;
+use auth_core::models::RefreshToken;
+use auth_core::services::token_service::RefreshTokenStore;
 
 // ... existing code ...
 
@@ -373,7 +388,11 @@ impl RefreshTokenStore for RefreshTokenRepository {
             created_at: token.created_at,
         };
 
-        self.save(record).await.map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+        self.save(record)
+            .await
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 
     async fn find_by_hash(&self, hash: &str) -> Result<Option<RefreshToken>, AuthError> {
@@ -393,20 +412,26 @@ impl RefreshTokenStore for RefreshTokenRepository {
                 created_at: record.created_at,
             })),
             Err(RefreshTokenError::TokenNotFound) => Ok(None),
-            Err(e) => Err(AuthError::DatabaseError { message: e.to_string() }),
+            Err(e) => Err(AuthError::DatabaseError {
+                message: e.to_string(),
+            }),
         }
     }
 
     async fn revoke(&self, token_id: Uuid) -> Result<(), AuthError> {
         self.revoke_token(token_id, Some("Revoked by user/system".to_string()))
             .await
-            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 
     async fn revoke_family(&self, family_id: Uuid) -> Result<(), AuthError> {
         self.revoke_family(family_id, "Family revocation".to_string())
             .await
             .map(|_| ())
-            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 }

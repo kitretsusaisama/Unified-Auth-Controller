@@ -10,7 +10,10 @@ pub enum AuthError {
     AuthenticationFailed { reason: String },
 
     #[error("Authorization denied: {permission} on {resource}")]
-    AuthorizationDenied { permission: String, resource: String },
+    AuthorizationDenied {
+        permission: String,
+        resource: String,
+    },
 
     #[error("Token error: {kind:?}")]
     TokenError { kind: TokenErrorKind },
@@ -127,7 +130,9 @@ impl From<sqlx::Error> for AuthError {
     fn from(err: sqlx::Error) -> Self {
         match err {
             sqlx::Error::RowNotFound => AuthError::UserNotFound,
-            _ => AuthError::DatabaseError { message: err.to_string() }
+            _ => AuthError::DatabaseError {
+                message: err.to_string(),
+            },
         }
     }
 }
@@ -136,18 +141,18 @@ impl From<auth_crypto::JwtError> for AuthError {
     fn from(err: auth_crypto::JwtError) -> Self {
         match err {
             auth_crypto::JwtError::TokenExpired => AuthError::TokenError {
-                kind: TokenErrorKind::Expired
+                kind: TokenErrorKind::Expired,
             },
             auth_crypto::JwtError::ValidationError { .. } => AuthError::TokenError {
-                kind: TokenErrorKind::Invalid
+                kind: TokenErrorKind::Invalid,
             },
             auth_crypto::JwtError::EncodingError(_) => AuthError::TokenError {
-                kind: TokenErrorKind::Invalid
+                kind: TokenErrorKind::Invalid,
             },
-            auth_crypto::JwtError::KeyError(msg) => AuthError::ConfigurationError {
-                message: msg
+            auth_crypto::JwtError::KeyError(msg) => AuthError::ConfigurationError { message: msg },
+            _ => AuthError::TokenError {
+                kind: TokenErrorKind::Invalid,
             },
-            _ => AuthError::TokenError { kind: TokenErrorKind::Invalid },
         }
     }
 }
@@ -163,7 +168,10 @@ impl From<crate::services::otp_delivery::DeliveryError> for AuthError {
         use crate::services::otp_delivery::DeliveryError;
         match err {
             DeliveryError::CircuitBreakerOpen(s) => AuthError::CircuitBreakerOpen { service: s },
-            _ => AuthError::ExternalServiceError { service: "otp_delivery".to_string(), error: err.to_string() },
+            _ => AuthError::ExternalServiceError {
+                service: "otp_delivery".to_string(),
+                error: err.to_string(),
+            },
         }
     }
 }
@@ -174,8 +182,11 @@ impl From<crate::services::otp_service::OtpError> for AuthError {
             OtpError::Invalid | OtpError::GenerationFailed => AuthError::InvalidOtp, // Generation failure internal really
             OtpError::Expired => AuthError::OtpExpired,
             OtpError::NotFound => AuthError::InvalidOtp,
-            OtpError::MaxAttemptsExceeded => AuthError::RateLimitExceeded { limit: 5, window: "session".to_string() }, // Mapping rough
-             _ => AuthError::InternalError,
+            OtpError::MaxAttemptsExceeded => AuthError::RateLimitExceeded {
+                limit: 5,
+                window: "session".to_string(),
+            }, // Mapping rough
+            _ => AuthError::InternalError,
         }
     }
 }

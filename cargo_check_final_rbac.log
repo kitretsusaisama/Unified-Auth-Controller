@@ -1,0 +1,34 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-core v0.1.0 (/app/crates/auth-core)
+error[E0761]: file for module `authorization` found at both "crates/auth-core/src/services/authorization.rs" and "crates/auth-core/src/services/authorization/mod.rs"
+  --> crates/auth-core/src/services/mod.rs:12:1
+   |
+12 | pub mod authorization;
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: delete or rename one of them to remove the ambiguity
+
+error[E0761]: file for module `authorization` found at both "crates/auth-core/src/services/authorization.rs" and "crates/auth-core/src/services/authorization/mod.rs"
+  --> crates/auth-core/src/services/mod.rs:16:1
+   |
+16 | pub mod authorization;
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: delete or rename one of them to remove the ambiguity
+
+error[E0428]: the name `authorization` is defined multiple times
+  --> crates/auth-core/src/services/mod.rs:16:1
+   |
+12 | pub mod authorization;
+   | ---------------------- previous definition of the module `authorization` here
+...
+16 | pub mod authorization;
+   | ^^^^^^^^^^^^^^^^^^^^^^ `authorization` redefined here
+   |
+   = note: `authorization` must be defined only once in the type namespace of this module
+
+Some errors have detailed explanations: E0428, E0761.
+For more information about an error, try `rustc --explain E0428`.
+error: could not compile `auth-core` (lib) due to 3 previous errors

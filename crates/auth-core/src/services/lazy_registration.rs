@@ -4,12 +4,12 @@
 //! with a valid credential (e.g., Firebase, Social, OTP) but does not
 //! have an account in the system.
 
-use uuid::Uuid;
-use std::sync::Arc;
-use crate::models::user::{User, IdentifierType, PrimaryIdentifier};
-use crate::services::identity::IdentityService;
 use crate::error::AuthError;
+use crate::models::user::{IdentifierType, User};
+use crate::services::identity::IdentityService;
 use serde_json::json;
+use std::sync::Arc;
+use uuid::Uuid;
 
 pub struct LazyRegistrationService {
     identity_service: Arc<IdentityService>,
@@ -35,7 +35,8 @@ impl LazyRegistrationService {
         identifier_type: IdentifierType,
     ) -> Result<(User, bool), AuthError> {
         // 1. Try to find existing user
-        let existing_user = self.identity_service
+        let existing_user = self
+            .identity_service
             .find_user_by_identifier(tenant_id, identifier)
             .await?;
 
@@ -53,9 +54,9 @@ impl LazyRegistrationService {
 
         // 3. Create the user "lazily"
         // We set a flag or status indicating profile is incomplete
-        let is_email = matches!(identifier_type, IdentifierType::Email);
+        let _is_email = matches!(identifier_type, IdentifierType::Email);
 
-        let mut profile_data = json!({
+        let _profile_data = json!({
             "registration_method": "lazy",
             "source": "auto_creation"
         });
@@ -64,11 +65,10 @@ impl LazyRegistrationService {
         // We'll calculate a random password or set none for passwordless users
 
         // This is a simplified call - in reality we go through CreateUserRequest
-        let new_user = self.identity_service.create_lazy_user(
-            tenant_id,
-            identifier,
-            identifier_type,
-        ).await?;
+        let new_user = self
+            .identity_service
+            .create_lazy_user(tenant_id, identifier, identifier_type)
+            .await?;
 
         Ok((new_user, true)) // true = was newly created
     }

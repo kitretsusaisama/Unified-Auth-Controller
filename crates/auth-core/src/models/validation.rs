@@ -8,15 +8,14 @@ static PHONE_REGEX: OnceLock<Regex> = OnceLock::new();
 /// Validate and normalize phone number to E.164 format
 pub fn normalize_phone(phone: &str) -> Result<String, String> {
     // Remove all non-digit characters except +
-    let cleaned: String = phone.chars()
+    let cleaned: String = phone
+        .chars()
         .filter(|c| c.is_ascii_digit() || *c == '+')
         .collect();
 
     // E.164 format validation: +[country code][number]
     // Min: +1234567 (7 digits), Max: +123456789012345 (15 digits)
-    let regex = PHONE_REGEX.get_or_init(|| {
-        Regex::new(r"^\+[1-9]\d{6,14}$").unwrap()
-    });
+    let regex = PHONE_REGEX.get_or_init(|| Regex::new(r"^\+[1-9]\d{6,14}$").unwrap());
 
     if regex.is_match(&cleaned) {
         Ok(cleaned)
@@ -58,7 +57,10 @@ mod tests {
     #[test]
     fn test_normalize_phone_valid() {
         assert_eq!(normalize_phone("+14155552671").unwrap(), "+14155552671");
-        assert_eq!(normalize_phone("+1 (415) 555-2671").unwrap(), "+14155552671");
+        assert_eq!(
+            normalize_phone("+1 (415) 555-2671").unwrap(),
+            "+14155552671"
+        );
         assert_eq!(normalize_phone("+91 98765 43210").unwrap(), "+919876543210");
     }
 
@@ -71,7 +73,13 @@ mod tests {
 
     #[test]
     fn test_detect_identifier() {
-        assert!(matches!(detect_identifier_type("+14155552671"), IdentifierType::Phone));
-        assert!(matches!(detect_identifier_type("user@example.com"), IdentifierType::Email));
+        assert!(matches!(
+            detect_identifier_type("+14155552671"),
+            IdentifierType::Phone
+        ));
+        assert!(matches!(
+            detect_identifier_type("user@example.com"),
+            IdentifierType::Email
+        ));
     }
 }

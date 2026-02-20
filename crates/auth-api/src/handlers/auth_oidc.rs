@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Redirect},
     Json,
 };
@@ -27,6 +27,7 @@ pub async fn callback(Query(params): Query<CallbackParams>) -> impl IntoResponse
         "status": "success",
         "action": "oidc_callback",
         "code_received": params.code,
+        "state_received": params.state,
         "message": "Token exchange would happen here"
     }))
 }

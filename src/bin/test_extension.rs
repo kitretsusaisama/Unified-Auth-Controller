@@ -1,6 +1,6 @@
-use auth_extension::{PluginEngine, WebhookDispatcher, create_schema};
-use serde_json::json;
 use async_graphql::Request;
+use auth_extension::{create_schema, PluginEngine, WebhookDispatcher};
+use serde_json::json;
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +19,8 @@ async fn main() {
 
     // 2. Test Webhook Dispatcher
     let dispatcher = WebhookDispatcher::new();
-    dispatcher.dispatch("mock://webhook", "user.created", json!({"id": "123"}))
+    dispatcher
+        .dispatch("mock://webhook", "user.created", json!({"id": "123"}))
         .await
         .expect("Webhook dispatch failed");
     println!("Webhook Dispatch Verified");
