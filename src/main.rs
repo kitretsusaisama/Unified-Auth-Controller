@@ -15,7 +15,7 @@ use auth_platform::{shutdown_signal, PortAuthority, PortClass, PortPolicy};
 use auth_db::repositories::{
     otp_repository::OtpRepository, session_repository::SessionRepository,
     subscription_repository::SubscriptionRepository, user_repository::UserRepository,
-    RoleRepository,
+    RoleRepository, TenantRepository,
 };
 
 // Services
@@ -97,6 +97,7 @@ async fn main() -> Result<()> {
     let subscription_repo = Arc::new(SubscriptionRepository::new(pool.clone()));
     let user_repo = Arc::new(UserRepository::new(pool.clone()));
     let otp_repo = Arc::new(OtpRepository::new(pool.clone()));
+    let tenant_repo = Arc::new(TenantRepository::new(pool.clone()));
 
     // Initialize Services
     // We use AuthorizationService for RBAC instead of legacy RoleService
@@ -168,8 +169,10 @@ async fn main() -> Result<()> {
     let otp_delivery_service = Arc::new(OtpDeliveryService::new(sms_provider, email_provider));
 
     // Initialize Lazy Registration Service
-    let lazy_registration_service =
-        Arc::new(LazyRegistrationService::new(identity_service.clone()));
+    let lazy_registration_service = Arc::new(LazyRegistrationService::new(
+        identity_service.clone(),
+        tenant_repo,
+    ));
 
     // Initialize Rate Limiter
     let rate_limiter = Arc::new(RateLimiter::new());

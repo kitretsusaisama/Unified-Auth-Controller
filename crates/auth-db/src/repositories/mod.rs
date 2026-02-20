@@ -15,3 +15,5 @@ pub mod authorization;
 pub mod webauthn_repository;
 pub use authorization::role_repository::*;
 pub use webauthn_repository::*;
+pub mod tenant_repository;
+pub use tenant_repository::*;

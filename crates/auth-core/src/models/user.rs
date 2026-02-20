@@ -26,7 +26,7 @@ pub enum PrimaryIdentifier {
 pub struct User {
     pub id: Uuid,
     pub tenant_id: Uuid,
-    
+
     // Multi-channel identifier fields
     pub identifier_type: IdentifierType,
     pub primary_identifier: PrimaryIdentifier,
@@ -62,6 +62,7 @@ impl Default for User {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
             identifier_type: IdentifierType::Email,
             primary_identifier: PrimaryIdentifier::Email,
             email: None,

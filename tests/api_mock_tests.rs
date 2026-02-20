@@ -5,16 +5,21 @@
 use async_trait::async_trait;
 use auth_api::{app, AppState};
 use auth_cache::MultiLevelCache;
+use auth_core::error::AuthError;
+use auth_core::models::tenant::Tenant;
 use auth_core::services::identity::IdentityService;
 use auth_core::services::otp_delivery::{DeliveryError, EmailProvider, OtpProvider};
+use auth_core::services::tenant_service::TenantStore;
 use auth_core::services::token_service::TokenEngine;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use chrono::Utc;
 use serde_json::json;
 use std::sync::Arc;
 use tower::util::ServiceExt;
+use uuid::Uuid;
 
 // Mock OTP Provider
 struct MockSmsProvider;
@@ -36,6 +41,28 @@ impl EmailProvider for MockEmailProvider {
         _body: &str,
     ) -> Result<String, DeliveryError> {
         Ok("sent".to_string())
+    }
+}
+
+// Mock Tenant Store
+struct MockTenantStore;
+
+#[async_trait]
+impl TenantStore for MockTenantStore {
+    async fn get_tenant(&self, _tenant_id: Uuid) -> Result<Option<Tenant>, AuthError> {
+        Ok(Some(Tenant {
+            id: Uuid::new_v4(),
+            organization_id: Uuid::new_v4(),
+            name: "Mock Tenant".to_string(),
+            slug: "mock-tenant".to_string(),
+            custom_domain: None,
+            branding_config: serde_json::Value::Null,
+            auth_config: json!({ "allow_lazy_registration": true }),
+            compliance_config: serde_json::Value::Null,
+            status: auth_core::models::tenant::TenantStatus::Active,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }))
     }
 }
 
@@ -89,7 +116,10 @@ async fn create_test_app_state() -> AppState {
             Arc::new(MockEmailProvider {}),
         )),
         lazy_registration_service: Arc::new(
-            auth_core::services::lazy_registration::LazyRegistrationService::new(identity_service),
+            auth_core::services::lazy_registration::LazyRegistrationService::new(
+                identity_service,
+                Arc::new(MockTenantStore),
+            ),
         ),
         rate_limiter: Arc::new(auth_core::services::rate_limiter::RateLimiter::new()),
         otp_repository: Arc::new(auth_db::repositories::otp_repository::OtpRepository::new(

@@ -275,6 +275,7 @@ pub async fn token(
             // Create "Service User" struct on the fly or fetch
             let user = auth_core::models::User {
                 id: user_id,
+                tenant_id,
                 identifier_type: auth_core::models::user::IdentifierType::Email,
                 primary_identifier: auth_core::models::user::PrimaryIdentifier::Email,
                 email: Some(format!("service-account@{}", payload.client_id)),

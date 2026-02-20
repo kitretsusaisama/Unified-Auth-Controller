@@ -10,6 +10,7 @@ pub mod risk_assessment;
 pub mod role_service;
 pub mod session_service;
 pub mod subscription_service;
+pub mod tenant_service;
 pub mod token_service;
 pub mod webauthn_service;
 pub mod workflow;

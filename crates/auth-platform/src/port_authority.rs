@@ -55,8 +55,8 @@ pub enum PortError {
 
 impl PortAuthority {
     /// Create a new port authority with default lease directory
-    pub async fn new() -> std::io::Result<Self> {
-        Self::with_lease_dir(default_lease_dir()).await
+    pub fn new() -> std::io::Result<Self> {
+        Self::with_lease_dir(default_lease_dir())
     }
 
     /// Create a new port authority with custom lease directory
@@ -255,7 +255,7 @@ impl PortAuthority {
         }
 
         // Delete lease file
-        PortLease::delete(&self.lease_dir, port)?;
+        PortLease::delete(&self.lease_dir, port).await?;
 
         Ok(())
     }
@@ -303,7 +303,6 @@ impl PortAuthority {
             .collect()
     }
 }
-
 
 #[cfg(test)]
 mod tests {

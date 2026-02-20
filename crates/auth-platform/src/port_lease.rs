@@ -125,7 +125,7 @@ impl PortLease {
                     "Reclaiming zombie lease"
                 );
 
-                Self::delete(lease_dir, port)?;
+                Self::delete(lease_dir, port).await?;
                 return Ok(true);
             }
         }
@@ -136,7 +136,7 @@ impl PortLease {
     /// Check if port is available (no valid lease exists)
     pub async fn is_port_available(lease_dir: &Path, port: u16) -> std::io::Result<bool> {
         // First try to reclaim any zombie leases
-        Self::reclaim(lease_dir, port)?;
+        Self::reclaim(lease_dir, port).await?;
 
         // Then check if a valid lease exists
         if let Some(lease) = Self::load(lease_dir, port).await? {
@@ -179,7 +179,7 @@ mod tests {
         let lease = PortLease::new(8081, "test-service");
         lease.save(lease_dir).unwrap();
 
-        let loaded = PortLease::load(lease_dir, 8081).unwrap();
+        let loaded = PortLease::load(lease_dir, 8081).await.unwrap();
         assert!(loaded.is_some());
 
         let loaded = loaded.unwrap();
@@ -227,17 +227,17 @@ mod tests {
         let lease_dir = temp_dir.path();
 
         // Port should be available initially
-        assert!(PortLease::is_port_available(lease_dir, 8081).unwrap());
+        assert!(PortLease::is_port_available(lease_dir, 8081).await.unwrap());
 
         // Lease the port
         let lease = PortLease::new(8081, "test");
         lease.save(lease_dir).unwrap();
 
         // Port should NOT be available
-        assert!(!PortLease::is_port_available(lease_dir, 8081).unwrap());
+        assert!(!PortLease::is_port_available(lease_dir, 8081).await.unwrap());
 
         // Delete the lease
-        PortLease::delete(lease_dir, 8081).unwrap();
+        PortLease::delete(lease_dir, 8081).await.unwrap();
 
         // Port should be available again
         assert!(PortLease::is_port_available(lease_dir, 8081).await.unwrap());

@@ -69,6 +69,7 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error>> {
     // Create a mock User object for the service
     let user = User {
         id: user_id,
+        tenant_id,
         email: Some("risk_user@example.com".to_string()),
         email_verified: true,
         phone: None,
