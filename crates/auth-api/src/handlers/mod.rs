@@ -1,10 +1,10 @@
 pub mod auth;
-pub mod users;
-pub mod health;
 pub mod auth_oidc;
 pub mod auth_saml;
-pub mod otp;
-pub mod register;
+pub mod health;
 pub mod login_otp;
+pub mod otp;
 pub mod profile;
+pub mod register;
+pub mod users;
 pub mod verification;

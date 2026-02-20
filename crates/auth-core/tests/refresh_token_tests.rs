@@ -1,26 +1,22 @@
-/*
 //! Unit tests for Refresh Token System
 //! Task 3.4: Write unit tests for refresh token system
 //!
 //! Requirements Covered: 3.4, 7.1
 
 use auth_core::models::Claims;
-use auth_core::services::{TokenProvider, TokenEngine};
-use chrono::{Utc, Duration};
+use auth_core::services::{TokenEngine, TokenProvider};
+use chrono::{Duration, Utc};
 use uuid::Uuid;
 
 #[tokio::test]
 async fn test_token_rotation_creates_new_and_invalidates_old() {
-    // ... tests ...
-}
-*/
-    /// Test: Token rotation creates new token and invalidates old one
-    ///
-    /// Scenario:
-    /// 1. Issue initial refresh token
-    /// 2. Use it to refresh and get new token pair
-    /// 3. Verify old token is invalidated
-    /// 4. Verify new token works
+    // Test: Token rotation creates new token and invalidates old one
+    //
+    // Scenario:
+    // 1. Issue initial refresh token
+    // 2. Use it to refresh and get new token pair
+    // 3. Verify old token is invalidated
+    // 4. Verify new token works
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
@@ -38,7 +34,10 @@ async fn test_token_rotation_creates_new_and_invalidates_old() {
 
     // Old token should be invalid now
     let result = engine.refresh_tokens(&token_hash1).await;
-    assert!(result.is_err(), "Old refresh token should be invalid after rotation");
+    assert!(
+        result.is_err(),
+        "Old refresh token should be invalid after rotation"
+    );
 
     // New token should work
     let result = engine.refresh_tokens(&new_refresh_token).await;
@@ -47,12 +46,12 @@ async fn test_token_rotation_creates_new_and_invalidates_old() {
 
 #[tokio::test]
 async fn test_token_family_tracking() {
-    /// Test: Token family tracking maintains relationship
-    ///
-    /// Scenario:
-    /// 1. Issue initial token (family created)
-    /// 2. Rotate token multiple times
-    /// 3. Verify all tokens share same family ID
+    // Test: Token family tracking maintains relationship
+    //
+    // Scenario:
+    // 1. Issue initial token (family created)
+    // 2. Rotate token multiple times
+    // 3. Verify all tokens share same family ID
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
@@ -74,12 +73,12 @@ async fn test_token_family_tracking() {
 
 #[tokio::test]
 async fn test_expired_refresh_token_rejected() {
-    /// Test: Expired refresh tokens are rejected
-    ///
-    /// Scenario:
-    /// 1. Create token with very short TTL
-    /// 2. Wait for expiration
-    /// 3. Verify token is rejected
+    // Test: Expired refresh tokens are rejected
+    //
+    // Scenario:
+    // 1. Create token with very short TTL
+    // 2. Wait for expiration
+    // 3. Verify token is rejected
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
@@ -95,13 +94,13 @@ async fn test_expired_refresh_token_rejected() {
 
 #[tokio::test]
 async fn test_device_context_tracking() {
-    /// Test: Device fingerprint and context are tracked
-    ///
-    /// Scenario:
-    /// 1. Issue token with device context
-    /// 2. Verify context is stored
-    ///
-    /// Note: Full device fingerprint validation would be in the service layer
+    // Test: Device fingerprint and context are tracked
+    //
+    // Scenario:
+    // 1. Issue token with device context
+    // 2. Verify context is stored
+    //
+    // Note: Full device fingerprint validation would be in the service layer
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
@@ -115,18 +114,21 @@ async fn test_device_context_tracking() {
 
 #[tokio::test]
 async fn test_token_pair_includes_access_and_refresh() {
-    /// Test: Token refresh returns both access and refresh tokens
-    ///
-    /// Scenario:
-    /// 1. Issue refresh token
-    /// 2. Use it to refresh
-    /// 3. Verify response includes both token types
+    // Test: Token refresh returns both access and refresh tokens
+    //
+    // Scenario:
+    // 1. Issue refresh token
+    // 2. Use it to refresh
+    // 3. Verify response includes both token types
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
 
     let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
-    let token_pair = engine.refresh_tokens(&refresh_token.token_hash).await.unwrap();
+    let token_pair = engine
+        .refresh_tokens(&refresh_token.token_hash)
+        .await
+        .unwrap();
 
     // Verify access token
     assert!(!token_pair.access_token.token.is_empty());
@@ -139,21 +141,27 @@ async fn test_token_pair_includes_access_and_refresh() {
 
 #[tokio::test]
 async fn test_access_token_validation_after_refresh() {
-    /// Test: Access token from refresh is immediately valid
-    ///
-    /// Scenario:
-    /// 1. Refresh tokens
-    /// 2. Validate the new access token
-    /// 3. Verify it contains correct claims
+    // Test: Access token from refresh is immediately valid
+    //
+    // Scenario:
+    // 1. Refresh tokens
+    // 2. Validate the new access token
+    // 3. Verify it contains correct claims
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
 
     let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
-    let token_pair = engine.refresh_tokens(&refresh_token.token_hash).await.unwrap();
+    let token_pair = engine
+        .refresh_tokens(&refresh_token.token_hash)
+        .await
+        .unwrap();
 
     // Validate the new access token
-    let claims = engine.validate_token(&token_pair.access_token.token).await.unwrap();
+    let claims = engine
+        .validate_token(&token_pair.access_token.token)
+        .await
+        .unwrap();
 
     // Verify claims
     assert_eq!(claims.sub, user_id.to_string());
@@ -162,12 +170,12 @@ async fn test_access_token_validation_after_refresh() {
 
 #[tokio::test]
 async fn test_token_introspection() {
-    /// Test: Token introspection provides accurate status
-    ///
-    /// Scenario:
-    /// 1. Issue access token
-    /// 2. Introspect it
-    /// 3. Verify introspection response is accurate
+    // Test: Token introspection provides accurate status
+    //
+    // Scenario:
+    // 1. Issue access token
+    // 2. Introspect it
+    // 3. Verify introspection response is accurate
 
     let engine = TokenEngine::new().await.unwrap();
 
@@ -197,12 +205,12 @@ async fn test_token_introspection() {
 
 #[tokio::test]
 async fn test_revoked_token_introspection_shows_inactive() {
-    /// Test: Introspection shows revoked tokens as inactive
-    ///
-    /// Scenario:
-    /// 1. Issue and revoke token
-    /// 2. Introspect it
-    /// 3. Verify it shows as inactive
+    // Test: Introspection shows revoked tokens as inactive
+    //
+    // Scenario:
+    // 1. Issue and revoke token
+    // 2. Introspect it
+    // 3. Verify it shows as inactive
 
     let engine = TokenEngine::new().await.unwrap();
 
@@ -232,14 +240,14 @@ async fn test_revoked_token_introspection_shows_inactive() {
 
 #[tokio::test]
 async fn test_multiple_concurrent_refreshes() {
-    /// Test: Concurrent token refresh attempts
-    ///
-    /// Scenario:
-    /// 1. Issue refresh token
-    /// 2. Attempt multiple concurrent refreshes
-    /// 3. Verify behavior is consistent
-    ///
-    /// Note: In-memory implementation allows this; database version should use transactions
+    // Test: Concurrent token refresh attempts
+    //
+    // Scenario:
+    // 1. Issue refresh token
+    // 2. Attempt multiple concurrent refreshes
+    // 3. Verify behavior is consistent
+    //
+    // Note: In-memory implementation allows this; database version should use transactions
 
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
@@ -253,5 +261,8 @@ async fn test_multiple_concurrent_refreshes() {
 
     // Second refresh with same token should fail (already used)
     let result2 = engine.refresh_tokens(&token_hash).await;
-    assert!(result2.is_err(), "Second refresh with same token should fail");
+    assert!(
+        result2.is_err(),
+        "Second refresh with same token should fail"
+    );
 }

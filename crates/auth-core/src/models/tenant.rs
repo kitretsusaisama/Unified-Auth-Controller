@@ -70,7 +70,11 @@ impl Tenant {
 
     /// Check if tenant has custom branding configured
     pub fn has_custom_branding(&self) -> bool {
-        !self.branding_config.is_null() && self.branding_config.as_object().map_or(false, |obj| !obj.is_empty())
+        !self.branding_config.is_null()
+            && self
+                .branding_config
+                .as_object()
+                .map_or(false, |obj| !obj.is_empty())
     }
 
     /// Validate slug format (alphanumeric and hyphens only)

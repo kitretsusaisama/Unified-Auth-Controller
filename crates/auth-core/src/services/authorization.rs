@@ -1,7 +1,7 @@
 //! Authorization service for RBAC and ABAC
 
 use crate::error::AuthError;
-use crate::models::{Role, CreateRoleRequest};
+use crate::models::{CreateRoleRequest, Role};
 use uuid::Uuid;
 
 #[async_trait::async_trait]
@@ -9,7 +9,11 @@ pub trait AuthorizationProvider: Send + Sync {
     async fn authorize(&self, context: AuthzContext) -> Result<AuthzDecision, AuthError>;
     async fn create_role(&self, role: CreateRoleRequest) -> Result<Role, AuthError>;
     async fn assign_role(&self, assignment: RoleAssignment) -> Result<(), AuthError>;
-    async fn evaluate_policy(&self, policy: Policy, context: Context) -> Result<Decision, AuthError>;
+    async fn evaluate_policy(
+        &self,
+        policy: Policy,
+        context: Context,
+    ) -> Result<Decision, AuthError>;
 }
 
 #[derive(Debug, Clone)]

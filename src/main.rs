@@ -2,40 +2,34 @@
 
 use anyhow::Result;
 use auth_config::{ConfigLoader, ConfigManager};
-use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use sqlx::{mysql::MySqlPoolOptions};
 use secrecy::ExposeSecret;
+use sqlx::mysql::MySqlPoolOptions;
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::info;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // Port management
-use auth_platform::{PortAuthority, PortPolicy, PortClass, shutdown_signal};
+use auth_platform::{shutdown_signal, PortAuthority, PortClass, PortPolicy};
 
 // Repositories
 use auth_db::repositories::{
-    role_repository::RoleRepository,
-    session_repository::SessionRepository,
-    subscription_repository::SubscriptionRepository,
+    otp_repository::OtpRepository, role_repository::RoleRepository,
+    session_repository::SessionRepository, subscription_repository::SubscriptionRepository,
     user_repository::UserRepository,
-    otp_repository::OtpRepository,
 };
 
 // Services
-use auth_core::services::{
-    role_service::RoleService,
-    session_service::SessionService,
-    subscription_service::SubscriptionService,
-    risk_assessment::RiskEngine,
-    otp_service::OtpService,
-    otp_delivery::OtpDeliveryService,
-    lazy_registration::LazyRegistrationService,
-    rate_limiter::RateLimiter,
-};
 use async_trait::async_trait;
+use auth_core::services::{
+    lazy_registration::LazyRegistrationService, otp_delivery::OtpDeliveryService,
+    otp_service::OtpService, rate_limiter::RateLimiter, risk_assessment::RiskEngine,
+    role_service::RoleService, session_service::SessionService,
+    subscription_service::SubscriptionService,
+};
 
-use auth_core::audit::{TracingAuditLogger, AuditLogger};
 use auth_audit::AuditService;
+use auth_core::audit::{AuditLogger, TracingAuditLogger};
 
 use auth_api::AppState;
 
@@ -55,10 +49,11 @@ async fn main() -> Result<()> {
     info!("Starting SSO Platform");
 
     // Load configuration
-    let environment = std::env::var("AUTH__ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
+    let environment =
+        std::env::var("AUTH__ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
     let config_loader = ConfigLoader::new("config", &environment);
     let config_manager = ConfigManager::new(config_loader)?;
-    
+
     let config = config_manager.get_config();
     info!("Configuration loaded for environment: {}", environment);
 
@@ -69,7 +64,7 @@ async fn main() -> Result<()> {
         .connect(database_url)
         .await
         .expect("Failed to connect to MySQL database");
-    
+
     info!("Database connection established");
 
     // Run migrations - Handle dirty migrations gracefully
@@ -77,7 +72,10 @@ async fn main() -> Result<()> {
         match e {
             sqlx::migrate::MigrateError::Dirty(version) => {
                 // Migration already applied but marked as dirty, continue
-                info!("Migrations already applied (dirty: {}), continuing...", version);
+                info!(
+                    "Migrations already applied (dirty: {}), continuing...",
+                    version
+                );
             }
             sqlx::migrate::MigrateError::VersionMissing(_) => {
                 // Migration already applied, continue
@@ -101,15 +99,18 @@ async fn main() -> Result<()> {
 
     // Initialize Services
     let role_service = Arc::new(RoleService::new(role_repo));
-    
+
     let risk_engine = Arc::new(RiskEngine::new()); // Config thresholds could be passed here
     let session_service = Arc::new(SessionService::new(session_repo, risk_engine));
-    
+
     let subscription_service = Arc::new(SubscriptionService::new(subscription_repo));
 
     // Initialize Token Engine (with in-memory stores for now)
-    let token_service: Arc<dyn auth_core::services::token_service::TokenProvider> = 
-        Arc::new(auth_core::services::token_service::TokenEngine::new().await.expect("Failed to initialize TokenEngine"));
+    let token_service: Arc<dyn auth_core::services::token_service::TokenProvider> = Arc::new(
+        auth_core::services::token_service::TokenEngine::new()
+            .await
+            .expect("Failed to initialize TokenEngine"),
+    );
 
     // Initialize Identity Service
     let identity_service = Arc::new(auth_core::services::identity::IdentityService::new(
@@ -122,12 +123,12 @@ async fn main() -> Result<()> {
 
     // Initialize OTP Delivery Service (using mock providers for now)
     // Since the test mocks aren't available publicly, create simple implementations
-    use auth_core::services::otp_delivery::{OtpProvider, EmailProvider};
     use auth_core::services::otp_delivery::DeliveryError;
-    
+    use auth_core::services::otp_delivery::{EmailProvider, OtpProvider};
+
     struct SimpleSmsProvider;
     struct SimpleEmailProvider;
-    
+
     #[async_trait]
     impl OtpProvider for SimpleSmsProvider {
         async fn send_otp(&self, to: &str, _otp: &str) -> Result<String, DeliveryError> {
@@ -135,7 +136,7 @@ async fn main() -> Result<()> {
             Ok(format!("sms_sent_to_{}", to))
         }
     }
-    
+
     #[async_trait]
     impl EmailProvider for SimpleEmailProvider {
         async fn send_email(
@@ -148,13 +149,14 @@ async fn main() -> Result<()> {
             Ok(format!("email_sent_to_{}", to))
         }
     }
-    
+
     let sms_provider = Arc::new(SimpleSmsProvider);
     let email_provider = Arc::new(SimpleEmailProvider);
     let otp_delivery_service = Arc::new(OtpDeliveryService::new(sms_provider, email_provider));
 
     // Initialize Lazy Registration Service
-    let lazy_registration_service = Arc::new(LazyRegistrationService::new(identity_service.clone()));
+    let lazy_registration_service =
+        Arc::new(LazyRegistrationService::new(identity_service.clone()));
 
     // Initialize Rate Limiter
     let rate_limiter = Arc::new(RateLimiter::new());
@@ -182,58 +184,64 @@ async fn main() -> Result<()> {
 
     // Initialize Port Authority for production-grade port management
     let port_authority = PortAuthority::new()?;
-    
+
     // Get or create port policy
     let port_policy = config.server.port_policy.clone().unwrap_or_else(|| {
         // Fallback to legacy port configuration
         PortPolicy::new(config.server.port, PortClass::Public, "http")
             .with_fallback_range((config.server.port + 1)..=(config.server.port + 9))
     });
-    
+
     // Acquire port with policy enforcement
     let managed_listener = port_authority
         .acquire(&port_policy, &config.server.host)
         .await?;
-    
+
     let bound_port = managed_listener.port();
-    
+
     // Determine display host (localhost for 0.0.0.0 binding)
     let display_host = if config.server.host == "0.0.0.0" {
         "localhost"
     } else {
         &config.server.host
     };
-    
+
     // User-facing startup message
     println!("\n🚀 SSO Platform Starting...");
     println!("📍 Server URL: http://{}:{}", display_host, bound_port);
     println!("🔧 Service: {}", managed_listener.service_name());
-    println!("✅ Port Management: Production-grade (PID: {})", std::process::id());
-    println!("⏱  Graceful Shutdown: {}s drain timeout", config.server.drain_timeout_seconds);
+    println!(
+        "✅ Port Management: Production-grade (PID: {})",
+        std::process::id()
+    );
+    println!(
+        "⏱  Graceful Shutdown: {}s drain timeout",
+        config.server.drain_timeout_seconds
+    );
     println!("📊 Health: http://{}:{}/health", display_host, bound_port);
     println!("📖 Docs: http://{}:{}/swagger-ui", display_host, bound_port);
     println!("\n✨ Ready to accept connections!\n");
-    
+
     // Convert to tokio listener
     let listener = managed_listener.into_tokio_listener()?;
-    
+
     // Start server with graceful shutdown
-    
+
     tokio::select! {
         result = axum::serve(listener, app) => {
             result?;
         }
         _ = shutdown_signal() => {
             info!("Shutdown signal received, initiating graceful shutdown");
-            
+
             // Release port lease
             if let Err(e) = port_authority.release(bound_port).await {
                 tracing::warn!("Failed to release port lease: {}", e);
             }
-            
+
             info!("Graceful shutdown complete");
         }
     }
-    
+
     Ok(())
 }

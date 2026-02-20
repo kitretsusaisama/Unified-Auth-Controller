@@ -58,7 +58,11 @@ impl Organization {
 
     /// Check if organization has custom settings configured
     pub fn has_custom_settings(&self) -> bool {
-        !self.settings.is_null() && self.settings.as_object().map_or(false, |obj| !obj.is_empty())
+        !self.settings.is_null()
+            && self
+                .settings
+                .as_object()
+                .map_or(false, |obj| !obj.is_empty())
     }
 }
 

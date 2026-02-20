@@ -61,7 +61,7 @@ impl RevokedTokenRepository {
     /// Add a token to the revocation blacklist
     pub async fn add_revoked_token(
         &self,
-       token_jti: Uuid,
+        token_jti: Uuid,
         user_id: Uuid,
         tenant_id: Uuid,
         token_type: TokenType,
@@ -113,7 +113,7 @@ impl RevokedTokenRepository {
     /// Check if a token is revoked (optimized for high-throughput reads)
     pub async fn is_token_revoked(&self, token_jti: Uuid) -> Result<bool, RevokedTokenError> {
         let now = Utc::now();
-        
+
         let row = sqlx::query(
             r#"
             SELECT COUNT(*) as count
@@ -141,7 +141,7 @@ impl RevokedTokenRepository {
         // This is a marker operation - actual tokens are stored elsewhere
         // In production, this would coordinate with refresh token repository
         // and possibly trigger session invalidation
-        
+
         // For now, we'll just add a record to track the bulk revocation
         let id = Uuid::new_v4();
         let now = Utc::now();
@@ -172,7 +172,7 @@ impl RevokedTokenRepository {
     /// Clean up expired revocation records (for background job)
     pub async fn cleanup_expired(&self) -> Result<u64, RevokedTokenError> {
         let now = Utc::now();
-        
+
         let result = sqlx::query(
             r#"
             DELETE FROM revoked_tokens
@@ -213,7 +213,7 @@ impl RevokedTokenRepository {
     /// Count active revocations (for monitoring)
     pub async fn count_active_revocations(&self) -> Result<i64, RevokedTokenError> {
         let now = Utc::now();
-        
+
         let row = sqlx::query(
             r#"
             SELECT COUNT(*) as count
@@ -229,7 +229,10 @@ impl RevokedTokenRepository {
     }
 
     /// Helper to convert database row to RevokedTokenRecord
-    fn row_to_record(&self, row: sqlx::mysql::MySqlRow) -> Result<RevokedTokenRecord, RevokedTokenError> {
+    fn row_to_record(
+        &self,
+        row: sqlx::mysql::MySqlRow,
+    ) -> Result<RevokedTokenRecord, RevokedTokenError> {
         let id_str: String = row.try_get("id")?;
         let jti_str: String = row.try_get("token_jti")?;
         let user_id_str: String = row.try_get("user_id")?;
@@ -238,14 +241,22 @@ impl RevokedTokenRepository {
         let revoked_by_str: Option<String> = row.try_get("revoked_by")?;
 
         Ok(RevokedTokenRecord {
-            id: Uuid::parse_str(&id_str)
-                .map_err(|_| RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound("id".to_string())))?,
-            token_jti: Uuid::parse_str(&jti_str)
-                .map_err(|_| RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound("token_jti".to_string())))?,
-            user_id: Uuid::parse_str(&user_id_str)
-                .map_err(|_| RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound("user_id".to_string())))?,
-            tenant_id: Uuid::parse_str(&tenant_id_str)
-                .map_err(|_| RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound("tenant_id".to_string())))?,
+            id: Uuid::parse_str(&id_str).map_err(|_| {
+                RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound("id".to_string()))
+            })?,
+            token_jti: Uuid::parse_str(&jti_str).map_err(|_| {
+                RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound(
+                    "token_jti".to_string(),
+                ))
+            })?,
+            user_id: Uuid::parse_str(&user_id_str).map_err(|_| {
+                RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound("user_id".to_string()))
+            })?,
+            tenant_id: Uuid::parse_str(&tenant_id_str).map_err(|_| {
+                RevokedTokenError::DatabaseError(sqlx::Error::ColumnNotFound(
+                    "tenant_id".to_string(),
+                ))
+            })?,
             token_type: TokenType::from_str(&token_type_str),
             revoked_at: row.try_get("revoked_at")?,
             revoked_by: revoked_by_str.and_then(|s| Uuid::parse_str(&s).ok()),
@@ -255,25 +266,40 @@ impl RevokedTokenRepository {
     }
 }
 
-use auth_core::services::RevokedTokenStore;
 use auth_core::error::AuthError;
+use auth_core::services::RevokedTokenStore;
 
 #[async_trait::async_trait]
 impl RevokedTokenStore for RevokedTokenRepository {
-    async fn add_to_blacklist(&self, jti: Uuid, user_id: Uuid, tenant_id: Uuid, expires_at: DateTime<Utc>) -> Result<(), AuthError> {
+    async fn add_to_blacklist(
+        &self,
+        jti: Uuid,
+        user_id: Uuid,
+        tenant_id: Uuid,
+        expires_at: DateTime<Utc>,
+    ) -> Result<(), AuthError> {
         self.add_revoked_token(
             jti,
             user_id,
             tenant_id,
             TokenType::Access, // Default to access token for blacklist
-            None, // revoked_by (system)
+            None,              // revoked_by (system)
             Some("Revoked via TokenEngine".to_string()),
-            expires_at
-        ).await.map(|_| ()).map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+            expires_at,
+        )
+        .await
+        .map(|_| ())
+        .map_err(|e| AuthError::DatabaseError {
+            message: e.to_string(),
+        })
     }
 
     async fn is_revoked(&self, jti: Uuid) -> Result<bool, AuthError> {
-        self.is_token_revoked(jti).await.map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+        self.is_token_revoked(jti)
+            .await
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 }
 

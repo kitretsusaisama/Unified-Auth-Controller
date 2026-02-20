@@ -23,17 +23,17 @@ pub enum JwtError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JwtClaims {
-    pub sub: String,      // Subject (user ID)
-    pub iss: String,      // Issuer
-    pub aud: String,      // Audience
-    pub exp: i64,         // Expiration time
-    pub iat: i64,         // Issued at
-    pub nbf: i64,         // Not before
-    pub jti: String,      // JWT ID
-    pub tenant_id: String, // Tenant ID for multi-tenancy
+    pub sub: String,              // Subject (user ID)
+    pub iss: String,              // Issuer
+    pub aud: String,              // Audience
+    pub exp: i64,                 // Expiration time
+    pub iat: i64,                 // Issued at
+    pub nbf: i64,                 // Not before
+    pub jti: String,              // JWT ID
+    pub tenant_id: String,        // Tenant ID for multi-tenancy
     pub permissions: Vec<String>, // User permissions
-    pub roles: Vec<String>, // User roles
-    pub scope: Option<String>, // OAuth scope
+    pub roles: Vec<String>,       // User roles
+    pub scope: Option<String>,    // OAuth scope
 }
 
 #[derive(Debug, Clone)]
@@ -62,7 +62,10 @@ pub struct JwtService {
 
 impl JwtService {
     pub fn new(config: JwtConfig, key_manager: KeyManager) -> Self {
-        Self { config, key_manager }
+        Self {
+            config,
+            key_manager,
+        }
     }
 
     /// Generate a new JWT access token with the given claims
@@ -76,7 +79,7 @@ impl JwtService {
     ) -> Result<String, JwtError> {
         let now = Utc::now();
         let exp = now + self.config.access_token_ttl;
-        
+
         let claims = JwtClaims {
             sub: user_id.to_string(),
             iss: self.config.issuer.clone(),
@@ -92,11 +95,13 @@ impl JwtService {
         };
 
         let header = Header::new(self.config.algorithm);
-        let encoding_key = self.key_manager.get_encoding_key().await
+        let encoding_key = self
+            .key_manager
+            .get_encoding_key()
+            .await
             .map_err(|e| JwtError::KeyError(e.to_string()))?;
 
-        encode(&header, &claims, &encoding_key)
-            .map_err(JwtError::EncodingError)
+        encode(&header, &claims, &encoding_key).map_err(JwtError::EncodingError)
     }
 
     /// Validate and decode a JWT token
@@ -107,13 +112,18 @@ impl JwtService {
         validation.validate_exp = true;
         validation.validate_nbf = true;
 
-        let decoding_key = self.key_manager.get_decoding_key().await
+        let decoding_key = self
+            .key_manager
+            .get_decoding_key()
+            .await
             .map_err(|e| JwtError::KeyError(e.to_string()))?;
 
-        let token_data = decode::<JwtClaims>(token, &decoding_key, &validation)
-            .map_err(|e| match e.kind() {
+        let token_data =
+            decode::<JwtClaims>(token, &decoding_key, &validation).map_err(|e| match e.kind() {
                 jsonwebtoken::errors::ErrorKind::ExpiredSignature => JwtError::TokenExpired,
-                _ => JwtError::ValidationError { reason: e.to_string() },
+                _ => JwtError::ValidationError {
+                    reason: e.to_string(),
+                },
             })?;
 
         Ok(token_data.claims)
@@ -129,7 +139,7 @@ impl JwtService {
 
         // Use a dummy key since we're not validating signature
         let dummy_key = DecodingKey::from_secret(b"dummy");
-        
+
         let token_data = decode::<JwtClaims>(token, &dummy_key, &validation)
             .map_err(|_| JwtError::InvalidFormat)?;
 
@@ -184,7 +194,7 @@ mod tests {
     async fn test_token_expiration() {
         let mut config = JwtConfig::default();
         config.access_token_ttl = chrono::Duration::milliseconds(1); // Very short TTL
-        
+
         let key_manager = KeyManager::new_for_testing().await.unwrap();
         let jwt_service = JwtService::new(config, key_manager);
 

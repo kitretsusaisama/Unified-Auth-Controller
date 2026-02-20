@@ -1,5 +1,5 @@
 //! Multi-Channel Registration Handler
-//! 
+//!
 //! Supports registration via:
 //! - Email only
 //! - Phone only
@@ -11,13 +11,13 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
+use auth_core::error::AuthError;
 use auth_core::models::user::{IdentifierType, PrimaryIdentifier};
 use auth_core::models::validation::{normalize_phone, validate_email};
 use auth_core::services::identity::IdentityService;
-use auth_core::error::AuthError;
 
 // ============================================================================
 // Request/Response Types
@@ -27,30 +27,30 @@ use auth_core::error::AuthError;
 pub struct RegisterRequest {
     /// Identifier type: "email", "phone", or "both"
     pub identifier_type: String,
-    
+
     /// Email address (required if identifier_type is "email" or "both")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-    
+
     /// Phone number (required if identifier_type is "phone" or "both")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phone: Option<String>,
-    
+
     /// Primary identifier for login: "email" or "phone" (required if both provided)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub primary_identifier: Option<String>,
-    
+
     /// Password (optional for passwordless registration)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
-    
+
     /// Tenant ID
     pub tenant_id: Uuid,
-    
+
     /// Profile data
     #[serde(default)]
     pub profile: serde_json::Value,
-    
+
     /// Whether to require verification before allowing login
     #[serde(default = "default_require_verification")]
     pub require_verification: bool,
@@ -88,7 +88,7 @@ pub struct ErrorResponse {
 // ============================================================================
 
 /// POST /auth/register
-/// 
+///
 /// Multi-channel user registration
 pub async fn register(
     State(identity_service): State<Arc<IdentityService>>,
@@ -103,14 +103,15 @@ pub async fn register(
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
-                    error: "Invalid identifier_type. Must be 'email', 'phone', or 'both'".to_string(),
+                    error: "Invalid identifier_type. Must be 'email', 'phone', or 'both'"
+                        .to_string(),
                     code: "AUTH_038".to_string(),
                     field: Some("identifier_type".to_string()),
                 }),
             ));
         }
     };
-    
+
     // 2. Validate required fields based on identifier_type
     match identifier_type {
         IdentifierType::Email => {
@@ -142,18 +143,20 @@ pub async fn register(
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ErrorResponse {
-                        error: "Both email and phone are required when identifier_type is 'both'".to_string(),
+                        error: "Both email and phone are required when identifier_type is 'both'"
+                            .to_string(),
                         code: "AUTH_004".to_string(),
                         field: None,
                     }),
                 ));
             }
-            
+
             if payload.primary_identifier.is_none() {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ErrorResponse {
-                        error: "primary_identifier is required when identifier_type is 'both'".to_string(),
+                        error: "primary_identifier is required when identifier_type is 'both'"
+                            .to_string(),
                         code: "AUTH_004".to_string(),
                         field: Some("primary_identifier".to_string()),
                     }),
@@ -161,7 +164,7 @@ pub async fn register(
             }
         }
     };
-    
+
     // 3. Validate email format if provided
     if let Some(ref email) = payload.email {
         validate_email(email).map_err(|_| {
@@ -175,14 +178,15 @@ pub async fn register(
             )
         })?;
     }
-    
+
     // 4. Validate and normalize phone if provided
     let normalized_phone = if let Some(ref phone) = payload.phone {
         Some(normalize_phone(phone).map_err(|_| {
             (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
-                    error: "Invalid phone format. Use E.164 format (e.g., +14155552671)".to_string(),
+                    error: "Invalid phone format. Use E.164 format (e.g., +14155552671)"
+                        .to_string(),
                     code: "AUTH_002".to_string(),
                     field: Some("phone".to_string()),
                 }),
@@ -191,29 +195,27 @@ pub async fn register(
     } else {
         None
     };
-    
+
     // 5. Determine primary identifier
     let primary_identifier = match identifier_type {
         IdentifierType::Email => PrimaryIdentifier::Email,
         IdentifierType::Phone => PrimaryIdentifier::Phone,
-        IdentifierType::Both => {
-            match payload.primary_identifier.as_deref() {
-                Some("email") => PrimaryIdentifier::Email,
-                Some("phone") => PrimaryIdentifier::Phone,
-                _ => {
-                    return Err((
-                        StatusCode::BAD_REQUEST,
-                        Json(ErrorResponse {
-                            error: "Invalid primary_identifier. Must be 'email' or 'phone'".to_string(),
-                            code: "AUTH_004".to_string(),
-                            field: Some("primary_identifier".to_string()),
-                        }),
-                    ));
-                }
+        IdentifierType::Both => match payload.primary_identifier.as_deref() {
+            Some("email") => PrimaryIdentifier::Email,
+            Some("phone") => PrimaryIdentifier::Phone,
+            _ => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse {
+                        error: "Invalid primary_identifier. Must be 'email' or 'phone'".to_string(),
+                        code: "AUTH_004".to_string(),
+                        field: Some("primary_identifier".to_string()),
+                    }),
+                ));
             }
-        }
+        },
     };
-    
+
     // 6. Validate password (if provided)
     if let Some(ref password) = payload.password {
         if password.len() < 8 {
@@ -227,7 +229,7 @@ pub async fn register(
             ));
         }
     }
-    
+
     // 7. Create user via identity service
     let create_request = auth_core::models::user::CreateUserRequest {
         identifier_type,
@@ -239,40 +241,42 @@ pub async fn register(
         require_verification: Some(payload.require_verification),
     };
 
-    let user = identity_service.register(create_request, payload.tenant_id)
+    let user = identity_service
+        .register(create_request, payload.tenant_id)
         .await
         .map_err(|e| {
-             // Map AuthError to API Error
-             match e {
-                 AuthError::Conflict { message } => (
-                     StatusCode::CONFLICT, 
-                     Json(ErrorResponse { 
-                         error: message, 
-                         code: "AUTH_005".to_string(), 
-                         field: None 
-                     })
-                 ),
-                 _ => (
-                     StatusCode::INTERNAL_SERVER_ERROR,
-                     Json(ErrorResponse {
-                         error: "Internal server error".to_string(),
-                         code: "AUTH_026".to_string(),
-                         field: None,
-                     })
-                 )
-             }
+            // Map AuthError to API Error
+            match e {
+                AuthError::Conflict { message } => (
+                    StatusCode::CONFLICT,
+                    Json(ErrorResponse {
+                        error: message,
+                        code: "AUTH_005".to_string(),
+                        field: None,
+                    }),
+                ),
+                _ => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: "Internal server error".to_string(),
+                        code: "AUTH_026".to_string(),
+                        field: None,
+                    }),
+                ),
+            }
         })?;
-    
+
     // 8. Send verification if required
     let verification_sent_to = if payload.require_verification {
-        match primary_identifier {             // Use the original (cloned) value
-             PrimaryIdentifier::Email => user.email.clone(),
-             PrimaryIdentifier::Phone => user.phone.clone(),
+        match primary_identifier {
+            // Use the original (cloned) value
+            PrimaryIdentifier::Email => user.email.clone(),
+            PrimaryIdentifier::Phone => user.phone.clone(),
         }
     } else {
         None
     };
-    
+
     // 9. Return success response
     Ok((
         StatusCode::CREATED,
@@ -292,7 +296,7 @@ pub async fn register(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_validate_email_only() {
         let req = RegisterRequest {
@@ -305,11 +309,11 @@ mod tests {
             profile: serde_json::json!({}),
             require_verification: true,
         };
-        
+
         assert_eq!(req.identifier_type, "email");
         assert!(req.email.is_some());
     }
-    
+
     #[test]
     fn test_validate_phone_only() {
         let req = RegisterRequest {
@@ -322,11 +326,11 @@ mod tests {
             profile: serde_json::json!({}),
             require_verification: true,
         };
-        
+
         assert_eq!(req.identifier_type, "phone");
         assert!(req.phone.is_some());
     }
-    
+
     #[test]
     fn test_normalize_phone() {
         let phone = "+1 (415) 555-2671";

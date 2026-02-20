@@ -18,23 +18,23 @@ impl GracefulShutdown {
     pub fn new(drain_timeout: Duration) -> Self {
         Self { drain_timeout }
     }
-    
+
     /// Get the drain timeout
     pub fn drain_timeout(&self) -> Duration {
         self.drain_timeout
     }
-    
+
     /// Wait for shutdown signal (Ctrl+C or SIGTERM)
     pub async fn wait_for_signal(&self) {
         #[cfg(unix)]
         {
             use tokio::signal::unix::{signal, SignalKind};
-            
-            let mut sigterm = signal(SignalKind::terminate())
-                .expect("Failed to register SIGTERM handler");
-            let mut sigint = signal(SignalKind::interrupt())
-                .expect("Failed to register SIGINT handler");
-            
+
+            let mut sigterm =
+                signal(SignalKind::terminate()).expect("Failed to register SIGTERM handler");
+            let mut sigint =
+                signal(SignalKind::interrupt()).expect("Failed to register SIGINT handler");
+
             tokio::select! {
                 _ = sigterm.recv() => {
                     info!("Received SIGTERM");
@@ -44,16 +44,14 @@ impl GracefulShutdown {
                 }
             }
         }
-        
+
         #[cfg(not(unix))]
         {
-            signal::ctrl_c()
-                .await
-                .expect("Failed to listen for Ctrl+C");
+            signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
             info!("Received Ctrl+C");
         }
     }
-    
+
     /// Run a future and gracefully shutdown on signal
     pub async fn run_until_signal<F, T>(&self, future: F) -> T
     where
@@ -80,12 +78,12 @@ pub async fn shutdown_signal() {
     #[cfg(unix)]
     {
         use tokio::signal::unix::{signal, SignalKind};
-        
-        let mut sigterm = signal(SignalKind::terminate())
-            .expect("Failed to register SIGTERM handler");
-        let mut sigint = signal(SignalKind::interrupt())
-            .expect("Failed to register SIGINT handler");
-        
+
+        let mut sigterm =
+            signal(SignalKind::terminate()).expect("Failed to register SIGTERM handler");
+        let mut sigint =
+            signal(SignalKind::interrupt()).expect("Failed to register SIGINT handler");
+
         tokio::select! {
             _ = sigterm.recv() => {
                 info!("Received SIGTERM");
@@ -95,12 +93,10 @@ pub async fn shutdown_signal() {
             }
         }
     }
-    
+
     #[cfg(not(unix))]
     {
-        signal::ctrl_c()
-            .await
-            .expect("Failed to listen for Ctrl+C");
+        signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
         info!("Received Ctrl+C");
     }
 }

@@ -44,14 +44,28 @@ impl RoleStore for RoleRepository {
     }
 
     async fn update(&self, id: Uuid, req: UpdateRoleRequest) -> Result<Role, AuthError> {
-        let mut current_role = self.find_by_id(id).await?
-            .ok_or(AuthError::ValidationError { message: "Role not found".to_string() })?;
+        let mut current_role = self
+            .find_by_id(id)
+            .await?
+            .ok_or(AuthError::ValidationError {
+                message: "Role not found".to_string(),
+            })?;
 
-        if let Some(name) = req.name { current_role.name = name; }
-        if let Some(desc) = req.description { current_role.description = Some(desc); }
-        if let Some(parent) = req.parent_role_id { current_role.parent_role_id = Some(parent); }
-        if let Some(perms) = req.permissions { current_role.permissions = sqlx::types::Json(perms); }
-        if let Some(cons) = req.constraints { current_role.constraints = sqlx::types::Json(cons); }
+        if let Some(name) = req.name {
+            current_role.name = name;
+        }
+        if let Some(desc) = req.description {
+            current_role.description = Some(desc);
+        }
+        if let Some(parent) = req.parent_role_id {
+            current_role.parent_role_id = Some(parent);
+        }
+        if let Some(perms) = req.permissions {
+            current_role.permissions = sqlx::types::Json(perms);
+        }
+        if let Some(cons) = req.constraints {
+            current_role.constraints = sqlx::types::Json(cons);
+        }
         current_role.updated_at = Some(chrono::Utc::now());
 
         sqlx::query(
@@ -59,7 +73,7 @@ impl RoleStore for RoleRepository {
             UPDATE roles 
             SET name=?, description=?, parent_role_id=?, permissions=?, constraints=?, updated_at=?
             WHERE id=?
-            "#
+            "#,
         )
         .bind(current_role.name.clone())
         .bind(current_role.description.clone())
@@ -70,7 +84,9 @@ impl RoleStore for RoleRepository {
         .bind(id.to_string())
         .execute(&self.pool)
         .await
-        .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
+        .map_err(|e| AuthError::DatabaseError {
+            message: e.to_string(),
+        })?;
 
         Ok(current_role)
     }
@@ -80,7 +96,9 @@ impl RoleStore for RoleRepository {
             .bind(id.to_string())
             .execute(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?;
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })?;
         Ok(())
     }
 
@@ -89,7 +107,9 @@ impl RoleStore for RoleRepository {
             .bind(id.to_string())
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 
     async fn find_by_tenant(&self, tenant_id: Uuid) -> Result<Vec<Role>, AuthError> {
@@ -97,7 +117,9 @@ impl RoleStore for RoleRepository {
             .bind(tenant_id.to_string())
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 
     async fn find_by_name(&self, tenant_id: Uuid, name: &str) -> Result<Option<Role>, AuthError> {
@@ -106,6 +128,8 @@ impl RoleStore for RoleRepository {
             .bind(name)
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| AuthError::DatabaseError { message: e.to_string() })
+            .map_err(|e| AuthError::DatabaseError {
+                message: e.to_string(),
+            })
     }
 }

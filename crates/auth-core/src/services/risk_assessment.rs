@@ -50,7 +50,6 @@ pub trait RiskAssessor: Send + Sync {
     async fn update_user_risk_score(&self, user_id: Uuid, score: f32) -> Result<(), AuthError>;
 }
 
-
 use std::collections::HashSet;
 
 #[derive(Default)]
@@ -61,15 +60,22 @@ impl RiskEngine {
         Self {}
     }
 
-    fn calculate_ip_risk(&self, ip: &Option<String>, history: &[LoginHistory]) -> (f32, Option<RiskFactor>) {
+    fn calculate_ip_risk(
+        &self,
+        ip: &Option<String>,
+        history: &[LoginHistory],
+    ) -> (f32, Option<RiskFactor>) {
         if let Some(current_ip) = ip {
             let known_ips: HashSet<&String> = history.iter().map(|h| &h.ip_address).collect();
             if !known_ips.contains(current_ip) {
-                return (0.3, Some(RiskFactor {
-                    name: "new_ip".to_string(),
-                    weight: 0.3,
-                    description: "Login from new IP address".to_string(),
-                }));
+                return (
+                    0.3,
+                    Some(RiskFactor {
+                        name: "new_ip".to_string(),
+                        weight: 0.3,
+                        description: "Login from new IP address".to_string(),
+                    }),
+                );
             }
         }
         (0.0, None)
@@ -86,22 +92,29 @@ impl RiskAssessor for RiskEngine {
         let mut recommendations = Vec::new();
 
         // 1. IP Risk
-        let (ip_score, ip_factor) = self.calculate_ip_risk(&context.ip_address, &context.previous_logins);
+        let (ip_score, ip_factor) =
+            self.calculate_ip_risk(&context.ip_address, &context.previous_logins);
         score += ip_score;
-        if let Some(f) = ip_factor { factors.push(f); }
+        if let Some(f) = ip_factor {
+            factors.push(f);
+        }
 
         // 2. Device Risk (Mock implementation - normally would check against user_devices table)
         if context.device_fingerprint.is_none() {
-             score += 0.2;
-             factors.push(RiskFactor {
-                 name: "missing_fingerprint".to_string(),
-                 weight: 0.2,
-                 description: "Device fingerprinting unavailable".to_string(),
-             });
+            score += 0.2;
+            factors.push(RiskFactor {
+                name: "missing_fingerprint".to_string(),
+                weight: 0.2,
+                description: "Device fingerprinting unavailable".to_string(),
+            });
         }
 
         // 3. Recent Failures (Mock - assuming history contains failures)
-        let recent_failures = context.previous_logins.iter().filter(|l| !l.success).count();
+        let recent_failures = context
+            .previous_logins
+            .iter()
+            .filter(|l| !l.success)
+            .count();
         if recent_failures > 3 {
             score += 0.4;
             factors.push(RiskFactor {

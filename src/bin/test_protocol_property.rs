@@ -1,5 +1,5 @@
+use auth_protocols::oidc::{OidcConfig, OidcService};
 use proptest::prelude::*;
-use auth_protocols::oidc::{OidcService, OidcConfig};
 
 proptest! {
     #[test]
@@ -22,7 +22,7 @@ proptest! {
         ).unwrap();
 
         let (url, _, _) = service.get_authorization_url();
-        
+
         assert!(url.contains(&client_id));
         assert!(url.contains("scope=openid"));
         assert!(url.contains(&redirect_uri.replace("/", "%2F").replace(":", "%3A"))); // URL encoding validation roughly
@@ -38,11 +38,11 @@ fn main() {
     // But implementation plan asked for `cargo run --bin test_protocol_property`.
     // So we'll trigger the tests here manually if possible, or print instructions.
     // Proptest crate is usually dev-dependency. We need to enable it for this bin.
-    
+
     // For simplicity in this `main` execution:
     println!("Since proptest is a testing framework, please run:");
     println!("cargo test --bin test_protocol_property");
-    
+
     // However, if we want to force execute:
     // We can't easily standalone invoke the proptest runner from main without internal API usage.
     // Let's rely on standard `cargo test` discovery for this file if we moved it to tests/.

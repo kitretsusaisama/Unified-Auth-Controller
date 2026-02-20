@@ -1,29 +1,23 @@
+use auth_core::services::{
+    lazy_registration::LazyRegistrationService, otp_delivery::OtpDeliveryService,
+    otp_service::OtpService, rate_limiter::RateLimiter, role_service::RoleService,
+    session_service::SessionService, subscription_service::SubscriptionService,
+};
+use auth_db::repositories::{
+    otp_repository::OtpRepository, role_repository::RoleRepository,
+    session_repository::SessionRepository, subscription_repository::SubscriptionRepository,
+};
 use axum::Router;
 use sqlx::MySqlPool;
 use std::sync::Arc;
-use auth_core::services::{
-    role_service::RoleService,
-    session_service::SessionService,
-    subscription_service::SubscriptionService,
-    otp_service::OtpService,
-    otp_delivery::OtpDeliveryService,
-    lazy_registration::LazyRegistrationService,
-    rate_limiter::RateLimiter,
-};
-use auth_db::repositories::{
-    role_repository::RoleRepository,
-    session_repository::SessionRepository,
-    subscription_repository::SubscriptionRepository,
-    otp_repository::OtpRepository,
-};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod router;
-pub mod handlers;
 pub mod error;
-pub mod validation;
+pub mod handlers;
 pub mod middleware;
+pub mod router;
+pub mod validation;
 
 // Admin UI (feature-gated)
 #[cfg(feature = "admin-ui")]
@@ -83,37 +77,52 @@ pub struct AppState {
 }
 
 pub fn app(state: AppState) -> Router {
-    // Build base router with swagger  
+    // Build base router with swagger
     let router = router::api_router()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()));
-    
+
     // Add admin UI routes if feature is enabled
     #[cfg(feature = "admin-ui")]
     let router = {
-        use axum::routing::get;
         use axum::middleware;
-        
+        use axum::routing::get;
+
         router
             // Public auth pages (no middleware)
             .route("/admin/login", get(admin::handlers::login_page))
             .route("/admin/register", get(admin::handlers::register_page))
-            
             // Protected dashboard pages (with JWT auth middleware)
-            .route("/admin/dashboard", 
-                get(admin::handlers::dashboard_page)
-                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
-            .route("/admin/users", 
-                get(admin::handlers::users_page)
-                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
-            .route("/admin/roles", 
-                get(admin::handlers::roles_page)
-                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
-            .route("/admin/settings", 
-                get(admin::handlers::settings_page)
-                    .route_layer(middleware::from_fn_with_state(state.clone(), crate::middleware::auth::jwt_auth)))
+            .route(
+                "/admin/dashboard",
+                get(admin::handlers::dashboard_page).route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::middleware::auth::jwt_auth,
+                )),
+            )
+            .route(
+                "/admin/users",
+                get(admin::handlers::users_page).route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::middleware::auth::jwt_auth,
+                )),
+            )
+            .route(
+                "/admin/roles",
+                get(admin::handlers::roles_page).route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::middleware::auth::jwt_auth,
+                )),
+            )
+            .route(
+                "/admin/settings",
+                get(admin::handlers::settings_page).route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::middleware::auth::jwt_auth,
+                )),
+            )
             .route("/admin/logout", get(admin::handlers::logout))
     };
-    
+
     router.with_state(state)
 }
 

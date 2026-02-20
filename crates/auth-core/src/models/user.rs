@@ -25,20 +25,20 @@ pub enum PrimaryIdentifier {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct User {
     pub id: Uuid,
-    
+
     // Multi-channel identifier fields
     pub identifier_type: IdentifierType,
     pub primary_identifier: PrimaryIdentifier,
-    
+
     #[validate(email)]
     pub email: Option<String>,
     pub email_verified: bool,
     pub email_verified_at: Option<DateTime<Utc>>,
-    
+
     pub phone: Option<String>,
     pub phone_verified: bool,
     pub phone_verified_at: Option<DateTime<Utc>>,
-    
+
     pub password_hash: Option<String>,
     pub password_changed_at: Option<DateTime<Utc>>,
     pub failed_login_attempts: u32,
@@ -70,20 +70,20 @@ pub enum UserStatus {
 pub struct CreateUserRequest {
     /// Type of identifier being used
     pub identifier_type: IdentifierType,
-    
+
     #[validate(email)]
     pub email: Option<String>,
-    
+
     pub phone: Option<String>,
-    
+
     /// Primary identifier for login (email or phone)
     pub primary_identifier: Option<PrimaryIdentifier>,
-    
+
     #[validate(length(min = 8, max = 128))]
     pub password: Option<String>,
-    
+
     pub profile_data: Option<serde_json::Value>,
-    
+
     /// Require verification after registration
     pub require_verification: Option<bool>,
 }

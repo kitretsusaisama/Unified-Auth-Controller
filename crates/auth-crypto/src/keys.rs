@@ -33,10 +33,10 @@ impl KeyManager {
         // Use a fixed RSA key pair for testing
         let private_key_pem = include_str!("../test_keys/private_key.pem");
         let public_key_pem = include_str!("../test_keys/public_key.pem");
-        
+
         let encoding_key = EncodingKey::from_rsa_pem(private_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
-        
+
         let decoding_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
 
@@ -47,16 +47,21 @@ impl KeyManager {
     }
 
     /// Load KeyManager from PEM files
-    pub async fn from_pem_files(private_key_path: &str, public_key_path: &str) -> Result<Self, KeyError> {
-        let private_key_pem = tokio::fs::read_to_string(private_key_path).await
+    pub async fn from_pem_files(
+        private_key_path: &str,
+        public_key_path: &str,
+    ) -> Result<Self, KeyError> {
+        let private_key_pem = tokio::fs::read_to_string(private_key_path)
+            .await
             .map_err(|e| KeyError::LoadingError(format!("Failed to read private key: {}", e)))?;
-        
-        let public_key_pem = tokio::fs::read_to_string(public_key_path).await
+
+        let public_key_pem = tokio::fs::read_to_string(public_key_path)
+            .await
             .map_err(|e| KeyError::LoadingError(format!("Failed to read public key: {}", e)))?;
 
         let encoding_key = EncodingKey::from_rsa_pem(private_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
-        
+
         let decoding_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())
             .map_err(|e| KeyError::LoadingError(e.to_string()))?;
 
@@ -104,7 +109,7 @@ mod tests {
     #[tokio::test]
     async fn test_key_generation() {
         let key_manager = KeyManager::new().await.unwrap();
-        
+
         // Should be able to get keys without error
         let _encoding_key = key_manager.get_encoding_key().await.unwrap();
         let _decoding_key = key_manager.get_decoding_key().await.unwrap();
@@ -113,7 +118,7 @@ mod tests {
     #[tokio::test]
     async fn test_key_rotation() {
         let key_manager = KeyManager::new().await.unwrap();
-        
+
         // Rotate keys (currently a no-op)
         key_manager.rotate_keys().await.unwrap();
     }

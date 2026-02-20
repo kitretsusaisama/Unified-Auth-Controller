@@ -1,23 +1,12 @@
-use axum::{
-    extract::Request,
-    http::HeaderValue,
-    middleware::Next,
-    response::Response,
-};
+use axum::{extract::Request, http::HeaderValue, middleware::Next, response::Response};
 
 /// Middleware to add security headers
-pub async fn security_headers_middleware(
-    req: Request,
-    next: Next,
-) -> Response {
+pub async fn security_headers_middleware(req: Request, next: Next) -> Response {
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
 
     // Prevent clickjacking
-    headers.insert(
-        "x-frame-options",
-        HeaderValue::from_static("DENY"),
-    );
+    headers.insert("x-frame-options", HeaderValue::from_static("DENY"));
 
     // Prevent MIME type sniffing
     headers.insert(

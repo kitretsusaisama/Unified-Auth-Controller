@@ -1,15 +1,15 @@
 //! Token management service
 
 use crate::error::{AuthError, TokenErrorKind};
-use crate::models::{AccessToken, RefreshToken, TokenPair, Claims};
-use auth_crypto::{JwtService, JwtConfig, JwtClaims, JwtError, KeyManager};
+use crate::models::{AccessToken, Claims, RefreshToken, TokenPair};
+use auth_crypto::{JwtClaims, JwtConfig, JwtError, JwtService, KeyManager};
+use chrono::{DateTime, Duration, Utc};
+use lru::LruCache;
+use std::collections::HashMap;
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use std::collections::HashMap;
-use lru::LruCache;
-use std::num::NonZeroUsize;
 
 /// Trait for refresh token persistent storage
 #[async_trait::async_trait]
@@ -23,16 +23,31 @@ pub trait RefreshTokenStore: Send + Sync {
 /// Trait for revoked access token storage (blacklist)
 #[async_trait::async_trait]
 pub trait RevokedTokenStore: Send + Sync {
-    async fn add_to_blacklist(&self, jti: Uuid, user_id: Uuid, tenant_id: Uuid, expires_at: DateTime<Utc>) -> Result<(), AuthError>;
+    async fn add_to_blacklist(
+        &self,
+        jti: Uuid,
+        user_id: Uuid,
+        tenant_id: Uuid,
+        expires_at: DateTime<Utc>,
+    ) -> Result<(), AuthError>;
     async fn is_revoked(&self, jti: Uuid) -> Result<bool, AuthError>;
 }
 
 #[async_trait::async_trait]
 pub trait TokenProvider: Send + Sync {
     async fn issue_access_token(&self, claims: Claims) -> Result<AccessToken, AuthError>;
-    async fn issue_refresh_token(&self, user_id: Uuid, tenant_id: Uuid) -> Result<RefreshToken, AuthError>;
+    async fn issue_refresh_token(
+        &self,
+        user_id: Uuid,
+        tenant_id: Uuid,
+    ) -> Result<RefreshToken, AuthError>;
     async fn validate_token(&self, token: &str) -> Result<Claims, AuthError>;
-    async fn revoke_token(&self, token_id: Uuid, user_id: Uuid, tenant_id: Uuid) -> Result<(), AuthError>;
+    async fn revoke_token(
+        &self,
+        token_id: Uuid,
+        user_id: Uuid,
+        tenant_id: Uuid,
+    ) -> Result<(), AuthError>;
     async fn refresh_tokens(&self, refresh_token: &str) -> Result<TokenPair, AuthError>;
     async fn introspect_token(&self, token: &str) -> Result<TokenIntrospectionResponse, AuthError>;
 } // End trait
@@ -90,14 +105,14 @@ impl RefreshTokenStore for InMemoryRefreshTokenStore {
     }
 
     async fn find_by_hash(&self, hash: &str) -> Result<Option<RefreshToken>, AuthError> {
-        let mut tokens = self.tokens.write().await;  // LRU needs mut for get
+        let mut tokens = self.tokens.write().await; // LRU needs mut for get
         Ok(tokens.get(hash).cloned())
     }
 
     async fn revoke(&self, token_id: Uuid) -> Result<(), AuthError> {
         // For LRU cache, scan all entries (inefficient but necessary for in-memory)
         let mut tokens = self.tokens.write().await;
-        
+
         // Find the matching token
         let mut found_hash: Option<String> = None;
         for (hash, token) in tokens.iter() {
@@ -106,7 +121,7 @@ impl RefreshTokenStore for InMemoryRefreshTokenStore {
                 break;
             }
         }
-        
+
         // Soft delete by setting revoked_at
         if let Some(hash) = found_hash {
             if let Some(token) = tokens.get_mut(&hash) {
@@ -137,14 +152,20 @@ impl InMemoryRevokedTokenStore {
 
 #[async_trait::async_trait]
 impl RevokedTokenStore for InMemoryRevokedTokenStore {
-    async fn add_to_blacklist(&self, jti: Uuid, _user_id: Uuid, _tenant_id: Uuid, expires_at: DateTime<Utc>) -> Result<(), AuthError> {
+    async fn add_to_blacklist(
+        &self,
+        jti: Uuid,
+        _user_id: Uuid,
+        _tenant_id: Uuid,
+        expires_at: DateTime<Utc>,
+    ) -> Result<(), AuthError> {
         let mut revoked = self.revoked.write().await;
         revoked.put(jti, expires_at);
         Ok(())
     }
 
     async fn is_revoked(&self, jti: Uuid) -> Result<bool, AuthError> {
-        let mut revoked = self.revoked.write().await;  // LRU needs mut for get
+        let mut revoked = self.revoked.write().await; // LRU needs mut for get
         if let Some(expiry) = revoked.get(&jti) {
             Ok(*expiry > Utc::now())
         } else {
@@ -156,11 +177,12 @@ impl RevokedTokenStore for InMemoryRevokedTokenStore {
 impl TokenEngine {
     pub async fn new() -> Result<Self, AuthError> {
         let config = JwtConfig::default();
-        let key_manager = KeyManager::new().await
-            .map_err(|e| AuthError::ConfigurationError { 
-                message: format!("Failed to initialize key manager: {}", e) 
+        let key_manager = KeyManager::new()
+            .await
+            .map_err(|e| AuthError::ConfigurationError {
+                message: format!("Failed to initialize key manager: {}", e),
             })?;
-        
+
         Ok(Self {
             jwt_service: JwtService::new(config, key_manager),
             revoked_token_store: Arc::new(InMemoryRevokedTokenStore::new(10_000)),
@@ -173,11 +195,12 @@ impl TokenEngine {
         refresh_store: Arc<dyn RefreshTokenStore>,
     ) -> Result<Self, AuthError> {
         let config = JwtConfig::default();
-        let key_manager = KeyManager::new().await
-            .map_err(|e| AuthError::ConfigurationError { 
-                message: format!("Failed to initialize key manager: {}", e) 
+        let key_manager = KeyManager::new()
+            .await
+            .map_err(|e| AuthError::ConfigurationError {
+                message: format!("Failed to initialize key manager: {}", e),
             })?;
-        
+
         Ok(Self {
             jwt_service: JwtService::new(config, key_manager),
             revoked_token_store: revoked_store,
@@ -192,13 +215,16 @@ impl TokenEngine {
 #[async_trait::async_trait]
 impl TokenProvider for TokenEngine {
     async fn issue_access_token(&self, claims: Claims) -> Result<AccessToken, AuthError> {
-        let user_id = Uuid::parse_str(&claims.sub)
-            .map_err(|_| AuthError::TokenError { kind: TokenErrorKind::Invalid })?;
-        
-        let tenant_id = Uuid::parse_str(&claims.tenant_id)
-            .map_err(|_| AuthError::TokenError { kind: TokenErrorKind::Invalid })?;
+        let user_id = Uuid::parse_str(&claims.sub).map_err(|_| AuthError::TokenError {
+            kind: TokenErrorKind::Invalid,
+        })?;
 
-        let token = self.jwt_service
+        let tenant_id = Uuid::parse_str(&claims.tenant_id).map_err(|_| AuthError::TokenError {
+            kind: TokenErrorKind::Invalid,
+        })?;
+
+        let token = self
+            .jwt_service
             .generate_access_token(
                 user_id,
                 tenant_id,
@@ -208,11 +234,13 @@ impl TokenProvider for TokenEngine {
             )
             .await
             .map_err(|e| match e {
-                JwtError::EncodingError(_) => AuthError::TokenError { 
-                    kind: TokenErrorKind::Invalid 
+                JwtError::EncodingError(_) => AuthError::TokenError {
+                    kind: TokenErrorKind::Invalid,
                 },
                 JwtError::KeyError(msg) => AuthError::ConfigurationError { message: msg },
-                _ => AuthError::TokenError { kind: TokenErrorKind::Invalid },
+                _ => AuthError::TokenError {
+                    kind: TokenErrorKind::Invalid,
+                },
             })?;
 
         Ok(AccessToken {
@@ -223,15 +251,19 @@ impl TokenProvider for TokenEngine {
         })
     }
 
-    async fn issue_refresh_token(&self, user_id: Uuid, tenant_id: Uuid) -> Result<RefreshToken, AuthError> {
+    async fn issue_refresh_token(
+        &self,
+        user_id: Uuid,
+        tenant_id: Uuid,
+    ) -> Result<RefreshToken, AuthError> {
         let token_id = Uuid::new_v4();
         let token_family = Uuid::new_v4();
         let now = Utc::now();
         let expires_at = now + Duration::days(30);
-        
+
         // Generate a secure random token
         let token_hash = format!("rt_{}", Uuid::new_v4());
-        
+
         let refresh_token = RefreshToken {
             id: token_id,
             user_id,
@@ -247,30 +279,37 @@ impl TokenProvider for TokenEngine {
             created_at: now,
         };
 
-        self.refresh_token_store.create(refresh_token.clone()).await?;
+        self.refresh_token_store
+            .create(refresh_token.clone())
+            .await?;
 
         Ok(refresh_token)
     }
 
     async fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
-        let jwt_claims = self.jwt_service
+        let jwt_claims = self
+            .jwt_service
             .validate_token(token)
             .await
             .map_err(|e| match e {
-                JwtError::TokenExpired => AuthError::TokenError { 
-                    kind: TokenErrorKind::Expired 
+                JwtError::TokenExpired => AuthError::TokenError {
+                    kind: TokenErrorKind::Expired,
                 },
-                JwtError::ValidationError { .. } => AuthError::TokenError { 
-                    kind: TokenErrorKind::Invalid 
+                JwtError::ValidationError { .. } => AuthError::TokenError {
+                    kind: TokenErrorKind::Invalid,
                 },
-                _ => AuthError::TokenError { kind: TokenErrorKind::Invalid },
+                _ => AuthError::TokenError {
+                    kind: TokenErrorKind::Invalid,
+                },
             })?;
 
         // Check blacklist using JTI
         if let Ok(jti) = Uuid::parse_str(&jwt_claims.jti) {
-             if self.revoked_token_store.is_revoked(jti).await? {
-                 return Err(AuthError::TokenError { kind: TokenErrorKind::Revoked });
-             }
+            if self.revoked_token_store.is_revoked(jti).await? {
+                return Err(AuthError::TokenError {
+                    kind: TokenErrorKind::Revoked,
+                });
+            }
         }
 
         Ok(Claims {
@@ -287,26 +326,40 @@ impl TokenProvider for TokenEngine {
         })
     }
 
-    async fn revoke_token(&self, token_id: Uuid, user_id: Uuid, tenant_id: Uuid) -> Result<(), AuthError> {
+    async fn revoke_token(
+        &self,
+        token_id: Uuid,
+        user_id: Uuid,
+        tenant_id: Uuid,
+    ) -> Result<(), AuthError> {
         let expiry = Utc::now() + Duration::hours(24);
-        self.revoked_token_store.add_to_blacklist(token_id, user_id, tenant_id, expiry).await?;
+        self.revoked_token_store
+            .add_to_blacklist(token_id, user_id, tenant_id, expiry)
+            .await?;
         // Also revoke refresh token if it exists
         let _ = self.refresh_token_store.revoke(token_id).await;
         Ok(())
     }
 
     async fn refresh_tokens(&self, refresh_token_hash: &str) -> Result<TokenPair, AuthError> {
-        let token_data = self.refresh_token_store.find_by_hash(refresh_token_hash).await?
-            .ok_or(AuthError::TokenError { kind: TokenErrorKind::Invalid })?;
+        let token_data = self
+            .refresh_token_store
+            .find_by_hash(refresh_token_hash)
+            .await?
+            .ok_or(AuthError::TokenError {
+                kind: TokenErrorKind::Invalid,
+            })?;
 
         if token_data.expires_at < Utc::now() {
-            return Err(AuthError::TokenError { 
-                kind: TokenErrorKind::Expired 
+            return Err(AuthError::TokenError {
+                kind: TokenErrorKind::Expired,
             });
         }
-        
+
         if token_data.revoked_at.is_some() {
-             return Err(AuthError::TokenError { kind: TokenErrorKind::Revoked });
+            return Err(AuthError::TokenError {
+                kind: TokenErrorKind::Revoked,
+            });
         }
 
         // Rotate
@@ -326,7 +379,9 @@ impl TokenProvider for TokenEngine {
         };
 
         let access_token = self.issue_access_token(claims).await?;
-        let new_refresh_token = self.issue_refresh_token(token_data.user_id, token_data.tenant_id).await?;
+        let new_refresh_token = self
+            .issue_refresh_token(token_data.user_id, token_data.tenant_id)
+            .await?;
 
         Ok(TokenPair {
             access_token,
@@ -336,23 +391,39 @@ impl TokenProvider for TokenEngine {
 
     async fn introspect_token(&self, token: &str) -> Result<TokenIntrospectionResponse, AuthError> {
         let claims_result = self.jwt_service.extract_claims_unsafe(token);
-        
+
         let claims = match claims_result {
-             Ok(c) => c,
-             Err(_) => return Ok(TokenIntrospectionResponse {
-                 active: false, scope: None, client_id: None, username: None, 
-                 token_type: None, exp: None, iat: None, nbf: None, sub: None, 
-                 aud: None, iss: None, jti: None
-             })
+            Ok(c) => c,
+            Err(_) => {
+                return Ok(TokenIntrospectionResponse {
+                    active: false,
+                    scope: None,
+                    client_id: None,
+                    username: None,
+                    token_type: None,
+                    exp: None,
+                    iat: None,
+                    nbf: None,
+                    sub: None,
+                    aud: None,
+                    iss: None,
+                    jti: None,
+                })
+            }
         };
 
         let mut is_revoked = false;
         if let Ok(jti) = Uuid::parse_str(&claims.jti) {
-             if self.revoked_token_store.is_revoked(jti).await.unwrap_or(false) {
-                 is_revoked = true;
-             }
+            if self
+                .revoked_token_store
+                .is_revoked(jti)
+                .await
+                .unwrap_or(false)
+            {
+                is_revoked = true;
+            }
         }
-        
+
         let is_expired = self.jwt_service.is_token_expired(&claims);
         let active = !is_revoked && !is_expired;
 

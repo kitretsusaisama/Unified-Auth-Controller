@@ -9,7 +9,12 @@ use tracing::{debug, error};
 #[async_trait]
 pub trait Cache: Send + Sync {
     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> Option<T>;
-    async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    async fn set<T: Serialize + Send + Sync>(
+        &self,
+        key: &str,
+        value: &T,
+        ttl: Duration,
+    ) -> anyhow::Result<()>;
     async fn delete(&self, key: &str) -> anyhow::Result<()>;
 }
 
@@ -64,8 +69,14 @@ impl Cache for MultiLevelCache {
                 debug!("L2 Cache Hit: {}", key);
                 // Populate L1 (Default TTL 60s for simplicity if not stored)
                 // In real app, fetch TTL from Redis or use config
-                self.l1.insert(key.to_string(), (val_str.clone(), std::time::Instant::now() + Duration::from_secs(60)));
-                
+                self.l1.insert(
+                    key.to_string(),
+                    (
+                        val_str.clone(),
+                        std::time::Instant::now() + Duration::from_secs(60),
+                    ),
+                );
+
                 serde_json::from_str(&val_str).ok()
             }
             Ok(None) => None,
@@ -76,11 +87,19 @@ impl Cache for MultiLevelCache {
         }
     }
 
-    async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()> {
+    async fn set<T: Serialize + Send + Sync>(
+        &self,
+        key: &str,
+        value: &T,
+        ttl: Duration,
+    ) -> anyhow::Result<()> {
         let val_str = serde_json::to_string(value)?;
 
         // Update L1
-        self.l1.insert(key.to_string(), (val_str.clone(), std::time::Instant::now() + ttl));
+        self.l1.insert(
+            key.to_string(),
+            (val_str.clone(), std::time::Instant::now() + ttl),
+        );
 
         // Update L2
         let mut _conn = self.l2.get_multiplexed_async_connection().await?;
