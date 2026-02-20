@@ -4,7 +4,7 @@
 //! Requirements Covered: 3.4, 7.1
 
 use auth_core::models::Claims;
-use auth_core::services::{TokenEngine, TokenProvider};
+use auth_core::services::token_service::{TokenEngine, TokenProvider};
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
@@ -17,11 +17,12 @@ async fn test_token_rotation_creates_new_and_invalidates_old() {
     /// 2. Use it to refresh and get new token pair
     /// 3. Verify old token is invalidated
     /// 4. Verify new token works
-    let engine = TokenEngine::new().await.unwrap();
+    let engine: TokenEngine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
 
     // Issue initial refresh token
-    let refresh_token1 = engine.issue_refresh_token(user_id).await.unwrap();
+    let tenant_id = Uuid::new_v4();
+    let refresh_token1 = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
     let token_hash1 = refresh_token1.token_hash.clone();
 
     // Use refresh token to get new pair
@@ -55,7 +56,8 @@ async fn test_token_family_tracking() {
     let user_id = Uuid::new_v4();
 
     // Issue initial token
-    let token1 = engine.issue_refresh_token(user_id).await.unwrap();
+    let tenant_id = Uuid::new_v4();
+    let token1 = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
     let family_id = token1.token_family;
 
     // First rotation
@@ -81,7 +83,8 @@ async fn test_expired_refresh_token_rejected() {
     let user_id = Uuid::new_v4();
 
     // Issue token
-    let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
+    let tenant_id = Uuid::new_v4();
+    let refresh_token = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
 
     // Manually create an expired token scenario by waiting
     // In a real test with database, we would set expires_at in the past
@@ -100,8 +103,9 @@ async fn test_device_context_tracking() {
     /// Note: Full device fingerprint validation would be in the service layer
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
+    let tenant_id = Uuid::new_v4();
 
-    let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
+    let refresh_token = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
 
     // Verify token structure includes fields for device context
     assert_eq!(refresh_token.user_id, user_id);
@@ -118,8 +122,9 @@ async fn test_token_pair_includes_access_and_refresh() {
     /// 3. Verify response includes both token types
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
+    let tenant_id = Uuid::new_v4();
 
-    let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
+    let refresh_token = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
     let token_pair = engine
         .refresh_tokens(&refresh_token.token_hash)
         .await
@@ -144,8 +149,9 @@ async fn test_access_token_validation_after_refresh() {
     /// 3. Verify it contains correct claims
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
+    let tenant_id = Uuid::new_v4();
 
-    let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
+    let refresh_token = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
     let token_pair = engine
         .refresh_tokens(&refresh_token.token_hash)
         .await
@@ -183,6 +189,7 @@ async fn test_token_introspection() {
         tenant_id: Uuid::new_v4().to_string(),
         permissions: vec!["read:users".to_string()],
         roles: vec!["admin".to_string()],
+        scope: Some("openid profile".to_string()),
     };
 
     let access_token = engine.issue_access_token(claims.clone()).await.unwrap();
@@ -217,13 +224,16 @@ async fn test_revoked_token_introspection_shows_inactive() {
         tenant_id: Uuid::new_v4().to_string(),
         permissions: vec![],
         roles: vec![],
+        scope: None,
     };
 
     let token_jti = Uuid::parse_str(&claims.jti).unwrap();
-    let access_token = engine.issue_access_token(claims).await.unwrap();
+    let access_token = engine.issue_access_token(claims.clone()).await.unwrap();
 
     // Revoke the token
-    engine.revoke_token(token_jti).await.unwrap();
+    let tenant_id = Uuid::parse_str(&claims.tenant_id).unwrap();
+    let user_id = Uuid::parse_str(&claims.sub).unwrap();
+    engine.revoke_token(token_jti, user_id, tenant_id).await.unwrap();
 
     // Introspect should show inactive
     let introspection = engine.introspect_token(&access_token.token).await.unwrap();
@@ -242,8 +252,9 @@ async fn test_multiple_concurrent_refreshes() {
     /// Note: In-memory implementation allows this; database version should use transactions
     let engine = TokenEngine::new().await.unwrap();
     let user_id = Uuid::new_v4();
+    let tenant_id = Uuid::new_v4();
 
-    let refresh_token = engine.issue_refresh_token(user_id).await.unwrap();
+    let refresh_token = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
     let token_hash = refresh_token.token_hash.clone();
 
     // First refresh should succeed

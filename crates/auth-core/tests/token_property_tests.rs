@@ -7,7 +7,7 @@
 //! Requirements Validated: 3.1, 3.2, 3.3, 3.4
 
 use auth_core::models::{AccessToken, Claims};
-use auth_core::services::{TokenEngine, TokenProvider};
+use auth_core::services::token_service::{TokenEngine, TokenProvider};
 use auth_crypto::{JwtConfig, JwtService, KeyManager};
 use chrono::{Duration, Utc};
 use proptest::prelude::*;
@@ -49,6 +49,7 @@ fn claims_strategy() -> impl Strategy<Value = Claims> {
                 tenant_id: tenant_id.to_string(),
                 permissions,
                 roles,
+                scope: None,
             }
         })
 }
@@ -155,6 +156,7 @@ proptest! {
                 tenant_id: tenant_id.to_string(),
                 permissions: vec![],
                 roles: vec![],
+                scope: None,
             };
 
             let access_token = engine.issue_access_token(claims).await.unwrap();
@@ -233,7 +235,8 @@ proptest! {
             let engine = TokenEngine::new().await.unwrap();
 
             // Issue initial refresh token
-            let refresh_token1 = engine.issue_refresh_token(user_id).await.unwrap();
+            let tenant_id = Uuid::new_v4();
+            let refresh_token1 = engine.issue_refresh_token(user_id, tenant_id).await.unwrap();
             let token_hash1 = refresh_token1.token_hash.clone();
 
             // Use refresh token to get new pair
@@ -280,6 +283,7 @@ async fn test_token_signature_tampering_detection() {
         tenant_id: Uuid::new_v4().to_string(),
         permissions: vec!["read:users".to_string()],
         roles: vec!["admin".to_string()],
+        scope: None,
     };
 
     let access_token = engine.issue_access_token(claims).await.unwrap();
@@ -336,9 +340,9 @@ async fn test_algorithm_consistency() {
     // Decode header to verify algorithm
     let parts: Vec<&str> = token.split('.').collect();
     if parts.len() >= 1 {
-        let header = base64::decode_config(parts[0], base64::URL_SAFE_NO_PAD)
+        let header: Option<serde_json::Value> = base64::decode_config(parts[0], base64::URL_SAFE_NO_PAD)
             .ok()
-            .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok());
+            .and_then(|bytes: Vec<u8>| serde_json::from_slice::<serde_json::Value>(&bytes).ok());
 
         if let Some(header_json) = header {
             let alg = header_json.get("alg").and_then(|v| v.as_str());
@@ -369,17 +373,20 @@ async fn test_revocation_consistency() {
         tenant_id: Uuid::new_v4().to_string(),
         permissions: vec![],
         roles: vec![],
+        scope: None,
     };
 
     let token_jti = Uuid::parse_str(&claims.jti).unwrap();
-    let access_token = engine.issue_access_token(claims).await.unwrap();
+    let access_token = engine.issue_access_token(claims.clone()).await.unwrap();
     let token_str = access_token.token.clone();
 
     // Token should be valid initially
     assert!(engine.validate_token(&token_str).await.is_ok());
 
     // Revoke the token
-    engine.revoke_token(token_jti).await.unwrap();
+    let tenant_id = Uuid::parse_str(&claims.tenant_id).unwrap();
+    let user_id = Uuid::parse_str(&claims.sub).unwrap();
+    engine.revoke_token(token_jti, user_id, tenant_id).await.unwrap();
 
     // Token must fail validation after revocation
     let result = engine.validate_token(&token_str).await;
