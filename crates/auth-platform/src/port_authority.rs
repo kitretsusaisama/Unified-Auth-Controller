@@ -55,8 +55,8 @@ pub enum PortError {
 
 impl PortAuthority {
     /// Create a new port authority with default lease directory
-    pub fn new() -> std::io::Result<Self> {
-        Self::with_lease_dir(default_lease_dir())
+    pub async fn new() -> std::io::Result<Self> {
+        Self::with_lease_dir(default_lease_dir()).await
     }
 
     /// Create a new port authority with custom lease directory
@@ -160,9 +160,9 @@ impl PortAuthority {
         is_fallback: bool,
     ) -> Result<ManagedListener, PortError> {
         // Check if port is available (reclaim zombie leases)
-        if !PortLease::is_port_available(&self.lease_dir, port)? {
+        if !PortLease::is_port_available(&self.lease_dir, port).await? {
             // Port has a valid lease
-            if let Some(existing_lease) = PortLease::load(&self.lease_dir, port)? {
+            if let Some(existing_lease) = PortLease::load(&self.lease_dir, port).await? {
                 return Err(PortError::PortOccupied {
                     port,
                     service: existing_lease.service_name.clone(),
@@ -276,7 +276,7 @@ impl PortAuthority {
                 if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
                     if let Some(port_str) = filename.strip_prefix("port-") {
                         if let Ok(port) = port_str.parse::<u16>() {
-                            if PortLease::reclaim(&self.lease_dir, port)? {
+                            if PortLease::reclaim(&self.lease_dir, port).await? {
                                 reclaimed.push(port);
                             }
                         }
@@ -304,11 +304,6 @@ impl PortAuthority {
     }
 }
 
-impl Default for PortAuthority {
-    fn default() -> Self {
-        Self::new().expect("Failed to create default PortAuthority")
-    }
-}
 
 #[cfg(test)]
 mod tests {
