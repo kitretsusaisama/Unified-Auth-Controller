@@ -7,18 +7,22 @@
 use crate::error::AuthError;
 use crate::models::user::{IdentifierType, User};
 use crate::services::identity::IdentityService;
+use crate::services::tenant_service::TenantStore;
 use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct LazyRegistrationService {
     identity_service: Arc<IdentityService>,
-    // In a real app, inject TenantRepository to check configs
+    tenant_store: Arc<dyn TenantStore>,
 }
 
 impl LazyRegistrationService {
-    pub fn new(identity_service: Arc<IdentityService>) -> Self {
-        Self { identity_service }
+    pub fn new(identity_service: Arc<IdentityService>, tenant_store: Arc<dyn TenantStore>) -> Self {
+        Self {
+            identity_service,
+            tenant_store,
+        }
     }
 
     /// Handle a login attempt that might require lazy registration
@@ -45,8 +49,16 @@ impl LazyRegistrationService {
         }
 
         // 2. User not found - Check if we should lazy register
-        // TODO: Load Tenant config here. Assuming TRUE for implementation prototype.
-        let allow_lazy = true;
+        // Load Tenant config
+        let tenant = self.tenant_store.get_tenant(tenant_id).await?;
+        let allow_lazy = tenant
+            .map(|t| {
+                t.auth_config
+                    .get("allow_lazy_registration")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false)
+            })
+            .unwrap_or(false);
 
         if !allow_lazy {
             return Err(AuthError::UserNotFound);

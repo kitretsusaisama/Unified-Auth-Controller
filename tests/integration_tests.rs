@@ -19,8 +19,10 @@ use auth_core::services::{
 use auth_core::services::{
     identity::UserStore,
     otp_delivery::{DeliveryError, EmailProvider, OtpProvider},
+    tenant_service::TenantStore,
     token_service::{TokenIntrospectionResponse, TokenProvider},
 };
+use auth_core::models::tenant::Tenant;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
@@ -224,6 +226,7 @@ impl UserStore for MockUserStore {
 fn mock_user() -> User {
     User {
         id: Uuid::new_v4(),
+        tenant_id: Uuid::new_v4(),
         identifier_type: auth_core::models::user::IdentifierType::Email,
         primary_identifier: auth_core::models::user::PrimaryIdentifier::Email,
         email: Some("test@example.com".to_string()),
@@ -275,6 +278,28 @@ impl EmailProvider for MockEmailProvider {
     }
 }
 
+// Mock Tenant Store
+struct MockTenantStore;
+
+#[async_trait]
+impl TenantStore for MockTenantStore {
+    async fn get_tenant(&self, _tenant_id: Uuid) -> Result<Option<Tenant>, AuthError> {
+        Ok(Some(Tenant {
+            id: Uuid::new_v4(),
+            organization_id: Uuid::new_v4(),
+            name: "Mock Tenant".to_string(),
+            slug: "mock-tenant".to_string(),
+            custom_domain: None,
+            branding_config: serde_json::Value::Null,
+            auth_config: json!({ "allow_lazy_registration": true }),
+            compliance_config: serde_json::Value::Null,
+            status: auth_core::models::tenant::TenantStatus::Active,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }))
+    }
+}
+
 fn create_test_app_state() -> AppState {
     let mock_services = MockServices::new();
     let audit_logger: Arc<dyn auth_core::audit::AuditLogger> = Arc::new(TracingAuditLogger);
@@ -319,7 +344,7 @@ fn create_test_app_state() -> AppState {
         mock_services.email_provider,
     ));
     let lazy_registration_service =
-        Arc::new(LazyRegistrationService::new(identity_service.clone()));
+        Arc::new(LazyRegistrationService::new(identity_service.clone(), Arc::new(MockTenantStore)));
     let rate_limiter = Arc::new(RateLimiter::new());
     let cache = Arc::new(MultiLevelCache::new(None).unwrap());
 
