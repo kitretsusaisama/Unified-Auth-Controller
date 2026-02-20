@@ -30,13 +30,17 @@ impl TenantStore for TenantRepository {
             let id_str: String = row.try_get("id").map_err(|e| AuthError::DatabaseError {
                 message: e.to_string(),
             })?;
-            let org_id_str: String = row.try_get("organization_id").map_err(|e| AuthError::DatabaseError {
-                message: e.to_string(),
-            })?;
+            let org_id_str: String =
+                row.try_get("organization_id")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?;
 
-            let status_str: String = row.try_get("status").map_err(|e| AuthError::DatabaseError {
-                message: e.to_string(),
-            })?;
+            let status_str: String =
+                row.try_get("status")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?;
 
             let status = match status_str.as_str() {
                 "active" => TenantStatus::Active,
@@ -46,26 +50,57 @@ impl TenantStore for TenantRepository {
             };
 
             Ok(Some(Tenant {
-                id: Uuid::parse_str(&id_str).map_err(|e| AuthError::DatabaseError { message: format!("Invalid UUID for id: {}", e) })?,
-                organization_id: Uuid::parse_str(&org_id_str).map_err(|e| AuthError::DatabaseError { message: format!("Invalid UUID for org_id: {}", e) })?,
-                name: row.try_get("name").map_err(|e| AuthError::DatabaseError { message: e.to_string() })?,
-                slug: row.try_get("slug").map_err(|e| AuthError::DatabaseError { message: e.to_string() })?,
-                custom_domain: row.try_get("custom_domain").map_err(|e| AuthError::DatabaseError { message: e.to_string() })?,
-                branding_config: row.try_get::<Option<sqlx::types::Json<serde_json::Value>>, _>("branding_config")
-                    .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?
+                id: Uuid::parse_str(&id_str).map_err(|e| AuthError::DatabaseError {
+                    message: format!("Invalid UUID for id: {}", e),
+                })?,
+                organization_id: Uuid::parse_str(&org_id_str).map_err(|e| {
+                    AuthError::DatabaseError {
+                        message: format!("Invalid UUID for org_id: {}", e),
+                    }
+                })?,
+                name: row.try_get("name").map_err(|e| AuthError::DatabaseError {
+                    message: e.to_string(),
+                })?,
+                slug: row.try_get("slug").map_err(|e| AuthError::DatabaseError {
+                    message: e.to_string(),
+                })?,
+                custom_domain: row.try_get("custom_domain").map_err(|e| {
+                    AuthError::DatabaseError {
+                        message: e.to_string(),
+                    }
+                })?,
+                branding_config: row
+                    .try_get::<Option<sqlx::types::Json<serde_json::Value>>, _>("branding_config")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?
                     .map(|json| json.0)
                     .unwrap_or(serde_json::Value::Null),
-                auth_config: row.try_get::<Option<sqlx::types::Json<serde_json::Value>>, _>("auth_config")
-                    .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?
+                auth_config: row
+                    .try_get::<Option<sqlx::types::Json<serde_json::Value>>, _>("auth_config")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?
                     .map(|json| json.0)
                     .unwrap_or(serde_json::Value::Null),
-                compliance_config: row.try_get::<Option<sqlx::types::Json<serde_json::Value>>, _>("compliance_config")
-                    .map_err(|e| AuthError::DatabaseError { message: e.to_string() })?
+                compliance_config: row
+                    .try_get::<Option<sqlx::types::Json<serde_json::Value>>, _>("compliance_config")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?
                     .map(|json| json.0)
                     .unwrap_or(serde_json::Value::Null),
                 status,
-                created_at: row.try_get("created_at").map_err(|e| AuthError::DatabaseError { message: e.to_string() })?,
-                updated_at: row.try_get("updated_at").map_err(|e| AuthError::DatabaseError { message: e.to_string() })?,
+                created_at: row
+                    .try_get("created_at")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?,
+                updated_at: row
+                    .try_get("updated_at")
+                    .map_err(|e| AuthError::DatabaseError {
+                        message: e.to_string(),
+                    })?,
             }))
         } else {
             Ok(None)

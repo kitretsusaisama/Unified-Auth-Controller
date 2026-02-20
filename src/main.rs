@@ -169,8 +169,10 @@ async fn main() -> Result<()> {
     let otp_delivery_service = Arc::new(OtpDeliveryService::new(sms_provider, email_provider));
 
     // Initialize Lazy Registration Service
-    let lazy_registration_service =
-        Arc::new(LazyRegistrationService::new(identity_service.clone(), tenant_repo));
+    let lazy_registration_service = Arc::new(LazyRegistrationService::new(
+        identity_service.clone(),
+        tenant_repo,
+    ));
 
     // Initialize Rate Limiter
     let rate_limiter = Arc::new(RateLimiter::new());

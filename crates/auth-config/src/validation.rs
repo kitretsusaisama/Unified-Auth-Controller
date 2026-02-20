@@ -110,7 +110,8 @@ mod tests {
 
     fn valid_test_config() -> AppConfig {
         let mut config = AppConfig::default();
-        config.security.jwt_secret = Secret::new("a-very-long-and-secure-jwt-secret-at-least-32-chars".to_string());
+        config.security.jwt_secret =
+            Secret::new("a-very-long-and-secure-jwt-secret-at-least-32-chars".to_string());
         config
     }
 
@@ -172,7 +173,8 @@ mod tests {
         let result = ConfigValidator::validate_config(&config);
         match result {
             Err(ConfigValidationError::DatabaseValidationFailed { message }) => {
-                assert!(message.contains("Max connections must be greater than or equal to min connections"));
+                assert!(message
+                    .contains("Max connections must be greater than or equal to min connections"));
             }
             _ => panic!("Expected DatabaseValidationFailed error, got {:?}", result),
         }
@@ -195,7 +197,10 @@ mod tests {
     #[test]
     fn test_invalid_feature_limit() {
         let mut config = valid_test_config();
-        config.features.feature_limits.insert("test_feature".to_string(), 0);
+        config
+            .features
+            .feature_limits
+            .insert("test_feature".to_string(), 0);
 
         let result = ConfigValidator::validate_config(&config);
         match result {
@@ -212,6 +217,9 @@ mod tests {
         config.server.port = 0; // Invalid port (range is 1-65535)
 
         let result = ConfigValidator::validate_config(&config);
-        assert!(matches!(result, Err(ConfigValidationError::ValidationFailed(_))));
+        assert!(matches!(
+            result,
+            Err(ConfigValidationError::ValidationFailed(_))
+        ));
     }
 }

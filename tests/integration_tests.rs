@@ -8,6 +8,7 @@ use auth_api::{app, AppState};
 use auth_cache::MultiLevelCache;
 use auth_core::audit::TracingAuditLogger;
 use auth_core::error::AuthError;
+use auth_core::models::tenant::Tenant;
 use auth_core::models::token::{AccessToken, Claims, RefreshToken, TokenPair};
 use auth_core::models::user::{CreateUserRequest, UpdateUserRequest, User, UserStatus};
 use auth_core::services::{
@@ -22,7 +23,6 @@ use auth_core::services::{
     tenant_service::TenantStore,
     token_service::{TokenIntrospectionResponse, TokenProvider},
 };
-use auth_core::models::tenant::Tenant;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
@@ -343,8 +343,10 @@ fn create_test_app_state() -> AppState {
         mock_services.sms_provider,
         mock_services.email_provider,
     ));
-    let lazy_registration_service =
-        Arc::new(LazyRegistrationService::new(identity_service.clone(), Arc::new(MockTenantStore)));
+    let lazy_registration_service = Arc::new(LazyRegistrationService::new(
+        identity_service.clone(),
+        Arc::new(MockTenantStore),
+    ));
     let rate_limiter = Arc::new(RateLimiter::new());
     let cache = Arc::new(MultiLevelCache::new(None).unwrap());
 

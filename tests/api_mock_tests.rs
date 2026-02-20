@@ -5,20 +5,20 @@
 use async_trait::async_trait;
 use auth_api::{app, AppState};
 use auth_cache::MultiLevelCache;
+use auth_core::error::AuthError;
+use auth_core::models::tenant::Tenant;
 use auth_core::services::identity::IdentityService;
 use auth_core::services::otp_delivery::{DeliveryError, EmailProvider, OtpProvider};
+use auth_core::services::tenant_service::TenantStore;
 use auth_core::services::token_service::TokenEngine;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use chrono::Utc;
 use serde_json::json;
 use std::sync::Arc;
 use tower::util::ServiceExt;
-use auth_core::error::AuthError;
-use auth_core::models::tenant::Tenant;
-use auth_core::services::tenant_service::TenantStore;
-use chrono::Utc;
 use uuid::Uuid;
 
 // Mock OTP Provider
@@ -116,7 +116,10 @@ async fn create_test_app_state() -> AppState {
             Arc::new(MockEmailProvider {}),
         )),
         lazy_registration_service: Arc::new(
-            auth_core::services::lazy_registration::LazyRegistrationService::new(identity_service, Arc::new(MockTenantStore)),
+            auth_core::services::lazy_registration::LazyRegistrationService::new(
+                identity_service,
+                Arc::new(MockTenantStore),
+            ),
         ),
         rate_limiter: Arc::new(auth_core::services::rate_limiter::RateLimiter::new()),
         otp_repository: Arc::new(auth_db::repositories::otp_repository::OtpRepository::new(
