@@ -96,7 +96,7 @@ impl UserStore for UserRepository {
 
 #[derive(Clone)]
 pub struct UserRepository {
-    pool: MySqlPool,
+    pub(crate) pool: MySqlPool,
 }
 
 impl UserRepository {
@@ -188,14 +188,14 @@ impl UserRepository {
         }
     }
 
-    fn map_row(&self, row: sqlx::mysql::MySqlRow) -> Result<User, sqlx::Error> {
+    pub(crate) fn map_row(&self, row: sqlx::mysql::MySqlRow) -> Result<User, sqlx::Error> {
         let status_str: String = row.try_get("status")?;
         let status: UserStatus =
             serde_json::from_str(&status_str).unwrap_or(UserStatus::PendingVerification);
 
         let id_str: String = row.try_get("id")?;
         let tenant_id_str: String = row.try_get("tenant_id")?;
-        
+
         Ok(User {
             id: Uuid::parse_str(&id_str).unwrap_or_default(),
             tenant_id: Uuid::parse_str(&tenant_id_str).unwrap_or_default(),

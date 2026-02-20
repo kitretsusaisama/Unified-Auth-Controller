@@ -272,16 +272,17 @@ pub async fn send_phone_verification(
 
     // Generate numeric OTP (6 digits)
     let tenant_id = user.tenant_id;
-    let (session, otp): (auth_core::services::otp_service::OtpSession, String) = otp_service.create_session(
-        tenant_id,
-        phone.clone(),
-        "phone".to_string(),
-        DeliveryMethod::Sms,
-        OtpPurpose::PhoneVerification,
-        Some(user.id),
-        None, // auto-generate
-        Some(10), // 10 minutes TTL
-    )?; // Removed .await as create_session is not async
+    let (session, otp): (auth_core::services::otp_service::OtpSession, String) = otp_service
+        .create_session(
+            tenant_id,
+            phone.clone(),
+            "phone".to_string(),
+            DeliveryMethod::Sms,
+            OtpPurpose::PhoneVerification,
+            Some(user.id),
+            None,     // auto-generate
+            Some(10), // 10 minutes TTL
+        )?; // Removed .await as create_session is not async
 
     let otp_hash = otp_service.hash_otp(&otp)?;
     otp_repo
