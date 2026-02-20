@@ -6,6 +6,8 @@ Runs migrations and inserts sample data
 import mysql.connector
 from mysql.connector import Error
 import uuid
+import os
+import re
 
 def main():
     print("=" * 50)
@@ -15,11 +17,25 @@ def main():
 
     # Connection details
     config = {
-        'host': 'srv1873.hstgr.io',
-        'database': 'u413456342_sias',
-        'user': 'u413456342_sias',
-        'password': 'V&zTudOgd9v1'
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'database': os.getenv('DB_NAME', 'auth_platform'),
+        'user': os.getenv('DB_USER', 'root'),
+        'password': os.getenv('DB_PASSWORD')
     }
+
+    # Try to parse from AUTH__DATABASE__MYSQL_URL if provided
+    mysql_url = os.getenv('AUTH__DATABASE__MYSQL_URL')
+    if mysql_url:
+        match = re.match(r"mysql://(.*?):(.*?)@(.*?)/(.*)", mysql_url)
+        if match:
+            config['user'] = match.group(1)
+            config['password'] = match.group(2)
+            config['host'] = match.group(3)
+            config['database'] = match.group(4)
+
+    if not config['password']:
+        print("❌ Error: DB_PASSWORD environment variable is not set")
+        return
 
     try:
         print("📡 Connecting to MySQL...")
