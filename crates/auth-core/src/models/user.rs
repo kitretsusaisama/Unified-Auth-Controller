@@ -62,6 +62,7 @@ impl Default for User {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
             identifier_type: IdentifierType::Email,
             primary_identifier: PrimaryIdentifier::Email,
             email: None,

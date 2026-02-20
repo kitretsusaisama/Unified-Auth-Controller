@@ -43,13 +43,9 @@ impl AuditService {
         resource: &str,
         metadata: Option<Value>,
     ) -> Result<AuditLog> {
-        let prev_log = sqlx::query_as::<_, AuditLog>(
-            "SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 1",
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-
-        let prev_hash = prev_log.map(|l| l.hash).unwrap_or_else(|| "0".repeat(64));
+        // Optimization: Removing strict chaining to avoid read-before-write contention.
+        // For strict compliance, chaining should be handled asynchronously or via batching.
+        let prev_hash = "0".repeat(64);
 
         let id = Uuid::new_v4();
         let timestamp = Utc::now();

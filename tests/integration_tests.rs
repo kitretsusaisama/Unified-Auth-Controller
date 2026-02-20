@@ -224,6 +224,7 @@ impl UserStore for MockUserStore {
 fn mock_user() -> User {
     User {
         id: Uuid::new_v4(),
+        tenant_id: Uuid::new_v4(),
         identifier_type: auth_core::models::user::IdentifierType::Email,
         primary_identifier: auth_core::models::user::PrimaryIdentifier::Email,
         email: Some("test@example.com".to_string()),

@@ -130,6 +130,10 @@ path = "tests/integration_tests.rs"
 name = "mysql_only_tests"
 path = "tests/mysql_only_tests.rs"
 
+[[test]]
+name = "audit_performance"
+path = "tests/audit_performance.rs"
+
 [workspace.dependencies]
 # Core async runtime
 tokio = { version = "1.35", features = ["full"] }
