@@ -22,28 +22,23 @@ impl ConfigLoader {
         let mut config = Config::builder();
 
         // Load default configuration
-        config = config.add_source(File::with_name(&format!(
-            "{}/default",
-            self.config_dir
-        )).required(false));
+        config = config
+            .add_source(File::with_name(&format!("{}/default", self.config_dir)).required(false));
 
         // Load environment-specific configuration
-        config = config.add_source(File::with_name(&format!(
-            "{}/{}",
-            self.config_dir, self.environment
-        )).required(false));
+        config = config.add_source(
+            File::with_name(&format!("{}/{}", self.config_dir, self.environment)).required(false),
+        );
 
         // Load local configuration (for development)
-        config = config.add_source(File::with_name(&format!(
-            "{}/local",
-            self.config_dir
-        )).required(false));
+        config = config
+            .add_source(File::with_name(&format!("{}/local", self.config_dir)).required(false));
 
         // Override with environment variables
         config = config.add_source(
             Environment::with_prefix("AUTH")
                 .separator("__")
-                .try_parsing(true)
+                .try_parsing(true),
         );
 
         let config = config.build()?;
@@ -54,7 +49,7 @@ impl ConfigLoader {
         let config = Config::builder()
             .add_source(File::from(path.as_ref()))
             .build()?;
-        
+
         config.try_deserialize()
     }
 
@@ -63,10 +58,10 @@ impl ConfigLoader {
             .add_source(
                 Environment::with_prefix("AUTH")
                     .separator("__")
-                    .try_parsing(true)
+                    .try_parsing(true),
             )
             .build()?;
-        
+
         config.try_deserialize()
     }
 }

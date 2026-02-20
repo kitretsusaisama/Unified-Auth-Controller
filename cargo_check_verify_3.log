@@ -1,0 +1,390 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-core v0.1.0 (/app/crates/auth-core)
+    Checking auth-protocols v0.1.0 (/app/crates/auth-protocols)
+    Checking auth-extension v0.1.0 (/app/crates/auth-extension)
+    Checking auth-db v0.1.0 (/app/crates/auth-db)
+    Checking auth-audit v0.1.0 (/app/crates/auth-audit)
+    Checking auth-api v0.1.0 (/app/crates/auth-api)
+warning: unused import: `StatusCode`
+ --> crates/auth-api/src/handlers/oidc_provider.rs:5:12
+  |
+5 |     http::{StatusCode, HeaderMap},
+  |            ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+ --> crates/auth-api/src/handlers/oidc_provider.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `http::StatusCode`
+  --> crates/auth-api/src/handlers/auth_flow.rs:14:5
+   |
+14 |     http::StatusCode,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> crates/auth-api/src/handlers/auth_flow.rs:18:5
+   |
+18 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+error[E0038]: the trait `Cache` is not dyn compatible
+  --> crates/auth-api/src/lib.rs:80:20
+   |
+80 |     pub cache: Arc<dyn Cache>,
+   |                    ^^^^^^^^^ `Cache` is not dyn compatible
+   |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+  --> /app/crates/auth-cache/src/lib.rs:10:14
+   |
+10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+   |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+   |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+   = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/lib.rs:162:5
+    |
+162 |     fn from_ref(state: &AppState) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/lib.rs:161:43
+    |
+161 | impl axum::extract::FromRef<AppState> for Arc<dyn Cache> {
+    |                                           ^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/lib.rs:162:38
+    |
+162 |     fn from_ref(state: &AppState) -> Self {
+    |                                      ^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/oidc_provider.rs:124:5
+    |
+124 |     state.cache.set(&cache_key, &auth_req, Duration::from_secs(600)).await // 10 mins TTL
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/oidc_provider.rs:146:54
+    |
+146 |             let auth_req: Option<AuthRequestState> = state.cache.get(&cache_key).await
+    |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/oidc_provider.rs:193:21
+    |
+193 |             let _ = state.cache.delete(&cache_key).await;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0599]: no method named `as_ref` found for enum `JsonValue` in the current scope
+   --> crates/auth-api/src/handlers/oidc_provider.rs:244:35
+    |
+244 |         "name": user.profile_data.as_ref().and_then(|p| p.get("name")).unwrap_or(&serde_json::json!("Unknown")),
+    |                                   ^^^^^^ method not found in `JsonValue`
+
+error[E0282]: type annotations needed
+   --> crates/auth-api/src/handlers/oidc_provider.rs:244:54
+    |
+244 |         "name": user.profile_data.as_ref().and_then(|p| p.get("name")).unwrap_or(&serde_json::json!("Unknown")),
+    |                                                      ^  - type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+244 |         "name": user.profile_data.as_ref().and_then(|p: /* Type */| p.get("name")).unwrap_or(&serde_json::json!("Unknown")),
+    |                                                       ++++++++++++
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:117:5
+    |
+117 |     state.cache.set(&key, &context, Duration::from_secs(900)).await
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:138:36
+    |
+138 |     let context: AuthFlowContext = state.cache.get(&key).await
+    |                                    ^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:168:40
+    |
+168 |     let mut context: AuthFlowContext = state.cache.get(&key).await
+    |                                        ^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:175:9
+    |
+175 |         state.cache.set(&key, &context, Duration::from_secs(300)).await.ok();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:194:17
+    |
+194 |                 state.cache.set(&key, &context, Duration::from_secs(900)).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:234:25
+    |
+234 | ...   state.cache.set(&key, &context, Duration::from_secs(900)).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:251:25
+    |
+251 |                         state.cache.delete(&key).await.ok();
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:266:21
+    |
+266 |                     state.cache.set(&key, &context, Duration::from_secs(900)).await.ok();
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0277]: `Result<bool, OtpError>` is not a future
+   --> crates/auth-api/src/handlers/auth_flow.rs:305:73
+    |
+305 |             let is_valid = state.otp_service.verify_totp(&secret, code).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    |                                                                         ^^^^^ `Result<bool, OtpError>` is not a future
+    |
+    = help: the trait `std::future::Future` is not implemented for `Result<bool, OtpError>`
+    = note: Result<bool, OtpError> must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `Result<bool, OtpError>` to implement `IntoFuture`
+help: remove the `.await`
+    |
+305 -             let is_valid = state.otp_service.verify_totp(&secret, code).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+305 +             let is_valid = state.otp_service.verify_totp(&secret, code).map_err(|_| ApiError::new(AuthError::InternalError))?;
+    |
+
+error[E0282]: type annotations needed
+   --> crates/auth-api/src/handlers/auth_flow.rs:305:28
+    |
+305 |             let is_valid = state.otp_service.verify_totp(&secret, code).await.map_err(|_| ApiError::new(AuthError::InternalError))?;
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:312:18
+    |
+312 |                  state.cache.delete(&key).await.ok();
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/handlers/auth_flow.rs:325:18
+    |
+325 |                  state.cache.set(&key, &context, Duration::from_secs(900)).await.ok();
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+  --> crates/auth-api/src/lib.rs:80:5
+   |
+67 | #[derive(Clone)]
+   |          ----- in this derive macro expansion
+...
+80 |     pub cache: Arc<dyn Cache>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+   |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+  --> /app/crates/auth-cache/src/lib.rs:10:14
+   |
+10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+   |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+   |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+   = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+error[E0038]: the trait `Cache` is not dyn compatible
+   --> crates/auth-api/src/lib.rs:163:9
+    |
+163 |         state.cache.clone()
+    |         ^^^^^^^^^^^^^^^^^^^ `Cache` is not dyn compatible
+    |
+note: for a trait to be dyn compatible it needs to allow building a vtable
+      for more information, visit <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
+   --> /app/crates/auth-cache/src/lib.rs:10:14
+    |
+ 10 |     async fn get<T: DeserializeOwned + Send>(&self, key: &str) -> anyhow::Result<Option<T>>;
+    |              ^^^ the trait is not dyn compatible because method `get` has generic type parameters
+ 11 |     async fn set<T: Serialize + Send + Sync>(&self, key: &str, value: &T, ttl: Duration) -> anyhow::Result<()>;
+    |              ^^^ the trait is not dyn compatible because method `set` has generic type parameters
+    = help: only type `auth_cache::MultiLevelCache` implements `Cache`; consider using it directly instead.
+
+warning: unused import: `auth_cache::Cache`
+  --> crates/auth-api/src/handlers/auth_flow.rs:22:5
+   |
+22 | use auth_cache::Cache;
+   |     ^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0038, E0277, E0282, E0599.
+For more information about an error, try `rustc --explain E0038`.
+warning: `auth-api` (lib) generated 5 warnings
+error: could not compile `auth-api` (lib) due to 23 previous errors; 5 warnings emitted

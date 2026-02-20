@@ -14,10 +14,11 @@ pub struct UserTenant {
     pub last_accessed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum UserTenantStatus {
     Active,
     Suspended,
+    #[default]
     Pending,
 }
 
@@ -39,10 +40,4 @@ pub struct UserRole {
     pub expires_at: Option<DateTime<Utc>>,
     pub revoked_at: Option<DateTime<Utc>>,
     pub revoked_by: Option<Uuid>,
-}
-
-impl Default for UserTenantStatus {
-    fn default() -> Self {
-        Self::Pending
-    }
 }

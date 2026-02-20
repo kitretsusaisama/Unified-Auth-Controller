@@ -1,0 +1,81 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-db v0.1.0 (/app/crates/auth-db)
+    Checking auth-protocols v0.1.0 (/app/crates/auth-protocols)
+warning: unused imports: `Serialize` and `de::DeserializeOwned`
+ --> crates/auth-cache/src/lib.rs:4:13
+  |
+4 | use serde::{de::DeserializeOwned, Serialize};
+  |             ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `auth-cache` (lib) generated 1 warning (run `cargo fix --lib -p auth-cache` to apply 1 suggestion)
+    Checking auth-extension v0.1.0 (/app/crates/auth-extension)
+    Checking auth-audit v0.1.0 (/app/crates/auth-audit)
+    Checking auth-api v0.1.0 (/app/crates/auth-api)
+error[E0252]: the name `Duration` is defined multiple times
+  --> crates/auth-api/src/handlers/workflow/universal.rs:11:5
+   |
+10 | use std::time::Duration;
+   |     ------------------- previous import of the type `Duration` here
+11 | use std::time::Duration;
+   |     ^^^^^^^^^^^^^^^^^^^ `Duration` reimported here
+   |
+   = note: `Duration` must be defined only once in the type namespace of this module
+
+error[E0432]: unresolved import `auth_core::services::workflow::StepHandler`
+ --> crates/auth-api/src/handlers/workflow/universal.rs:8:89
+  |
+8 | use auth_core::services::workflow::{FlowContext, FlowAction, FlowState, WorkflowEngine, StepHandler};
+  |                                                                                         ^^^^^^^^^^^ no `StepHandler` in `services::workflow`
+  |
+  = help: consider importing this trait instead:
+          auth_core::prelude::workflow::engine::StepHandler
+
+error[E0432]: unresolved import `auth_core::services::workflow::StepHandler`
+ --> crates/auth-api/src/handlers/workflow/lazy_upgrade.rs:5:73
+  |
+5 | use auth_core::services::workflow::{FlowContext, FlowAction, FlowState, StepHandler};
+  |                                                                         ^^^^^^^^^^^ no `StepHandler` in `services::workflow`
+  |
+  = help: consider importing this trait instead:
+          auth_core::prelude::workflow::engine::StepHandler
+
+warning: unused import: `StatusCode`
+ --> crates/auth-api/src/handlers/oidc_provider.rs:5:12
+  |
+5 |     http::{StatusCode, HeaderMap},
+  |            ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+ --> crates/auth-api/src/handlers/oidc_provider.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `http::StatusCode`
+  --> crates/auth-api/src/handlers/auth_flow.rs:14:5
+   |
+14 |     http::StatusCode,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::time::Duration`
+  --> crates/auth-api/src/handlers/workflow/universal.rs:11:5
+   |
+11 | use std::time::Duration;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Json`
+ --> crates/auth-api/src/error.rs:4:5
+  |
+4 |     Json,
+  |     ^^^^
+
+Some errors have detailed explanations: E0252, E0432.
+For more information about an error, try `rustc --explain E0252`.
+warning: `auth-api` (lib) generated 5 warnings
+error: could not compile `auth-api` (lib) due to 3 previous errors; 5 warnings emitted
