@@ -125,7 +125,7 @@ impl PortLease {
                     "Reclaiming zombie lease"
                 );
 
-                Self::delete(lease_dir, port)?;
+                Self::delete(lease_dir, port).await?;
                 return Ok(true);
             }
         }
@@ -136,7 +136,7 @@ impl PortLease {
     /// Check if port is available (no valid lease exists)
     pub async fn is_port_available(lease_dir: &Path, port: u16) -> std::io::Result<bool> {
         // First try to reclaim any zombie leases
-        Self::reclaim(lease_dir, port)?;
+        Self::reclaim(lease_dir, port).await?;
 
         // Then check if a valid lease exists
         if let Some(lease) = Self::load(lease_dir, port).await? {
