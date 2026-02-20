@@ -1,9 +1,9 @@
 use crate::error::AuthError;
 use crate::models::{Session, User};
 use crate::services::risk_assessment::{RiskAssessor, RiskContext};
-use uuid::Uuid;
-use std::sync::Arc;
 use chrono::Utc;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[async_trait::async_trait]
 pub trait SessionStore: Send + Sync {
@@ -23,20 +23,24 @@ impl SessionService {
         Self { store, risk_engine }
     }
 
-    pub async fn create_session(&self, user: User, risk_context: RiskContext) -> Result<Session, AuthError> {
+    pub async fn create_session(
+        &self,
+        user: User,
+        risk_context: RiskContext,
+    ) -> Result<Session, AuthError> {
         // 1. Assess Risk
         let risk_assessment = self.risk_engine.assess_risk(risk_context.clone()).await?;
 
         // 2. Decide Policy (e.g., if Critical, reject login)
-        // using string matching for simplicity since RiskLevel is enum 
+        // using string matching for simplicity since RiskLevel is enum
         // Logic: if risk > 0.8 (Critical), assume we might want to challenge or block.
         // For this implementation, we log/record but proceed unless strictly blocked.
         // But let's block critical.
         if risk_assessment.score >= 0.9 {
-             return Err(AuthError::AuthorizationDenied { 
-                 permission: "login".to_string(), 
-                 resource: "session".to_string() 
-             });
+            return Err(AuthError::AuthorizationDenied {
+                permission: "login".to_string(),
+                resource: "session".to_string(),
+            });
         }
 
         // 3. Create Session
@@ -58,12 +62,19 @@ impl SessionService {
     }
 
     pub async fn validate_session(&self, token: &str) -> Result<Session, AuthError> {
-        let session = self.store.get(token).await?
-            .ok_or(AuthError::AuthenticationFailed { reason: "Session invalid".to_string() })?;
+        let session = self
+            .store
+            .get(token)
+            .await?
+            .ok_or(AuthError::AuthenticationFailed {
+                reason: "Session invalid".to_string(),
+            })?;
 
         if session.expires_at < Utc::now() {
             self.store.delete(token).await?;
-            return Err(AuthError::AuthenticationFailed { reason: "Session expired".to_string() });
+            return Err(AuthError::AuthenticationFailed {
+                reason: "Session expired".to_string(),
+            });
         }
 
         Ok(session)
@@ -72,7 +83,7 @@ impl SessionService {
     pub async fn revoke_session(&self, token: &str) -> Result<(), AuthError> {
         self.store.delete(token).await
     }
-    
+
     pub async fn revoke_user_sessions(&self, user_id: Uuid) -> Result<(), AuthError> {
         self.store.delete_by_user(user_id).await
     }

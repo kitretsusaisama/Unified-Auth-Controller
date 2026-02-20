@@ -1,36 +1,33 @@
 //! OTP Delivery Service
-//! 
+//!
 //! Handles delivery of OTPs via:
 //! - Firebase Authentication (for phone OTP)
 //! - SMTP (for email OTP)
-//! 
+//!
 //! Includes circuit breakers and fallback mechanisms
 
 use async_trait::async_trait;
-use thiserror::Error;
+use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
 use std::sync::Arc;
-use lettre::{
-    Message, SmtpTransport, Transport,
-    transport::smtp::authentication::Credentials,
-};
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DeliveryError {
     #[error("SMS delivery failed: {0}")]
     SmsFailed(String),
-    
+
     #[error("Email delivery failed: {0}")]
     EmailFailed(String),
-    
+
     #[error("Circuit breaker open for {0}")]
     CircuitBreakerOpen(String),
-    
+
     #[error("All delivery methods failed")]
     AllMethodsFailed,
-    
+
     #[error("Rate limit exceeded")]
     RateLimitExceeded,
-    
+
     #[error("Provider configuration error: {0}")]
     ConfigError(String),
 }
@@ -55,6 +52,7 @@ pub trait EmailProvider: Send + Sync {
 /// Firebase Authentication OTP Provider
 /// Uses Firebase Phone Authentication to send OTPs
 pub struct FirebaseOtpProvider {
+    #[allow(dead_code)]
     project_id: String,
     api_key: String,
     client: reqwest::Client,
@@ -68,41 +66,46 @@ impl FirebaseOtpProvider {
             client: reqwest::Client::new(),
         }
     }
-    
+
     /// Send OTP using Firebase Phone Auth
-    async fn send_firebase_otp(&self, phone: &str, otp: &str) -> Result<String, DeliveryError> {
+    async fn send_firebase_otp(&self, phone: &str, _otp: &str) -> Result<String, DeliveryError> {
         // Firebase REST API endpoint for sending verification code
         let url = format!(
             "https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={}",
             self.api_key
         );
-        
+
         let body = serde_json::json!({
             "phoneNumber": phone,
             "recaptchaToken": "skip", // For server-side calls
         });
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(&url)
             .json(&body)
             .send()
             .await
             .map_err(|e| DeliveryError::SmsFailed(e.to_string()))?;
-        
+
         if response.status().is_success() {
-            let result: serde_json::Value = response.json()
+            let result: serde_json::Value = response
+                .json()
                 .await
                 .map_err(|e| DeliveryError::SmsFailed(e.to_string()))?;
-            
+
             let session_info = result["sessionInfo"]
                 .as_str()
                 .ok_or_else(|| DeliveryError::SmsFailed("No session info".to_string()))?;
-            
+
             tracing::info!("Firebase OTP sent successfully to {}", phone);
             Ok(session_info.to_string())
         } else {
             let error = response.text().await.unwrap_or_default();
-            Err(DeliveryError::SmsFailed(format!("Firebase error: {}", error)))
+            Err(DeliveryError::SmsFailed(format!(
+                "Firebase error: {}",
+                error
+            )))
         }
     }
 }
@@ -138,10 +141,14 @@ impl GenericSmsProvider {
 #[async_trait]
 impl OtpProvider for GenericSmsProvider {
     async fn send_otp(&self, to: &str, otp: &str) -> Result<String, DeliveryError> {
-        let message = format!("Your verification code is: {}. Valid for 10 minutes. Do not share this code.", otp);
-        
+        let message = format!(
+            "Your verification code is: {}. Valid for 10 minutes. Do not share this code.",
+            otp
+        );
+
         // Generic SMS API call (adapt based on your provider)
-        let response = self.client
+        let response = self
+            .client
             .post(&self.api_url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .json(&serde_json::json!({
@@ -152,7 +159,7 @@ impl OtpProvider for GenericSmsProvider {
             .send()
             .await
             .map_err(|e| DeliveryError::SmsFailed(e.to_string()))?;
-        
+
         if response.status().is_success() {
             tracing::info!("SMS OTP sent successfully to {}", to);
             Ok(format!("sms-{}", uuid::Uuid::new_v4()))
@@ -192,13 +199,10 @@ impl SmtpEmailProvider {
             from_name,
         }
     }
-    
+
     fn build_mailer(&self) -> Result<SmtpTransport, DeliveryError> {
-        let creds = Credentials::new(
-            self.smtp_username.clone(),
-            self.smtp_password.clone(),
-        );
-        
+        let creds = Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
+
         Ok(SmtpTransport::relay(&self.smtp_host)
             .map_err(|e| DeliveryError::EmailFailed(e.to_string()))?
             .port(self.smtp_port)
@@ -216,22 +220,26 @@ impl EmailProvider for SmtpEmailProvider {
         body: &str,
     ) -> Result<String, DeliveryError> {
         let email = Message::builder()
-            .from(format!("{} <{}>", self.from_name, self.from_email).parse().unwrap())
-            .to(to.parse().map_err(|e| DeliveryError::EmailFailed(format!("Invalid email: {}", e)))?)
+            .from(
+                format!("{} <{}>", self.from_name, self.from_email)
+                    .parse()
+                    .unwrap(),
+            )
+            .to(to
+                .parse()
+                .map_err(|e| DeliveryError::EmailFailed(format!("Invalid email: {}", e)))?)
             .subject(subject)
             .body(body.to_string())
             .map_err(|e| DeliveryError::EmailFailed(e.to_string()))?;
-        
+
         let mailer = self.build_mailer()?;
-        
+
         // Send email synchronously (lettre doesn't have async SMTP yet)
-        let result = tokio::task::spawn_blocking(move || {
-            mailer.send(&email)
-        })
-        .await
-        .map_err(|e| DeliveryError::EmailFailed(e.to_string()))?
-        .map_err(|e| DeliveryError::EmailFailed(e.to_string()))?;
-        
+        let _result = tokio::task::spawn_blocking(move || mailer.send(&email))
+            .await
+            .map_err(|e| DeliveryError::EmailFailed(e.to_string()))?
+            .map_err(|e| DeliveryError::EmailFailed(e.to_string()))?;
+
         tracing::info!("Email sent successfully to {}", to);
         Ok(format!("email-{}", uuid::Uuid::new_v4()))
     }
@@ -267,10 +275,10 @@ impl CircuitBreaker {
             success_count: Arc::new(tokio::sync::RwLock::new(0)),
         }
     }
-    
+
     pub async fn is_open(&self) -> bool {
         let mut state = self.state.write().await;
-        
+
         match *state {
             CircuitState::Closed => false,
             CircuitState::Open => {
@@ -278,7 +286,7 @@ impl CircuitBreaker {
                 if let Some(time) = *last {
                     if time.elapsed() >= self.reset_timeout {
                         *state = CircuitState::HalfOpen;
-                         tracing::warn!("Circuit breaker entering Half-Open state");
+                        tracing::warn!("Circuit breaker entering Half-Open state");
                         return false; // Allow traffic in Half-Open
                     }
                 }
@@ -287,13 +295,13 @@ impl CircuitBreaker {
             CircuitState::HalfOpen => false, // Allow traffic
         }
     }
-    
+
     pub async fn record_failure(&self) {
         let mut base_state = self.state.write().await;
         let mut failures = self.failure_count.write().await;
         *failures += 1;
         *self.last_failure.write().await = Some(std::time::Instant::now());
-        
+
         match *base_state {
             CircuitState::Closed => {
                 if *failures >= self.failure_threshold {
@@ -310,20 +318,20 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     pub async fn record_success(&self) {
         let mut base_state = self.state.write().await;
-        
+
         match *base_state {
             CircuitState::HalfOpen => {
                 let mut successes = self.success_count.write().await;
                 *successes += 1;
-                
+
                 if *successes >= self.half_open_success_threshold {
                     *base_state = CircuitState::Closed;
                     *self.failure_count.write().await = 0;
                     *successes = 0;
-                     tracing::info!("Circuit breaker CLOSED (recovered)");
+                    tracing::info!("Circuit breaker CLOSED (recovered)");
                 }
             }
             CircuitState::Closed => {
@@ -346,10 +354,7 @@ pub struct OtpDeliveryService {
 }
 
 impl OtpDeliveryService {
-    pub fn new(
-        otp_provider: Arc<dyn OtpProvider>,
-        email_provider: Arc<dyn EmailProvider>,
-    ) -> Self {
+    pub fn new(otp_provider: Arc<dyn OtpProvider>, email_provider: Arc<dyn EmailProvider>) -> Self {
         Self {
             otp_provider,
             email_provider,
@@ -357,13 +362,15 @@ impl OtpDeliveryService {
             email_circuit_breaker: Arc::new(CircuitBreaker::new(5, 60)),
         }
     }
-    
+
     /// Send OTP via SMS/Firebase with circuit breaker
     pub async fn send_phone_otp(&self, to: &str, otp: &str) -> Result<String, DeliveryError> {
         if self.otp_circuit_breaker.is_open().await {
-            return Err(DeliveryError::CircuitBreakerOpen("OTP Provider".to_string()));
+            return Err(DeliveryError::CircuitBreakerOpen(
+                "OTP Provider".to_string(),
+            ));
         }
-        
+
         match self.otp_provider.send_otp(to, otp).await {
             Ok(msg_id) => {
                 self.otp_circuit_breaker.record_success().await;
@@ -375,19 +382,19 @@ impl OtpDeliveryService {
             }
         }
     }
-    
+
     /// Send OTP via email with circuit breaker
     pub async fn send_email_otp(&self, to: &str, otp: &str) -> Result<String, DeliveryError> {
         if self.email_circuit_breaker.is_open().await {
             return Err(DeliveryError::CircuitBreakerOpen("Email".to_string()));
         }
-        
+
         let subject = "Your Verification Code";
         let body = format!(
             "Your verification code is: {}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.",
             otp
         );
-        
+
         match self.email_provider.send_email(to, subject, &body).await {
             Ok(msg_id) => {
                 self.email_circuit_breaker.record_success().await;
@@ -399,7 +406,7 @@ impl OtpDeliveryService {
             }
         }
     }
-    
+
     /// Send OTP with automatic fallback
     pub async fn send_with_fallback(
         &self,
@@ -415,7 +422,7 @@ impl OtpDeliveryService {
                 }
             }
         }
-        
+
         match self.send_email_otp(identifier, otp).await {
             Ok(id) => Ok((id, "email")),
             Err(_) => Err(DeliveryError::AllMethodsFailed),
@@ -423,20 +430,20 @@ impl OtpDeliveryService {
     }
     /// Send verification email (Magic Link)
     pub async fn send_verification_email(
-        &self, 
-        to: &str, 
-        link: &str
+        &self,
+        to: &str,
+        link: &str,
     ) -> Result<String, DeliveryError> {
         if self.email_circuit_breaker.is_open().await {
             return Err(DeliveryError::CircuitBreakerOpen("Email".to_string()));
         }
-        
+
         let subject = "Verify your email address";
         let body = format!(
             "Please click the link below to verify your email address:\n\n{}\n\nThis link will expire in 24 hours.\n\nIf you didn't request this, please ignore this email.",
             link
         );
-        
+
         match self.email_provider.send_email(to, subject, &body).await {
             Ok(msg_id) => {
                 self.email_circuit_breaker.record_success().await;
@@ -453,18 +460,18 @@ impl OtpDeliveryService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     struct MockOtpProvider;
-    
+
     #[async_trait]
     impl OtpProvider for MockOtpProvider {
         async fn send_otp(&self, _to: &str, _otp: &str) -> Result<String, DeliveryError> {
             Ok("mock-otp-id".to_string())
         }
     }
-    
+
     struct MockEmailProvider;
-    
+
     #[async_trait]
     impl EmailProvider for MockEmailProvider {
         async fn send_email(
@@ -476,30 +483,28 @@ mod tests {
             Ok("mock-email-id".to_string())
         }
     }
-    
+
     #[tokio::test]
     async fn test_send_phone_otp() {
-        let service = OtpDeliveryService::new(
-            Arc::new(MockOtpProvider),
-            Arc::new(MockEmailProvider),
-        );
-        
+        let service =
+            OtpDeliveryService::new(Arc::new(MockOtpProvider), Arc::new(MockEmailProvider));
+
         let result = service.send_phone_otp("+14155552671", "123456").await;
         assert!(result.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_circuit_breaker() {
         let breaker = CircuitBreaker::new(3, 60);
-        
+
         assert!(!breaker.is_open().await);
-        
+
         breaker.record_failure().await;
         breaker.record_failure().await;
         breaker.record_failure().await;
-        
+
         assert!(breaker.is_open().await);
-        
+
         breaker.record_success().await;
         assert!(!breaker.is_open().await);
     }

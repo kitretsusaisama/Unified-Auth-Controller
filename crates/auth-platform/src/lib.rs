@@ -17,20 +17,20 @@ pub use port_authority::PortAuthority;
 pub use port_lease::PortLease;
 pub use port_policy::{PortClass, PortPolicy};
 pub use safe_socket::ManagedListener;
-pub use shutdown::{GracefulShutdown, shutdown_signal};
+pub use shutdown::{shutdown_signal, GracefulShutdown};
 
 /// Platform-level errors
 #[derive(Debug, thiserror::Error)]
 pub enum PlatformError {
     #[error("Port error: {0}")]
     Port(#[from] port_authority::PortError),
-    
+
     #[error("Policy error: {0}")]
     Policy(#[from] port_policy::PolicyError),
-    
+
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Shutdown error: {0}")]
     Shutdown(String),
 }

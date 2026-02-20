@@ -25,20 +25,21 @@ pub enum PrimaryIdentifier {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct User {
     pub id: Uuid,
+    pub tenant_id: Uuid,
     
     // Multi-channel identifier fields
     pub identifier_type: IdentifierType,
     pub primary_identifier: PrimaryIdentifier,
-    
+
     #[validate(email)]
     pub email: Option<String>,
     pub email_verified: bool,
     pub email_verified_at: Option<DateTime<Utc>>,
-    
+
     pub phone: Option<String>,
     pub phone_verified: bool,
     pub phone_verified_at: Option<DateTime<Utc>>,
-    
+
     pub password_hash: Option<String>,
     pub password_changed_at: Option<DateTime<Utc>>,
     pub failed_login_attempts: u32,
@@ -57,12 +58,46 @@ pub struct User {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
+impl Default for User {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            identifier_type: IdentifierType::Email,
+            primary_identifier: PrimaryIdentifier::Email,
+            email: None,
+            email_verified: false,
+            email_verified_at: None,
+            phone: None,
+            phone_verified: false,
+            phone_verified_at: None,
+            password_hash: None,
+            password_changed_at: None,
+            failed_login_attempts: 0,
+            locked_until: None,
+            last_login_at: None,
+            last_login_ip: None,
+            mfa_enabled: false,
+            mfa_secret: None,
+            backup_codes: None,
+            risk_score: 0.0,
+            profile_data: serde_json::json!({}),
+            preferences: serde_json::json!({}),
+            status: UserStatus::Active,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            deleted_at: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum UserStatus {
     Active,
     Suspended,
     Deleted,
+    #[default]
     PendingVerification,
 }
 
@@ -70,20 +105,20 @@ pub enum UserStatus {
 pub struct CreateUserRequest {
     /// Type of identifier being used
     pub identifier_type: IdentifierType,
-    
+
     #[validate(email)]
     pub email: Option<String>,
-    
+
     pub phone: Option<String>,
-    
+
     /// Primary identifier for login (email or phone)
     pub primary_identifier: Option<PrimaryIdentifier>,
-    
+
     #[validate(length(min = 8, max = 128))]
     pub password: Option<String>,
-    
+
     pub profile_data: Option<serde_json::Value>,
-    
+
     /// Require verification after registration
     pub require_verification: Option<bool>,
 }
@@ -132,11 +167,5 @@ impl std::fmt::Display for UserStatus {
             UserStatus::Deleted => write!(f, "deleted"),
             UserStatus::PendingVerification => write!(f, "pending_verification"),
         }
-    }
-}
-
-impl Default for UserStatus {
-    fn default() -> Self {
-        Self::PendingVerification
     }
 }
