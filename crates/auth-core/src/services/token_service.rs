@@ -85,9 +85,10 @@ pub struct InMemoryRefreshTokenStore {
 #[allow(deprecated)]
 impl InMemoryRefreshTokenStore {
     pub fn new(capacity: usize) -> Self {
-        let cap = NonZeroUsize::new(capacity)
-            .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_CAPACITY)
-                .expect("DEFAULT_CACHE_CAPACITY must be non-zero"));
+        let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| {
+            NonZeroUsize::new(DEFAULT_CACHE_CAPACITY)
+                .expect("DEFAULT_CACHE_CAPACITY must be non-zero")
+        });
         Self {
             tokens: Arc::new(RwLock::new(LruCache::new(cap))),
         }
@@ -144,9 +145,10 @@ pub struct InMemoryRevokedTokenStore {
 #[allow(deprecated)]
 impl InMemoryRevokedTokenStore {
     pub fn new(capacity: usize) -> Self {
-        let cap = NonZeroUsize::new(capacity)
-            .unwrap_or_else(|| NonZeroUsize::new(DEFAULT_CACHE_CAPACITY)
-                .expect("DEFAULT_CACHE_CAPACITY must be non-zero"));
+        let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| {
+            NonZeroUsize::new(DEFAULT_CACHE_CAPACITY)
+                .expect("DEFAULT_CACHE_CAPACITY must be non-zero")
+        });
         Self {
             revoked: Arc::new(RwLock::new(LruCache::new(cap))),
         }

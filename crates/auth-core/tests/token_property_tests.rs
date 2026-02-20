@@ -9,6 +9,7 @@
 use auth_core::models::{AccessToken, Claims};
 use auth_core::services::token_service::{TokenEngine, TokenProvider};
 use auth_crypto::{JwtConfig, JwtService, KeyManager};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{Duration, Utc};
 use proptest::prelude::*;
 use uuid::Uuid;
@@ -340,7 +341,8 @@ async fn test_algorithm_consistency() {
     // Decode header to verify algorithm
     let parts: Vec<&str> = token.split('.').collect();
     if parts.len() >= 1 {
-        let header: Option<serde_json::Value> = base64::decode_config(parts[0], base64::URL_SAFE_NO_PAD)
+        let header: Option<serde_json::Value> = URL_SAFE_NO_PAD
+            .decode(parts[0])
             .ok()
             .and_then(|bytes: Vec<u8>| serde_json::from_slice::<serde_json::Value>(&bytes).ok());
 
@@ -386,7 +388,10 @@ async fn test_revocation_consistency() {
     // Revoke the token
     let tenant_id = Uuid::parse_str(&claims.tenant_id).unwrap();
     let user_id = Uuid::parse_str(&claims.sub).unwrap();
-    engine.revoke_token(token_jti, user_id, tenant_id).await.unwrap();
+    engine
+        .revoke_token(token_jti, user_id, tenant_id)
+        .await
+        .unwrap();
 
     // Token must fail validation after revocation
     let result = engine.validate_token(&token_str).await;
