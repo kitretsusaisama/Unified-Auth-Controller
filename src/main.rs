@@ -181,7 +181,7 @@ async fn main() -> Result<()> {
     let app = auth_api::app(app_state);
 
     // Initialize Port Authority for production-grade port management
-    let port_authority = PortAuthority::new()?;
+    let port_authority = PortAuthority::new().await?;
     
     // Get or create port policy
     let port_policy = config.server.port_policy.clone().unwrap_or_else(|| {

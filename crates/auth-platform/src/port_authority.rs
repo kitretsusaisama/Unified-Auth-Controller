@@ -55,13 +55,13 @@ pub enum PortError {
 
 impl PortAuthority {
     /// Create a new port authority with default lease directory
-    pub fn new() -> std::io::Result<Self> {
-        Self::with_lease_dir(default_lease_dir())
+    pub async fn new() -> std::io::Result<Self> {
+        Self::with_lease_dir(default_lease_dir()).await
     }
     
     /// Create a new port authority with custom lease directory
-    pub fn with_lease_dir(lease_dir: PathBuf) -> std::io::Result<Self> {
-        std::fs::create_dir_all(&lease_dir)?;
+    pub async fn with_lease_dir(lease_dir: PathBuf) -> std::io::Result<Self> {
+        tokio::fs::create_dir_all(&lease_dir).await?;
         
         info!(lease_dir = ?lease_dir, "Port authority initialized");
         
@@ -160,9 +160,9 @@ impl PortAuthority {
         is_fallback: bool,
     ) -> Result<ManagedListener, PortError> {
         // Check if port is available (reclaim zombie leases)
-        if !PortLease::is_port_available(&self.lease_dir, port)? {
+        if !PortLease::is_port_available(&self.lease_dir, port).await? {
             // Port has a valid lease
-            if let Some(existing_lease) = PortLease::load(&self.lease_dir, port)? {
+            if let Some(existing_lease) = PortLease::load(&self.lease_dir, port).await? {
                 return Err(PortError::PortOccupied {
                     port,
                     service: existing_lease.service_name.clone(),
@@ -209,7 +209,7 @@ impl PortAuthority {
         
         // Create and save lease with actual port
         let lease = PortLease::new(actual_port, &policy.service_name);
-        lease.save(&self.lease_dir)?;
+        lease.save(&self.lease_dir).await?;
         
         // Register in memory with actual port
         self.lease_registry.insert(actual_port, lease);
@@ -255,7 +255,7 @@ impl PortAuthority {
         }
         
         // Delete lease file
-        PortLease::delete(&self.lease_dir, port)?;
+        PortLease::delete(&self.lease_dir, port).await?;
         
         Ok(())
     }
@@ -265,10 +265,9 @@ impl PortAuthority {
         let mut reclaimed = Vec::new();
         
         // Read all lease files
-        let entries = std::fs::read_dir(&self.lease_dir)?;
+        let mut entries = tokio::fs::read_dir(&self.lease_dir).await?;
         
-        for entry in entries {
-            let entry = entry?;
+        while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             
             if path.extension().and_then(|s| s.to_str()) == Some("lease") {
@@ -276,7 +275,7 @@ impl PortAuthority {
                 if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
                     if let Some(port_str) = filename.strip_prefix("port-") {
                         if let Ok(port) = port_str.parse::<u16>() {
-                            if PortLease::reclaim(&self.lease_dir, port)? {
+                            if PortLease::reclaim(&self.lease_dir, port).await? {
                                 reclaimed.push(port);
                             }
                         }
@@ -304,11 +303,6 @@ impl PortAuthority {
     }
 }
 
-impl Default for PortAuthority {
-    fn default() -> Self {
-        Self::new().expect("Failed to create default PortAuthority")
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -318,7 +312,7 @@ mod tests {
     #[tokio::test]
     async fn test_acquire_preferred_port() {
         let temp_dir = TempDir::new().unwrap();
-        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).unwrap();
+        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).await.unwrap();
         
         let policy = PortPolicy::new(0, PortClass::Public, "test"); // Port 0 = OS assigns
         let listener = authority.acquire(&policy, "127.0.0.1").await.unwrap();
@@ -330,7 +324,7 @@ mod tests {
     #[tokio::test]
     async fn test_fallback_when_preferred_occupied() {
         let temp_dir = TempDir::new().unwrap();
-        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).unwrap();
+        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).await.unwrap();
         
         // Bind to an ephemeral port first
         let first_listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
@@ -350,7 +344,7 @@ mod tests {
     #[tokio::test]
     async fn test_admin_port_no_fallback() {
         let temp_dir = TempDir::new().unwrap();
-        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).unwrap();
+        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).await.unwrap();
         
         let policy = PortPolicy::new(9000, PortClass::Admin, "admin");
         
@@ -367,7 +361,7 @@ mod tests {
     #[tokio::test]
     async fn test_release_port() {
         let temp_dir = TempDir::new().unwrap();
-        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).unwrap();
+        let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).await.unwrap();
         
         let policy = PortPolicy::new(0, PortClass::Public, "test");
         let listener = authority.acquire(&policy, "127.0.0.1").await.unwrap();
