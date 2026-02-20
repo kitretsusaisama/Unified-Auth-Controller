@@ -1,0 +1,45 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+    Checking auth-extension v0.1.0 (/app/crates/auth-extension)
+    Checking auth-protocols v0.1.0 (/app/crates/auth-protocols)
+    Checking auth-audit v0.1.0 (/app/crates/auth-audit)
+    Checking auth-api v0.1.0 (/app/crates/auth-api)
+    Checking auth-sso-platform v0.1.0 (/app)
+error[E0432]: unresolved import `auth_db::repositories::UserRepository`
+ --> src/bin/test_auth_flow.rs:4:5
+  |
+4 | use auth_db::repositories::UserRepository;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `UserRepository` in `repositories`
+  |
+help: a similar name exists in the module
+  |
+4 - use auth_db::repositories::UserRepository;
+4 + use auth_db::repositories::user_repository;
+  |
+help: consider importing this struct instead
+  |
+4 - use auth_db::repositories::UserRepository;
+4 + use auth_db::user_repository::UserRepository;
+  |
+
+error[E0282]: type annotations needed
+  --> src/bin/test_auth_flow.rs:97:24
+   |
+97 |     let user_fetched = user_repo.find_by_id(user.id).await?.expect("User should exist");
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+
+Some errors have detailed explanations: E0282, E0432.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `auth-sso-platform` (bin "test_auth_flow") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0277]: the trait bound `RoleRepository: auth_core::services::role_service::RoleStore` is not satisfied
+  --> src/bin/test_rbac.rs:33:41
+   |
+33 |     let role_service = RoleService::new(role_repo);
+   |                                         ^^^^^^^^^ the trait `auth_core::services::role_service::RoleStore` is not implemented for `RoleRepository`
+   |
+   = note: required for the cast from `Arc<RoleRepository>` to `Arc<(dyn auth_core::services::role_service::RoleStore + 'static)>`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `auth-sso-platform` (bin "test_rbac") due to 1 previous error

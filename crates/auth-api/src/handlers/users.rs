@@ -1,8 +1,11 @@
-use axum::{extract::{State, Path}, Json};
-use crate::AppState;
 use crate::error::ApiError;
-use uuid::Uuid;
+use crate::AppState;
+use axum::{
+    extract::{Path, State},
+    Json,
+};
 use serde_json::json;
+use uuid::Uuid;
 
 /// Suspend a user account (Admin only)
 #[utoipa::path(
@@ -22,7 +25,9 @@ pub async fn ban_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     state.identity_service.ban_user(user_id).await?;
-    Ok(Json(json!({"status": "success", "message": "User suspended"})))
+    Ok(Json(
+        json!({"status": "success", "message": "User suspended"}),
+    ))
 }
 
 /// Activate a suspended user account (Admin only)
@@ -43,5 +48,7 @@ pub async fn activate_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     state.identity_service.activate_user(user_id).await?;
-    Ok(Json(json!({"status": "success", "message": "User activated"})))
+    Ok(Json(
+        json!({"status": "success", "message": "User activated"}),
+    ))
 }

@@ -1,7 +1,8 @@
+pub mod discovery;
+pub mod oauth;
 pub mod oidc;
 pub mod saml;
-pub mod oauth;
 
+pub use oauth::OAuthService;
 pub use oidc::OidcService;
 pub use saml::SamlService;
-pub use oauth::OAuthService;

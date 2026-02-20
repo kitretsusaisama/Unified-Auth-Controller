@@ -1,5 +1,5 @@
 //! Error types for the authentication system
-//! 
+//!
 //! Implements MNC-grade error handling with standard error codes.
 
 use thiserror::Error;
@@ -8,52 +8,55 @@ use thiserror::Error;
 pub enum AuthError {
     #[error("Authentication failed: {reason}")]
     AuthenticationFailed { reason: String },
-    
+
     #[error("Authorization denied: {permission} on {resource}")]
-    AuthorizationDenied { permission: String, resource: String },
-    
+    AuthorizationDenied {
+        permission: String,
+        resource: String,
+    },
+
     #[error("Token error: {kind:?}")]
     TokenError { kind: TokenErrorKind },
-    
+
     #[error("Rate limit exceeded: {limit} requests per {window}")]
     RateLimitExceeded { limit: u32, window: String },
-    
+
     #[error("Tenant not found: {tenant_id}")]
     TenantNotFound { tenant_id: String },
-    
+
     #[error("Configuration error: {message}")]
     ConfigurationError { message: String },
-    
+
     #[error("External service error: {service} - {error}")]
     ExternalServiceError { service: String, error: String },
-    
+
     #[error("Database error: {message}")]
     DatabaseError { message: String },
-    
+
     #[error("Validation error: {message}")]
     ValidationError { message: String },
-    
+
     #[error("Internal error")]
     InternalError,
-    
+
     #[error("Credential error: {message}")]
     CredentialError { message: String },
-    
+
     #[error("Password policy violation: {errors:?}")]
     PasswordPolicyViolation { errors: Vec<String> },
-    
+
     #[error("Account locked: {reason}")]
     AccountLocked { reason: String },
-    
+
     #[error("Account suspended")]
     AccountSuspended,
-    
+
     #[error("Account deleted")]
     AccountDeleted,
-    
+
     #[error("Password expired")]
     PasswordExpired,
-    
+
     #[error("User not found")]
     UserNotFound,
 
@@ -68,16 +71,16 @@ pub enum AuthError {
 
     #[error("Crypto error: {0}")]
     UTCryptoError(String),
-    
+
     #[error("Session not found")]
     SessionNotFound,
-    
+
     #[error("Invalid OTP")]
     InvalidOtp,
-    
+
     #[error("OTP expired")]
     OtpExpired,
-    
+
     #[error("Circuit breaker open: {service}")]
     CircuitBreakerOpen { service: String },
 }
@@ -127,7 +130,9 @@ impl From<sqlx::Error> for AuthError {
     fn from(err: sqlx::Error) -> Self {
         match err {
             sqlx::Error::RowNotFound => AuthError::UserNotFound,
-            _ => AuthError::DatabaseError { message: err.to_string() }
+            _ => AuthError::DatabaseError {
+                message: err.to_string(),
+            },
         }
     }
 }
@@ -135,19 +140,19 @@ impl From<sqlx::Error> for AuthError {
 impl From<auth_crypto::JwtError> for AuthError {
     fn from(err: auth_crypto::JwtError) -> Self {
         match err {
-            auth_crypto::JwtError::TokenExpired => AuthError::TokenError { 
-                kind: TokenErrorKind::Expired 
+            auth_crypto::JwtError::TokenExpired => AuthError::TokenError {
+                kind: TokenErrorKind::Expired,
             },
-            auth_crypto::JwtError::ValidationError { .. } => AuthError::TokenError { 
-                kind: TokenErrorKind::Invalid 
+            auth_crypto::JwtError::ValidationError { .. } => AuthError::TokenError {
+                kind: TokenErrorKind::Invalid,
             },
-            auth_crypto::JwtError::EncodingError(_) => AuthError::TokenError { 
-                kind: TokenErrorKind::Invalid 
+            auth_crypto::JwtError::EncodingError(_) => AuthError::TokenError {
+                kind: TokenErrorKind::Invalid,
             },
-            auth_crypto::JwtError::KeyError(msg) => AuthError::ConfigurationError { 
-                message: msg 
+            auth_crypto::JwtError::KeyError(msg) => AuthError::ConfigurationError { message: msg },
+            _ => AuthError::TokenError {
+                kind: TokenErrorKind::Invalid,
             },
-            _ => AuthError::TokenError { kind: TokenErrorKind::Invalid },
         }
     }
 }
@@ -163,7 +168,10 @@ impl From<crate::services::otp_delivery::DeliveryError> for AuthError {
         use crate::services::otp_delivery::DeliveryError;
         match err {
             DeliveryError::CircuitBreakerOpen(s) => AuthError::CircuitBreakerOpen { service: s },
-            _ => AuthError::ExternalServiceError { service: "otp_delivery".to_string(), error: err.to_string() },
+            _ => AuthError::ExternalServiceError {
+                service: "otp_delivery".to_string(),
+                error: err.to_string(),
+            },
         }
     }
 }
@@ -174,8 +182,11 @@ impl From<crate::services::otp_service::OtpError> for AuthError {
             OtpError::Invalid | OtpError::GenerationFailed => AuthError::InvalidOtp, // Generation failure internal really
             OtpError::Expired => AuthError::OtpExpired,
             OtpError::NotFound => AuthError::InvalidOtp,
-            OtpError::MaxAttemptsExceeded => AuthError::RateLimitExceeded { limit: 5, window: "session".to_string() }, // Mapping rough
-             _ => AuthError::InternalError,
+            OtpError::MaxAttemptsExceeded => AuthError::RateLimitExceeded {
+                limit: 5,
+                window: "session".to_string(),
+            }, // Mapping rough
+            _ => AuthError::InternalError,
         }
     }
 }

@@ -22,31 +22,31 @@ pub struct PasswordPolicyRules {
     // Length requirements
     pub min_length: usize,
     pub max_length: usize,
-    
+
     // Character requirements
     pub require_uppercase: bool,
     pub require_lowercase: bool,
     pub require_numbers: bool,
     pub require_special_chars: bool,
     pub min_special_chars: usize,
-    
+
     // Complexity requirements
     pub min_character_classes: usize, // How many different types of chars required
     pub disallow_common_passwords: bool,
     pub disallow_personal_info: bool,
     pub disallow_repeated_chars: bool,
     pub disallow_sequential_chars: bool,
-    
+
     // Aging and history
     pub max_age_days: Option<u32>,
     pub history_count: usize, // Number of previous passwords to remember
     pub min_age_hours: Option<u32>, // Minimum time before password can be changed again
-    
+
     // Lockout policy
     pub lockout_threshold: u32,
     pub lockout_duration_minutes: u32,
     pub lockout_reset_time_minutes: Option<u32>, // Time after which failed attempts reset
-    
+
     // Advanced features
     pub require_mfa_for_privileged: bool,
     pub password_strength_meter: bool,
@@ -78,31 +78,31 @@ impl Default for PasswordPolicyRules {
             // Length requirements - enterprise grade
             min_length: 12,
             max_length: 128,
-            
+
             // Character requirements
             require_uppercase: true,
             require_lowercase: true,
             require_numbers: true,
             require_special_chars: true,
             min_special_chars: 2,
-            
+
             // Complexity requirements
             min_character_classes: 3,
             disallow_common_passwords: true,
             disallow_personal_info: true,
             disallow_repeated_chars: true,
             disallow_sequential_chars: true,
-            
+
             // Aging and history
             max_age_days: Some(90),
             history_count: 12,
             min_age_hours: Some(24),
-            
+
             // Lockout policy
             lockout_threshold: 5,
             lockout_duration_minutes: 30,
             lockout_reset_time_minutes: Some(60),
-            
+
             // Advanced features
             require_mfa_for_privileged: true,
             password_strength_meter: true,
