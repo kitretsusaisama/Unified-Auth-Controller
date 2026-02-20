@@ -1,0 +1,51 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+warning: unused imports: `Serialize` and `de::DeserializeOwned`
+ --> crates/auth-cache/src/lib.rs:4:13
+  |
+4 | use serde::{de::DeserializeOwned, Serialize};
+  |             ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `auth-cache` (lib) generated 1 warning (run `cargo fix --lib -p auth-cache` to apply 1 suggestion)
+warning: unused import: `StatusCode`
+ --> crates/auth-api/src/handlers/oidc_provider.rs:5:12
+  |
+5 |     http::{StatusCode, HeaderMap},
+  |            ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+ --> crates/auth-api/src/handlers/oidc_provider.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `http::StatusCode`
+  --> crates/auth-api/src/handlers/auth_flow.rs:14:5
+   |
+14 |     http::StatusCode,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `auth_cache::Cache`
+  --> crates/auth-api/src/handlers/oidc_provider.rs:12:5
+   |
+12 | use auth_cache::Cache;
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `e`
+   --> crates/auth-api/src/handlers/oidc_provider.rs:126:19
+    |
+126 |         .map_err(|e| ApiError::new(AuthError::InternalError))?; // Log error in real app
+    |                   ^ help: if this is intentional, prefix it with an underscore: `_e`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `auth-api` (lib) generated 5 warnings (run `cargo fix --lib -p auth-api` to apply 4 suggestions)
+    Checking auth-sso-platform v0.1.0 (/app)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.12s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`

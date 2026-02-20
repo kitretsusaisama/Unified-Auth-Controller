@@ -19,3 +19,8 @@ impl SamlService {
     // However, due to libxml2 dependency issues on Windows, we are stubbing this for now
     // to allow compilation of the rest of the platform.
 }
+impl Default for SamlService {
+    fn default() -> Self {
+        Self::new()
+    }
+}

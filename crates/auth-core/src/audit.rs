@@ -1,12 +1,11 @@
 //! Audit Logging System
-//! 
+//!
 //! Structured logging for security-critical events.
 //! Compliant with MNC audit requirements.
 
-use serde::{Serialize, Serializer};
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Serializer};
 use uuid::Uuid;
-use std::fmt;
 
 /// Categories of audit events
 #[derive(Debug, Clone, Serialize)]
@@ -66,7 +65,11 @@ pub enum AuditOutcome {
 }
 
 impl AuditEvent {
-    pub fn new(category: AuditCategory, action: impl Into<String>, severity: AuditSeverity) -> Self {
+    pub fn new(
+        category: AuditCategory,
+        action: impl Into<String>,
+        severity: AuditSeverity,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             timestamp: Utc::now(),
@@ -82,31 +85,38 @@ impl AuditEvent {
             outcome: AuditOutcome::Success,
         }
     }
-    
+
     pub fn with_actor(mut self, actor_id: Uuid) -> Self {
         self.actor_id = Some(actor_id);
         self
     }
-    
+
     pub fn with_resource(mut self, resource_id: impl Into<String>) -> Self {
         self.resource_id = Some(resource_id.into());
         self
     }
-    
-    pub fn with_context(mut self, ip: Option<String>, ua: Option<String>, tenant: Option<Uuid>) -> Self {
+
+    pub fn with_context(
+        mut self,
+        ip: Option<String>,
+        ua: Option<String>,
+        tenant: Option<Uuid>,
+    ) -> Self {
         self.ip_address = ip;
         self.user_agent = ua;
         self.tenant_id = tenant;
         self
     }
-    
+
     pub fn with_metadata(mut self, metadata: serde_json::Value) -> Self {
         self.metadata = metadata;
         self
     }
-    
+
     pub fn failure(mut self, reason: impl Into<String>) -> Self {
-        self.outcome = AuditOutcome::Failure { reason: reason.into() };
+        self.outcome = AuditOutcome::Failure {
+            reason: reason.into(),
+        };
         self
     }
 }

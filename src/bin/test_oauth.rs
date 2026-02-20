@@ -14,7 +14,7 @@ async fn main() {
     let auth_url = oauth_service
         .authorize_url("https://sso.com/callback", "random_state")
         .expect("Failed to generate auth URL");
-    
+
     println!("Generated Auth URL: {}", auth_url);
     assert!(auth_url.contains("client_id=client_id"));
     assert!(auth_url.contains("response_type=code"));
@@ -23,7 +23,7 @@ async fn main() {
         .exchange_token("valid_code", "https://sso.com/callback")
         .await
         .expect("Failed to exchange token");
-    
+
     println!("Exchanged Token: {}", token);
     assert_eq!(token, "mock_access_token");
 

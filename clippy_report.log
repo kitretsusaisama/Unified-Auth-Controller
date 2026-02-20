@@ -1,0 +1,252 @@
+warning: /app/crates/auth-platform/Cargo.toml: file `/app/crates/auth-platform/src/lib.rs` found to be present in multiple build targets:
+  * `lib` target `auth_platform`
+  * `integration-test` target `lib`
+ Downloading crates ...
+  Downloaded askama_axum v0.4.0
+  Downloaded askama_parser v0.2.1
+  Downloaded humansize v2.1.3
+  Downloaded tokio-test v0.4.5
+  Downloaded askama_derive v0.12.5
+  Downloaded proptest-derive v0.4.0
+  Downloaded yansi v1.0.1
+  Downloaded pretty_assertions v1.4.1
+  Downloaded basic-toml v0.1.10
+  Downloaded diff v0.1.13
+  Downloaded cookie v0.18.1
+  Downloaded rust-multipart-rfc7578_2 v0.6.1
+  Downloaded reserve-port v2.3.0
+  Downloaded auto-future v1.0.0
+  Downloaded askama_escape v0.10.3
+  Downloaded axum-test v14.10.0
+  Downloaded askama v0.12.1
+    Checking tokio v1.49.0
+   Compiling syn v1.0.109
+   Compiling mime v0.3.17
+   Compiling askama_parser v0.2.1
+   Compiling mime_guess v2.0.5
+   Compiling basic-toml v0.1.10
+    Checking humansize v2.1.3
+    Checking askama_escape v0.10.3
+   Compiling cookie v0.18.1
+    Checking diff v0.1.13
+    Checking yansi v1.0.1
+   Compiling askama_derive v0.12.5
+    Checking pretty_assertions v1.4.1
+    Checking rust-multipart-rfc7578_2 v0.6.1
+    Checking reserve-port v2.3.0
+    Checking auto-future v1.0.0
+   Compiling proc-macro-error v1.0.4
+   Compiling sqlx-macros-core v0.7.4
+    Checking askama v0.12.1
+    Checking askama_axum v0.4.0
+    Checking tokio-util v0.7.18
+    Checking tokio-stream v0.1.18
+    Checking tokio-native-tls v0.3.1
+    Checking h2 v0.3.27
+    Checking tokio-rustls v0.24.1
+    Checking sqlx-core v0.7.4
+   Compiling validator_derive v0.18.2
+    Checking auth-platform v0.1.0 (/app/crates/auth-platform)
+    Checking validator v0.18.1
+   Compiling utoipa-gen v4.3.1
+    Checking sqlx-mysql v0.7.4
+    Checking sqlx-sqlite v0.7.4
+    Checking hyper v0.14.32
+   Compiling sqlx-macros v0.7.4
+    Checking auth-crypto v0.1.0 (/app/crates/auth-crypto)
+    Checking auth-config v0.1.0 (/app/crates/auth-config)
+    Checking lettre v0.11.19
+    Checking sqlx v0.7.4
+    Checking h2 v0.4.13
+    Checking combine v4.6.7
+    Checking hyper-tls v0.5.0
+    Checking hyper-rustls v0.24.2
+    Checking utoipa v4.2.3
+    Checking reqwest v0.11.27
+    Checking oauth2 v4.4.2
+    Checking auth-core v0.1.0 (/app/crates/auth-core)
+    Checking tower v0.5.3
+    Checking tokio-retry v0.3.0
+    Checking hyper v1.8.1
+    Checking openidconnect v3.5.0
+    Checking hyper-util v0.1.20
+    Checking redis v0.24.0
+    Checking axum v0.7.9
+    Checking metrics-exporter-prometheus v0.12.2
+warning: redundant pattern matching, consider using `is_some()`
+  --> crates/auth-core/src/services/role_service.rs:27:16
+   |
+27 |         if let Some(_) = self.store.find_by_name(tenant_id, &req.name).await? {
+   |         -------^^^^^^^------------------------------------------------------- help: try: `if (self.store.find_by_name(tenant_id, &req.name).await?).is_some()`
+   |
+   = note: this will change drop order of the result, as well as all temporaries
+   = note: add `#[allow(clippy::redundant_pattern_matching)]` if this is important
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#redundant_pattern_matching
+   = note: `#[warn(clippy::redundant_pattern_matching)]` on by default
+
+warning: this function has too many arguments (9/7)
+   --> crates/auth-core/src/services/otp_service.rs:171:5
+    |
+171 | /     pub fn create_session(
+172 | |         &self,
+173 | |         tenant_id: Uuid,
+174 | |         identifier: String,
+...   |
+180 | |         ttl_minutes: Option<i64>,
+181 | |     ) -> Result<(OtpSession, String), OtpError> {
+    | |_______________________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#too_many_arguments
+    = note: `#[warn(clippy::too_many_arguments)]` on by default
+
+warning: you should consider adding a `Default` implementation for `WorkflowEngine`
+  --> crates/auth-core/src/services/workflow/engine.rs:59:5
+   |
+59 | /     pub fn new() -> Self {
+60 | |         Self {
+61 | |             handlers: HashMap::new(),
+62 | |         }
+63 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#new_without_default
+   = note: `#[warn(clippy::new_without_default)]` on by default
+help: try adding this
+   |
+58 + impl Default for WorkflowEngine {
+59 +     fn default() -> Self {
+60 +         Self::new()
+61 +     }
+62 + }
+   |
+
+warning: you should consider adding a `Default` implementation for `RuleEngine`
+  --> crates/auth-core/src/services/workflow/rules.rs:13:5
+   |
+13 | /     pub fn new() -> Self {
+14 | |         Self { rules: Vec::new() }
+15 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#new_without_default
+help: try adding this
+   |
+12 + impl Default for RuleEngine {
+13 +     fn default() -> Self {
+14 +         Self::new()
+15 +     }
+16 + }
+   |
+
+    Checking tower v0.4.13
+warning: `auth-core` (lib) generated 4 warnings (run `cargo clippy --fix --lib -p auth-core` to apply 2 suggestions)
+    Checking async-compression v0.4.39
+    Checking auth-protocols v0.1.0 (/app/crates/auth-protocols)
+    Checking auth-extension v0.1.0 (/app/crates/auth-extension)
+    Checking auth-cache v0.1.0 (/app/crates/auth-cache)
+    Checking auth-db v0.1.0 (/app/crates/auth-db)
+    Checking tower-http v0.5.2
+    Checking auth-telemetry v0.1.0 (/app/crates/auth-telemetry)
+    Checking auth-audit v0.1.0 (/app/crates/auth-audit)
+    Checking tokio-test v0.4.5
+   Compiling proptest-derive v0.4.0
+warning: this function has too many arguments (9/7)
+  --> crates/auth-db/src/repositories/refresh_token_repository.rs:49:5
+   |
+49 | /     pub async fn create(
+50 | |         &self,
+51 | |         user_id: Uuid,
+52 | |         tenant_id: Uuid,
+...  |
+58 | |         expires_at: DateTime<Utc>,
+59 | |     ) -> Result<RefreshTokenRecord, RefreshTokenError> {
+   | |______________________________________________________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#too_many_arguments
+   = note: `#[warn(clippy::too_many_arguments)]` on by default
+
+warning: methods with the following characteristics: (`to_*` and `self` type is `Copy`) usually take `self` by value
+  --> crates/auth-db/src/repositories/revoked_token_repository.rs:37:15
+   |
+37 |     fn to_str(&self) -> &'static str {
+   |               ^^^^^
+   |
+   = help: consider choosing a less ambiguous name
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#wrong_self_convention
+   = note: `#[warn(clippy::wrong_self_convention)]` on by default
+
+warning: this function has too many arguments (8/7)
+  --> crates/auth-db/src/repositories/revoked_token_repository.rs:62:5
+   |
+62 | /     pub async fn add_revoked_token(
+63 | |         &self,
+64 | |        token_jti: Uuid,
+65 | |         user_id: Uuid,
+...  |
+70 | |         expires_at: DateTime<Utc>,
+71 | |     ) -> Result<RevokedTokenRecord, RevokedTokenError> {
+   | |______________________________________________________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#too_many_arguments
+
+warning: `auth-db` (lib) generated 3 warnings
+    Checking utoipa-swagger-ui v6.0.0
+    Checking axum-test v14.10.0
+warning: unused variable: `authority`
+   --> crates/auth-platform/src/port_authority.rs:353:13
+    |
+353 |         let authority = PortAuthority::with_lease_dir(temp_dir.path().to_path_buf()).unwrap();
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_authority`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+    Checking auth-api v0.1.0 (/app/crates/auth-api)
+warning: `auth-platform` (test "lib") generated 1 warning (run `cargo clippy --fix --test "lib" -p auth-platform` to apply 1 suggestion)
+error[E0063]: missing fields `drain_timeout_seconds` and `port_policy` in initializer of `config::ServerConfig`
+   --> crates/auth-config/src/manager.rs:152:17
+    |
+152 |                 ServerConfig {
+    |                 ^^^^^^^^^^^^ missing `drain_timeout_seconds` and `port_policy`
+
+warning: unused import: `FlowResult`
+  --> crates/auth-api/src/handlers/auth_flow.rs:14:102
+   |
+14 | use auth_core::services::workflow::{WorkflowEngine, FlowContext, FlowAction, FlowState, StepHandler, FlowResult};
+   |                                                                                                      ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `auth-config` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+warning: unused variable: `ctx`
+  --> crates/auth-api/src/handlers/auth_flow.rs:96:28
+   |
+96 |     async fn handle(&self, ctx: &mut FlowContext, action: FlowAction) -> Result<FlowState, AuthError> {
+   |                            ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `id_str`
+   --> crates/auth-api/src/handlers/auth_flow.rs:229:18
+    |
+229 |              let id_str = action.payload.get("identifier").and_then(|s| s.as_str());
+    |                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_id_str`
+
+warning: struct `AuthenticateStep` is never constructed
+  --> crates/auth-api/src/handlers/auth_flow.rs:93:8
+   |
+93 | struct AuthenticateStep;
+   |        ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `get_user_email_from_jwt` is never used
+  --> crates/auth-api/src/admin/handlers.rs:83:4
+   |
+83 | fn get_user_email_from_jwt() -> Option<String> {
+   |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `auth-api` (lib) generated 5 warnings (run `cargo clippy --fix --lib -p auth-api` to apply 3 suggestions)
+warning: `auth-api` (lib test) generated 5 warnings (5 duplicates)
+warning: `auth-core` (lib test) generated 4 warnings (4 duplicates)

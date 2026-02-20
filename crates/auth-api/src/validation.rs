@@ -1,22 +1,19 @@
 use auth_core::error::AuthError;
-use regex::Regex;
 use once_cell::sync::Lazy;
+use regex::Regex;
 
 /// Common weak passwords to reject
 static COMMON_PASSWORDS: Lazy<Vec<&str>> = Lazy::new(|| {
     vec![
-        "password", "123456", "12345678", "qwerty", "abc123",
-        "monkey", "1234567", "letmein", "trustno1", "dragon",
-        "baseball", "iloveyou", "master", "sunshine", "ashley",
-        "bailey", "passw0rd", "shadow", "123123", "654321",
-        "superman", "qazwsx", "michael", "football",
+        "password", "123456", "12345678", "qwerty", "abc123", "monkey", "1234567", "letmein",
+        "trustno1", "dragon", "baseball", "iloveyou", "master", "sunshine", "ashley", "bailey",
+        "passw0rd", "shadow", "123123", "654321", "superman", "qazwsx", "michael", "football",
     ]
 });
 
 /// Email validation regex
-static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap()
-});
+static EMAIL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap());
 
 /// Password validation result
 #[derive(Debug)]
@@ -55,13 +52,19 @@ pub fn validate_password(password: &str) -> Result<(), AuthError> {
     }
 
     // Check for special character
-    if !password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c)) {
+    if !password
+        .chars()
+        .any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c))
+    {
         errors.push("Password must contain at least one special character".to_string());
     }
 
     // Check against common passwords
     let lowercase_password = password.to_lowercase();
-    if COMMON_PASSWORDS.iter().any(|&common| lowercase_password.contains(common)) {
+    if COMMON_PASSWORDS
+        .iter()
+        .any(|&common| lowercase_password.contains(common))
+    {
         errors.push("Password is too common or easily guessable".to_string());
     }
 
@@ -75,7 +78,7 @@ pub fn validate_password(password: &str) -> Result<(), AuthError> {
 /// Validate and normalize email
 pub fn validate_email(email: &str) -> Result<String, AuthError> {
     let trimmed = email.trim();
-    
+
     if trimmed.is_empty() {
         return Err(AuthError::ValidationError {
             message: "Email cannot be empty".to_string(),
