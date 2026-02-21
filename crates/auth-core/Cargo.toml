@@ -27,7 +27,7 @@ sqlx = { workspace = true }
 # Additional dependencies
 async-trait = "0.1"
 utoipa = { version = "4.2", features = ["chrono", "uuid"] }
-lru = "0.12"
+lru = "0.16"
 lettre = { version = "0.11", features = ["tokio1", "tokio1-native-tls"] }
 reqwest = { workspace = true }
 bcrypt = "0.15"

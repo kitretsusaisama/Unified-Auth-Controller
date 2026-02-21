@@ -55,7 +55,7 @@ pub enum PortError {
 
 impl PortAuthority {
     /// Create a new port authority with default lease directory
-    pub fn new() -> std::io::Result<Self> {
+    pub async fn new() -> std::io::Result<Self> {
         Self::with_lease_dir(default_lease_dir())
     }
 
