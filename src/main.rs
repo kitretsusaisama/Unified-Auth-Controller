@@ -15,7 +15,7 @@ use auth_platform::{shutdown_signal, PortAuthority, PortClass, PortPolicy};
 use auth_db::repositories::{
     otp_repository::OtpRepository, session_repository::SessionRepository,
     subscription_repository::SubscriptionRepository, user_repository::UserRepository,
-    RoleRepository,
+    RefreshTokenRepository, RevokedTokenRepository, RoleRepository,
 };
 
 // Services
@@ -107,11 +107,17 @@ async fn main() -> Result<()> {
 
     let subscription_service = Arc::new(SubscriptionService::new(subscription_repo));
 
-    // Initialize Token Engine (with in-memory stores for now)
+    // Initialize Token Engine with persistent stores
+    let revoked_token_repo = Arc::new(RevokedTokenRepository::new(pool.clone()));
+    let refresh_token_repo = Arc::new(RefreshTokenRepository::new(pool.clone()));
+
     let token_service: Arc<dyn auth_core::services::token_service::TokenProvider> = Arc::new(
-        auth_core::services::token_service::TokenEngine::new()
-            .await
-            .expect("Failed to initialize TokenEngine"),
+        auth_core::services::token_service::TokenEngine::new_with_stores(
+            revoked_token_repo,
+            refresh_token_repo,
+        )
+        .await
+        .expect("Failed to initialize TokenEngine"),
     );
 
     // Initialize Async Audit
