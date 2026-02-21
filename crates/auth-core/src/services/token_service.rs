@@ -77,10 +77,12 @@ pub struct TokenEngine {
 }
 
 // In-memory implementations for testing/default
+#[deprecated(note = "Use persistent storage in production")]
 pub struct InMemoryRefreshTokenStore {
     tokens: Arc<RwLock<LruCache<String, RefreshToken>>>,
 }
 
+#[allow(deprecated)]
 impl InMemoryRefreshTokenStore {
     pub fn new(capacity: usize) -> Self {
         let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| {
@@ -93,6 +95,7 @@ impl InMemoryRefreshTokenStore {
     }
 }
 
+#[allow(deprecated)]
 #[async_trait::async_trait]
 impl RefreshTokenStore for InMemoryRefreshTokenStore {
     async fn create(&self, token: RefreshToken) -> Result<(), AuthError> {
@@ -134,10 +137,12 @@ impl RefreshTokenStore for InMemoryRefreshTokenStore {
     }
 }
 
+#[deprecated(note = "Use persistent storage in production")]
 pub struct InMemoryRevokedTokenStore {
     revoked: Arc<RwLock<LruCache<Uuid, DateTime<Utc>>>>,
 }
 
+#[allow(deprecated)]
 impl InMemoryRevokedTokenStore {
     pub fn new(capacity: usize) -> Self {
         let cap = NonZeroUsize::new(capacity).unwrap_or_else(|| {
@@ -150,6 +155,7 @@ impl InMemoryRevokedTokenStore {
     }
 }
 
+#[allow(deprecated)]
 #[async_trait::async_trait]
 impl RevokedTokenStore for InMemoryRevokedTokenStore {
     async fn add_to_blacklist(
@@ -175,6 +181,8 @@ impl RevokedTokenStore for InMemoryRevokedTokenStore {
 }
 
 impl TokenEngine {
+    #[deprecated(note = "Use new_with_stores with persistent repositories")]
+    #[allow(deprecated)]
     pub async fn new() -> Result<Self, AuthError> {
         let config = JwtConfig::default();
 
@@ -198,8 +206,25 @@ impl TokenEngine {
         })
     }
 
+    #[deprecated(note = "Use new_with_stores with persistent repositories")]
+    #[allow(deprecated)]
     pub async fn new_with_defaults() -> Self {
         Self::new().await.expect("Failed to initialize TokenEngine")
+    }
+
+    #[allow(deprecated)]
+    pub async fn new_with_config(config: JwtConfig) -> Result<Self, AuthError> {
+        let key_manager = KeyManager::new()
+            .await
+            .map_err(|e| AuthError::ConfigurationError {
+                message: format!("Failed to initialize key manager: {}", e),
+            })?;
+
+        Ok(Self {
+            jwt_service: JwtService::new(config, key_manager),
+            revoked_token_store: Arc::new(InMemoryRevokedTokenStore::new(10_000)),
+            refresh_token_store: Arc::new(InMemoryRefreshTokenStore::new(10_000)),
+        })
     }
 
     pub async fn new_with_stores(
